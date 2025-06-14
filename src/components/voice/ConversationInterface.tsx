@@ -13,16 +13,22 @@ interface ConversationMessage {
   hasAudio?: boolean;
 }
 
-// Classe pour gérer l'enregistrement audio optimisé
+// Classe pour gérer l'enregistrement audio optimisé avec meilleure gestion d'erreur
 class AudioRecorder {
   private stream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
+  private isActive = false;
 
   constructor(private onAudioData: (audioData: Float32Array) => void) {}
 
   async start() {
+    if (this.isActive) {
+      console.warn('AudioRecorder déjà actif');
+      return;
+    }
+
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -38,74 +44,144 @@ class AudioRecorder {
         sampleRate: 24000,
       });
       
+      // Vérifier l'état de l'AudioContext
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+      
       this.source = this.audioContext.createMediaStreamSource(this.stream);
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
       
       this.processor.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        this.onAudioData(new Float32Array(inputData));
+        if (!this.isActive) return;
+        
+        try {
+          const inputData = e.inputBuffer.getChannelData(0);
+          // Vérifier que les données audio sont valides
+          if (inputData && inputData.length > 0) {
+            this.onAudioData(new Float32Array(inputData));
+          }
+        } catch (error) {
+          console.error('Erreur traitement audio:', error);
+        }
       };
       
       this.source.connect(this.processor);
       this.processor.connect(this.audioContext.destination);
+      this.isActive = true;
+      
+      console.log('✅ AudioRecorder démarré avec succès');
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      this.cleanup();
       throw error;
     }
   }
 
   stop() {
-    if (this.source) {
-      this.source.disconnect();
-      this.source = null;
+    this.isActive = false;
+    this.cleanup();
+  }
+
+  private cleanup() {
+    try {
+      if (this.source) {
+        this.source.disconnect();
+        this.source = null;
+      }
+    } catch (error) {
+      console.error('Erreur déconnexion source:', error);
     }
-    if (this.processor) {
-      this.processor.disconnect();
-      this.processor = null;
+
+    try {
+      if (this.processor) {
+        this.processor.disconnect();
+        this.processor = null;
+      }
+    } catch (error) {
+      console.error('Erreur déconnexion processor:', error);
     }
+
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      this.stream.getTracks().forEach(track => {
+        try {
+          track.stop();
+        } catch (error) {
+          console.error('Erreur arrêt track:', error);
+        }
+      });
       this.stream = null;
     }
-    if (this.audioContext) {
-      this.audioContext.close();
+
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try {
+        this.audioContext.close();
+      } catch (error) {
+        console.error('Erreur fermeture AudioContext:', error);
+      }
       this.audioContext = null;
     }
   }
 }
 
-// Fonction pour encoder l'audio au format requis par OpenAI (corrigée)
-const encodeAudioForAPI = (float32Array: Float32Array): string => {
-  const int16Array = new Int16Array(float32Array.length);
-  for (let i = 0; i < float32Array.length; i++) {
-    const s = Math.max(-1, Math.min(1, float32Array[i]));
-    int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+// Fonction pour encoder l'audio au format requis par OpenAI avec validation
+const encodeAudioForAPI = (float32Array: Float32Array): string | null => {
+  try {
+    if (!float32Array || float32Array.length === 0) {
+      console.warn('Données audio vides');
+      return null;
+    }
+
+    const int16Array = new Int16Array(float32Array.length);
+    for (let i = 0; i < float32Array.length; i++) {
+      const s = Math.max(-1, Math.min(1, float32Array[i]));
+      int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    
+    const uint8Array = new Uint8Array(int16Array.buffer);
+    let binary = '';
+    
+    // Traitement par chunks pour éviter les erreurs de mémoire
+    const chunkSize = 1024;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binary += String.fromCharCode(...Array.from(chunk));
+    }
+    
+    return btoa(binary);
+  } catch (error) {
+    console.error('Erreur encodage audio:', error);
+    return null;
   }
-  
-  const uint8Array = new Uint8Array(int16Array.buffer);
-  let binary = '';
-  
-  // Traitement par chunks pour éviter les erreurs de mémoire
-  for (let i = 0; i < uint8Array.length; i += 1024) {
-    const chunk = uint8Array.subarray(i, Math.min(i + 1024, uint8Array.length));
-    binary += String.fromCharCode(...Array.from(chunk));
-  }
-  
-  return btoa(binary);
 };
 
-// Classe pour gérer la lecture audio en continu
+// Classe pour gérer la lecture audio en continu avec gestion d'erreur améliorée
 class AudioPlayer {
   private audioContext: AudioContext | null = null;
   private audioQueue: AudioBuffer[] = [];
   private isPlaying = false;
+  private currentSource: AudioBufferSourceNode | null = null;
 
   constructor() {
-    this.audioContext = new AudioContext();
+    this.initAudioContext();
+  }
+
+  private async initAudioContext() {
+    try {
+      this.audioContext = new AudioContext();
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+    } catch (error) {
+      console.error('Erreur initialisation AudioContext:', error);
+    }
   }
 
   async addAudioChunk(base64Audio: string) {
-    if (!this.audioContext) return;
+    if (!this.audioContext) {
+      console.error('AudioContext non initialisé');
+      return;
+    }
 
     try {
       // Décoder l'audio base64
@@ -117,34 +193,42 @@ class AudioPlayer {
 
       // Créer un buffer audio PCM
       const audioBuffer = await this.createPCMBuffer(bytes);
-      this.audioQueue.push(audioBuffer);
+      if (audioBuffer) {
+        this.audioQueue.push(audioBuffer);
 
-      if (!this.isPlaying) {
-        this.playNext();
+        if (!this.isPlaying) {
+          this.playNext();
+        }
       }
     } catch (error) {
       console.error('Erreur décodage audio:', error);
     }
   }
 
-  private async createPCMBuffer(pcmData: Uint8Array): Promise<AudioBuffer> {
-    if (!this.audioContext) throw new Error('AudioContext not initialized');
+  private async createPCMBuffer(pcmData: Uint8Array): Promise<AudioBuffer | null> {
+    if (!this.audioContext) return null;
 
-    const samples = pcmData.length / 2;
-    const audioBuffer = this.audioContext.createBuffer(1, samples, 24000);
-    const channelData = audioBuffer.getChannelData(0);
+    try {
+      const samples = pcmData.length / 2;
+      const audioBuffer = this.audioContext.createBuffer(1, samples, 24000);
+      const channelData = audioBuffer.getChannelData(0);
 
-    for (let i = 0; i < samples; i++) {
-      const sample = (pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
-      channelData[i] = sample < 0x8000 ? sample / 0x8000 : (sample - 0x10000) / 0x8000;
+      for (let i = 0; i < samples; i++) {
+        const sample = (pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
+        channelData[i] = sample < 0x8000 ? sample / 0x8000 : (sample - 0x10000) / 0x8000;
+      }
+
+      return audioBuffer;
+    } catch (error) {
+      console.error('Erreur création buffer PCM:', error);
+      return null;
     }
-
-    return audioBuffer;
   }
 
   private playNext() {
     if (this.audioQueue.length === 0) {
       this.isPlaying = false;
+      this.currentSource = null;
       return;
     }
 
@@ -153,20 +237,55 @@ class AudioPlayer {
     
     if (!this.audioContext) return;
 
-    const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
-    
-    source.onended = () => {
+    try {
+      this.currentSource = this.audioContext.createBufferSource();
+      this.currentSource.buffer = audioBuffer;
+      this.currentSource.connect(this.audioContext.destination);
+      
+      this.currentSource.onended = () => {
+        this.currentSource = null;
+        this.playNext();
+      };
+      
+      this.currentSource.onerror = (error) => {
+        console.error('Erreur lecture audio:', error);
+        this.currentSource = null;
+        this.playNext();
+      };
+      
+      this.currentSource.start(0);
+    } catch (error) {
+      console.error('Erreur démarrage lecture audio:', error);
+      this.currentSource = null;
       this.playNext();
-    };
-    
-    source.start(0);
+    }
   }
 
   stop() {
     this.audioQueue = [];
     this.isPlaying = false;
+    
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop();
+        this.currentSource.disconnect();
+      } catch (error) {
+        console.error('Erreur arrêt audio:', error);
+      }
+      this.currentSource = null;
+    }
+  }
+
+  cleanup() {
+    this.stop();
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try {
+        this.audioContext.close();
+      } catch (error) {
+        console.error('Erreur fermeture AudioContext player:', error);
+      }
+      this.audioContext = null;
+    }
   }
 }
 
@@ -187,12 +306,21 @@ export const ConversationInterface = () => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxReconnectAttempts = 5;
 
+  // Initialisation du player audio
   useEffect(() => {
     audioPlayerRef.current = new AudioPlayer();
     return () => {
-      audioPlayerRef.current?.stop();
+      audioPlayerRef.current?.cleanup();
     };
   }, []);
+
+  // Nettoyage des timeouts
+  const clearReconnectTimeout = () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+  };
 
   const connectWebSocket = useCallback(() => {
     if (isConnected || isConnecting) {
@@ -204,10 +332,7 @@ export const ConversationInterface = () => {
     setSessionReady(false);
     setConnectionStatus('Connexion au serveur...');
     
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
+    clearReconnectTimeout();
     
     try {
       const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
@@ -268,7 +393,7 @@ export const ConversationInterface = () => {
               break;
               
             case 'conversation.item.input_audio_transcription.completed':
-              if (data.transcript) {
+              if (data.transcript && data.transcript.trim()) {
                 console.log(`📝 Transcription: ${data.transcript}`);
                 
                 const userMessage: ConversationMessage = {
@@ -361,13 +486,14 @@ export const ConversationInterface = () => {
                 variant: "destructive"
               });
               
-              if (errorMessage.includes('OpenAI') || errorMessage.includes('connexion')) {
+              // Décider si reconnexion nécessaire
+              if (data.canRetry !== false && (errorMessage.includes('OpenAI') || errorMessage.includes('connexion'))) {
                 scheduleReconnect();
               }
               break;
               
             case 'pong':
-              console.log('🏓 Pong reçu');
+              console.log('🏓 Pong reçu:', data.serverTime);
               break;
 
             default:
@@ -388,11 +514,15 @@ export const ConversationInterface = () => {
         setWs(null);
         setConnectionStatus('Connexion fermée');
         
+        // Arrêter l'enregistrement si en cours
         if (audioRecorderRef.current) {
           audioRecorderRef.current.stop();
           audioRecorderRef.current = null;
           setIsRecording(false);
         }
+        
+        // Arrêter la lecture audio
+        audioPlayerRef.current?.stop();
         
         if (event.code !== 1000) {
           scheduleReconnect();
@@ -445,14 +575,21 @@ export const ConversationInterface = () => {
       return;
     }
 
+    if (audioRecorderRef.current) {
+      console.warn('Enregistrement déjà en cours');
+      return;
+    }
+
     try {
       audioRecorderRef.current = new AudioRecorder((audioData) => {
         if (ws && ws.readyState === WebSocket.OPEN && sessionReady) {
           const encodedAudio = encodeAudioForAPI(audioData);
-          ws.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: encodedAudio
-          }));
+          if (encodedAudio) {
+            ws.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: encodedAudio
+            }));
+          }
         }
       });
 
@@ -465,6 +602,7 @@ export const ConversationInterface = () => {
       });
     } catch (error) {
       console.error('❌ Erreur enregistrement:', error);
+      audioRecorderRef.current = null;
       toast({
         title: "Erreur microphone",
         description: "Impossible d'accéder au microphone",
@@ -486,7 +624,7 @@ export const ConversationInterface = () => {
     }
   };
 
-  // Ping périodique
+  // Ping périodique avec gestion d'erreur
   useEffect(() => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
@@ -497,24 +635,25 @@ export const ConversationInterface = () => {
         } catch (error) {
           console.error('❌ Erreur ping:', error);
         }
+      } else {
+        clearInterval(pingInterval);
       }
     }, 30000);
 
     return () => clearInterval(pingInterval);
   }, [ws]);
 
-  // Nettoyage
+  // Nettoyage complet
   useEffect(() => {
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
+      clearReconnectTimeout();
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close(1000, "Component unmount");
       }
       if (audioRecorderRef.current) {
         audioRecorderRef.current.stop();
       }
+      audioPlayerRef.current?.cleanup();
     };
   }, [ws]);
 
