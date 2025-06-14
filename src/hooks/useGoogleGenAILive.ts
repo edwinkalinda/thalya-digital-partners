@@ -40,7 +40,7 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
   
   // GenAI
   const clientRef = useRef<GoogleGenerativeAI | null>(null);
-  const sessionRef = useRef<any | null>(null);
+  const modelRef = useRef<any | null>(null);
   
   // Audio processing
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -78,28 +78,19 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
 
       clientRef.current = new GoogleGenerativeAI(apiKey);
       
-      // Créer une session live
-      const model = clientRef.current.getGenerativeModel({
-        model: 'gemini-2.0-flash-exp',
-        systemInstruction: "Tu es Clara, une assistante vocale française amicale et professionnelle. Réponds de manière naturelle et conversationnelle."
-      });
-
-      sessionRef.current = model.startChat({
-        generationConfig: {
-          responseModalities: ['AUDIO', 'TEXT'],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
-          }
-        }
+      // Utiliser l'API standard de Google GenerativeAI
+      modelRef.current = clientRef.current.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        systemInstruction: "Tu es Clara, une assistante vocale française amicale et professionnelle. Réponds de manière naturelle et conversationnelle en français."
       });
 
       initializeAudioContexts();
       setIsConnected(true);
-      setStatus('Connected to Gemini 2.0 Flash');
+      setStatus('Connected to Gemini 1.5 Flash');
       
       toast({
         title: "🤖 Gemini Live",
-        description: "Clara est connectée avec Gemini 2.0 Flash Live!",
+        description: "Clara est connectée avec Gemini 1.5 Flash!",
       });
 
     } catch (err: any) {
@@ -145,15 +136,16 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
       scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
       
       scriptProcessorRef.current.onaudioprocess = (event) => {
-        if (sessionRef.current && isRecording) {
+        if (modelRef.current && isRecording) {
           const inputBuffer = event.inputBuffer;
           const inputData = inputBuffer.getChannelData(0);
           
           // Convertir en PCM 16-bit
           const pcmData = floatTo16BitPCM(inputData);
           
-          // Envoyer à Gemini (cette partie nécessiterait l'API de streaming réelle)
-          console.log('Sending audio chunk to Gemini:', pcmData.byteLength, 'bytes');
+          // Pour l'instant, on log l'audio capturé
+          // L'intégration complète avec Gemini nécessiterait l'API WebRTC ou streaming
+          console.log('Audio chunk captured:', pcmData.byteLength, 'bytes');
         }
       };
 
@@ -198,8 +190,8 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
   const disconnect = useCallback(() => {
     stopRecording();
     
-    if (sessionRef.current) {
-      sessionRef.current = null;
+    if (modelRef.current) {
+      modelRef.current = null;
     }
     
     if (inputAudioContextRef.current) {
