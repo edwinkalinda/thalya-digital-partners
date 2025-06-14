@@ -132,32 +132,34 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100 flex flex-col">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100 overflow-hidden">
       {/* Header */}
       <Header />
       
       {/* Main Header - adjusted for fixed header */}
-      <div className="pt-16 p-4 sm:p-6 border-b border-graphite-200">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
-            <p className="text-sm sm:text-base text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
-          </div>
-          <div className="w-full sm:w-auto">
-            <ProgressIndicator 
-              steps={onboardingSteps} 
-              currentStep={currentStep} 
-            />
+      <div className="flex-shrink-0 pt-16 p-4 sm:p-6 border-b border-graphite-200 bg-pure-white/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
+              <p className="text-sm sm:text-base text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
+            </div>
+            <div className="flex-shrink-0 overflow-x-auto">
+              <ProgressIndicator 
+                steps={onboardingSteps} 
+                currentStep={currentStep} 
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content - Responsive Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Avatar Section */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 min-h-[300px] lg:min-h-0">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 flex-shrink-0">
           <div className="text-center">
-            <div className="mb-6 w-48 h-48 sm:w-64 sm:h-64 mx-auto">
+            <div className="mb-4 sm:mb-6 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 mx-auto">
               <Orb 
                 hue={240}
                 hoverIntensity={0.3}
@@ -175,14 +177,14 @@ const Onboarding = () => {
         </div>
 
         {/* Chat Section */}
-        <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col min-h-[400px] lg:min-h-0">
+        <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col min-h-0 flex-1">
           <ChatInterface 
             conversation={conversation}
-            className="flex-1"
+            className="flex-1 min-h-0"
           />
           
           {/* Input Section */}
-          <div className="p-4 sm:p-6 border-t border-graphite-200 bg-pure-white">
+          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-graphite-200 bg-pure-white">
             <div className="flex gap-2 sm:gap-4 items-end">
               <div className="flex-1">
                 <Input
