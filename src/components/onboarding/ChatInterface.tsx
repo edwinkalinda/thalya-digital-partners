@@ -1,7 +1,7 @@
 
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Bot, User } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'ai';
@@ -13,6 +13,24 @@ interface ChatInterfaceProps {
   conversation: Message[];
   className?: string;
 }
+
+const ThalyaIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M8 4C5.79086 4 4 5.79086 4 8C4 10.2091 5.79086 12 8 12C10.2091 12 12 10.2091 12 8C12 5.79086 10.2091 4 8 4ZM8 4C8 6.20914 9.79086 8 12 8C14.2091 8 16 6.20914 16 4C16 1.79086 14.2091 0 12 0C9.79086 0 8 1.79086 8 4Z" 
+      fill="currentColor"
+    />
+    <path 
+      d="M16 20C18.2091 20 20 18.2091 20 16C20 13.7909 18.2091 12 16 12C13.7909 12 12 13.7909 12 16C12 18.2091 13.7909 20 16 20ZM16 20C16 17.7909 14.2091 16 12 16C9.79086 16 8 17.7909 8 20C8 22.2091 9.79086 24 12 24C14.2091 24 16 22.2091 16 20Z" 
+      fill="currentColor"
+    />
+  </svg>
+);
 
 const ChatInterface = ({ conversation, className }: ChatInterfaceProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -52,7 +70,7 @@ const ChatInterface = ({ conversation, className }: ChatInterfaceProps) => {
                 : "bg-graphite-200 text-graphite-700"
             )}>
               {msg.role === 'ai' ? (
-                <Bot className="w-5 h-5" />
+                <ThalyaIcon className="w-5 h-5" />
               ) : (
                 <User className="w-5 h-5" />
               )}
