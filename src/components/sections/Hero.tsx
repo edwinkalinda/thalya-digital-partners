@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import DecryptedText from "@/components/ui/DecryptedText";
+import StarBorder from "@/components/ui/StarBorder";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -36,13 +37,14 @@ const Hero = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Button 
-              size="lg" 
-              className="bg-deep-black hover:bg-graphite-800 text-pure-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:scale-105"
+            <StarBorder 
+              color="#0066FF"
+              speed="4s"
+              className="transition-all duration-300 hover:scale-105"
               onClick={() => navigate('/onboarding')}
             >
               Découvrir l'automatisation →
-            </Button>
+            </StarBorder>
             
             <Button 
               variant="outline"

@@ -1,6 +1,6 @@
 
-import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import StarBorder from "@/components/ui/StarBorder";
 
 const FinalCTA = () => {
   return (
@@ -30,13 +30,16 @@ const FinalCTA = () => {
           </p>
           
           <div className="space-y-6">
-            <Button 
-              size="lg" 
-              className="bg-electric-blue hover:bg-blue-600 text-pure-white px-12 py-6 text-xl font-semibold rounded-2xl transition-all duration-300 hover:scale-105 animate-glow group"
+            <StarBorder 
+              color="#0066FF"
+              speed="5s"
+              className="transition-all duration-300 hover:scale-105"
             >
-              Donner Vie à votre IA
-              <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform duration-300" />
-            </Button>
+              <div className="flex items-center">
+                Donner Vie à votre IA
+                <ArrowRight className="w-6 h-6 ml-3" />
+              </div>
+            </StarBorder>
             
             <p className="text-graphite-400 text-sm">
               Configuration en moins de 5 minutes • Aucun engagement • Support premium inclus

@@ -1,5 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import StarBorder from "@/components/ui/StarBorder";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -57,12 +59,14 @@ const Header = () => {
             <Button variant="outline" className="hidden md:inline-flex hover:bg-electric-blue/5 hover:text-electric-blue hover:border-electric-blue/30 transition-all duration-300">
               Connexion
             </Button>
-            <Button 
-              className="bg-gradient-to-r from-electric-blue to-emerald-600 hover:from-electric-blue/90 hover:to-emerald-500 text-pure-white transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+            <StarBorder 
+              color="#0066FF"
+              speed="4s"
+              className="transition-all duration-300 hover:scale-105"
               onClick={() => navigate('/onboarding')}
             >
               Demander une démo
-            </Button>
+            </StarBorder>
           </div>
         </div>
       </div>
