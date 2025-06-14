@@ -1,9 +1,18 @@
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
+import TextCycler from "@/components/ui/TextCycler";
 import { Phone, Package, TrendingUp } from "lucide-react";
 
 const AIHub = () => {
+  const capabilities = [
+    "la réception",
+    "la gestion de stock", 
+    "le marketing",
+    "et bien plus encore"
+  ];
+
   return (
     <section id="ai-hub" className="py-24 px-6 lg:px-8 bg-graphite-50">
       <div className="max-w-7xl mx-auto">
@@ -11,7 +20,7 @@ const AIHub = () => {
           <h2 className="text-5xl md:text-6xl font-bold mb-6">
             <TextRotate text="Un agent pour " className="inline" />
             <span className="text-gradient">
-              <TextRotate text="chaque mission" />
+              <TextCycler texts={capabilities} />
             </span>
           </h2>
           <p className="text-xl text-graphite-600 max-w-3xl mx-auto">
