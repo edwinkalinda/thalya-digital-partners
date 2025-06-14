@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -36,7 +37,14 @@ interface TextCyclerProps {
   interval?: number;
 }
 
-const TextCycler = forwardRef<any, TextCyclerProps>((props, ref) => {
+interface TextCyclerRef {
+  next: () => void;
+  previous: () => void;
+  jumpTo: (index: number) => void;
+  reset: () => void;
+}
+
+const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
   const {
     texts,
     transition = { type: "spring", damping: 25, stiffness: 300 },
