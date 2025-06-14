@@ -157,9 +157,9 @@ const Onboarding = () => {
       {/* Main Content - Responsive Layout */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Avatar Section */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 flex-shrink-0">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 flex-shrink-0">
           <div className="text-center">
-            <div className="mb-4 sm:mb-6 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 mx-auto">
+            <div className="mb-3 sm:mb-4 w-28 h-28 sm:w-40 sm:h-40 lg:w-52 lg:h-52 mx-auto">
               <Orb 
                 hue={240}
                 hoverIntensity={0.3}
