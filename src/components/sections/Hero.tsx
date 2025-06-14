@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import DecryptedText from "@/components/ui/DecryptedText";
 import StarBorder from "@/components/ui/StarBorder";
+import TextCycler from "@/components/ui/TextCycler";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -29,6 +30,17 @@ const Hero = () => {
               encryptedClassName="text-electric-blue/40"
             />
           </h1>
+          
+          {/* TextCycler test */}
+          <div className="mb-8">
+            <TextCycler
+              texts={["Gestion automatisée", "IA intelligente", "Croissance optimisée"]}
+              className="text-2xl text-electric-blue font-semibold"
+              interval={3000}
+              splitBy="characters"
+              staggerDuration={50}
+            />
+          </div>
           
           {/* Subtitle */}
           <p className="text-xl md:text-2xl text-graphite-600 max-w-4xl mx-auto mb-12 font-normal leading-relaxed">

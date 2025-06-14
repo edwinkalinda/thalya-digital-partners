@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -73,13 +72,23 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
 
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
 
+  console.log('TextCycler rendered with texts:', texts);
+  console.log('Current text index:', currentTextIndex);
+
   const splitIntoCharacters = (text: string) => {
     // Simple character splitting that works with TypeScript
     return Array.from(text);
   };
 
   const elements = useMemo(() => {
+    if (!texts || texts.length === 0) {
+      console.log('No texts provided to TextCycler');
+      return [];
+    }
+    
     const currentText = texts[currentTextIndex];
+    console.log('Processing text:', currentText);
+    
     if (splitBy === "characters") {
       const words = currentText.split(" ");
       return words.map((word: string, i: number) => ({
@@ -192,7 +201,12 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
     return () => clearInterval(intervalId);
   }, [next, finalRotationInterval, auto]);
 
-  if (texts.length === 0) return null;
+  if (texts.length === 0) {
+    console.log('TextCycler: No texts provided, returning null');
+    return null;
+  }
+
+  console.log('TextCycler: Rendering with elements:', elements);
 
   return (
     <motion.span
