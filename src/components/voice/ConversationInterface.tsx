@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,27 @@ interface ConversationMessage {
   timestamp: number;
   isPlaying?: boolean;
 }
+
+// Fonction utilitaire pour détecter le format audio supporté
+const getSupportedMimeType = (): string => {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/wav'
+  ];
+  
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      console.log(`✅ Format supporté détecté: ${type}`);
+      return type;
+    }
+  }
+  
+  console.log('⚠️ Aucun format audio préféré supporté, utilisation du format par défaut');
+  return '';
+};
 
 export const ConversationInterface = () => {
   const { toast } = useToast();
@@ -202,6 +222,8 @@ export const ConversationInterface = () => {
     }
 
     try {
+      console.log('🎤 Demande d\'accès au microphone...');
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 22050,
@@ -213,26 +235,46 @@ export const ConversationInterface = () => {
       });
       
       streamRef.current = stream;
+      console.log('✅ Accès microphone accordé');
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
+      // Détecter le format supporté
+      const supportedMimeType = getSupportedMimeType();
+      
+      const mediaRecorderOptions: MediaRecorderOptions = {
         audioBitsPerSecond: 32000
-      });
+      };
+      
+      // Ajouter le mimeType seulement s'il est supporté
+      if (supportedMimeType) {
+        mediaRecorderOptions.mimeType = supportedMimeType;
+      }
+      
+      console.log('🎙️ Configuration MediaRecorder:', mediaRecorderOptions);
+      
+      const mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
       
       const audioChunks: BlobPart[] = [];
       
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunks.push(event.data);
+          console.log(`📦 Chunk audio reçu: ${event.data.size} bytes`);
         }
       };
       
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log('⏹️ Arrêt de l\'enregistrement, traitement des chunks...');
+        
+        const audioBlob = new Blob(audioChunks, { 
+          type: supportedMimeType || 'audio/webm' 
+        });
+        
+        console.log(`📋 Blob audio créé: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
         
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64Audio = (reader.result as string).split(',')[1];
+          console.log(`📤 Envoi audio base64: ${base64Audio.length} caractères`);
           
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
@@ -250,6 +292,15 @@ export const ConversationInterface = () => {
         reader.readAsDataURL(audioBlob);
       };
       
+      mediaRecorder.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event);
+        toast({
+          title: "Erreur d'enregistrement",
+          description: "Problème avec l'enregistrement audio",
+          variant: "destructive"
+        });
+      };
+      
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(1000);
       setIsRecording(true);
@@ -261,9 +312,21 @@ export const ConversationInterface = () => {
       
     } catch (error) {
       console.error('❌ Microphone access error:', error);
+      
+      let errorMessage = "Impossible d'accéder au microphone";
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = "Permission microphone refusée. Veuillez autoriser l'accès au microphone.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = "Aucun microphone trouvé sur cet appareil.";
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = "Format audio non supporté par ce navigateur.";
+        }
+      }
+      
       toast({
         title: "Erreur microphone",
-        description: "Impossible d'accéder au microphone. Vérifiez les permissions.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -271,11 +334,15 @@ export const ConversationInterface = () => {
 
   const stopListening = () => {
     if (mediaRecorderRef.current && isRecording) {
+      console.log('🛑 Arrêt de l\'enregistrement...');
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('🔇 Track audio arrêté');
+        });
       }
       
       toast({
