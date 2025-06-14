@@ -58,7 +58,15 @@ const TextRotate = ({ text, className = '' }: TextRotateProps) => {
               </span>
             ))}
             {wordIndex < words.length - 1 && (
-              <span className="text-rotate-space"> </span>
+              <span 
+                className="text-rotate-space relative z-10 inline-block"
+                style={{
+                  animationDelay: isVisible ? `${(wordIndex * word.length + word.length) * 50}ms` : '0ms',
+                  transform: isVisible ? 'translateY(0) rotateX(0deg)' : 'translateY(20px) rotateX(90deg)',
+                  opacity: isVisible ? 1 : 0,
+                  transition: 'transform 0.6s ease, opacity 0.6s ease',
+                }}
+              > </span>
             )}
           </span>
         ))}
