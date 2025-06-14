@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -387,12 +388,7 @@ export const ConversationInterface = () => {
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
-          // Paramètres avancés pour meilleure capture
-          googEchoCancellation: true,
-          googNoiseSuppression: true,
-          googAutoGainControl: true,
-          googHighpassFilter: true
+          autoGainControl: true
         }
       });
       
