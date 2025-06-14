@@ -35,6 +35,18 @@ serve(async (req) => {
     });
   }
 
+  // Vérifier immédiatement la clé API OpenAI
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+  if (!OPENAI_API_KEY || OPENAI_API_KEY.trim() === '') {
+    console.error("❌ ERREUR CRITIQUE: OPENAI_API_KEY non configurée ou vide");
+    return new Response("OpenAI API Key not configured", { 
+      status: 500,
+      headers: corsHeaders 
+    });
+  }
+
+  console.log("✅ Clé OpenAI API détectée, longueur:", OPENAI_API_KEY.length);
+
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   console.log("🚀 Client WebSocket connecté");
@@ -102,6 +114,20 @@ serve(async (req) => {
         errorMessage = error.error.message;
       }
       
+      // Gestion spéciale pour les erreurs d'authentification
+      if (errorMessage.includes('Missing bearer or basic authentication')) {
+        errorMessage = 'Clé API OpenAI non configurée ou invalide';
+        shouldReconnect = false; // Pas de reconnexion pour les erreurs d'auth
+        
+        safeSend(socket, {
+          type: 'error',
+          message: 'Configuration OpenAI requise',
+          details: 'Veuillez configurer votre clé API OpenAI dans les secrets Supabase',
+          fatal: true
+        });
+        return { errorMessage, shouldReconnect };
+      }
+      
       // Déterminer si on doit reconnecter basé sur le type d'erreur
       const errorStr = errorMessage.toLowerCase();
       shouldReconnect = errorStr.includes('connection') || 
@@ -137,12 +163,8 @@ serve(async (req) => {
     }
 
     try {
-      const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-      if (!OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY not configured');
-      }
-
       console.log(`🔌 Tentative de connexion OpenAI (${connectionState.reconnectAttempts + 1}/${maxReconnectAttempts})`);
+      console.log("🔑 Utilisation de la clé API OpenAI (longueur):", OPENAI_API_KEY.length);
       
       // Nettoyer toute connexion existante
       if (openAISocket) {
@@ -151,6 +173,13 @@ serve(async (req) => {
       }
       
       const url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01";
+      
+      // Vérifier à nouveau la clé API avant de créer la connexion
+      if (!OPENAI_API_KEY || OPENAI_API_KEY.trim() === '') {
+        throw new Error('Clé API OpenAI manquante ou vide');
+      }
+      
+      console.log("📡 Création WebSocket OpenAI avec URL:", url);
       
       openAISocket = new WebSocket(url, [], {
         headers: {
@@ -162,14 +191,15 @@ serve(async (req) => {
       // Timeout pour la connexion
       const connectionTimeout = setTimeout(() => {
         if (openAISocket && openAISocket.readyState === WebSocket.CONNECTING) {
+          console.error("⏰ Timeout de connexion OpenAI");
           openAISocket.close();
           handleOpenAIError("Timeout de connexion OpenAI", "connexion");
         }
-      }, 10000);
+      }, 15000); // Augmenté à 15 secondes
 
       openAISocket.onopen = () => {
         clearTimeout(connectionTimeout);
-        console.log("✅ Connecté à OpenAI Realtime API");
+        console.log("✅ Connecté à OpenAI Realtime API avec succès");
         connectionState.isConnected = true;
         connectionState.reconnectAttempts = 0;
         connectionState.lastError = null;
@@ -177,7 +207,7 @@ serve(async (req) => {
         safeSend(socket, {
           type: 'connection_status',
           status: 'connected',
-          message: 'Connexion OpenAI établie'
+          message: 'Connexion OpenAI établie avec succès'
         });
       };
 
@@ -214,7 +244,7 @@ serve(async (req) => {
             
             if (safeSend(openAISocket, sessionConfig)) {
               connectionState.sessionConfigured = true;
-              console.log("📤 Configuration de session envoyée");
+              console.log("📤 Configuration de session envoyée avec succès");
             }
           }
           
@@ -224,7 +254,7 @@ serve(async (req) => {
             
             safeSend(socket, {
               type: 'session_ready',
-              message: 'Chat vocal temps réel prêt'
+              message: 'Chat vocal temps réel prêt - Authentification OpenAI réussie'
             });
           }
 
@@ -250,22 +280,36 @@ serve(async (req) => {
         connectionState.isConnected = false;
         connectionState.sessionConfigured = false;
         
+        // Message plus spécifique selon le code d'erreur
+        let closeMessage = `Connexion OpenAI fermée: ${event.reason || 'Connexion interrompue'}`;
+        if (event.code === 3000) {
+          closeMessage = 'Erreur d\'authentification OpenAI - Vérifiez votre clé API';
+        }
+        
         safeSend(socket, {
           type: 'connection_status',
           status: 'disconnected',
-          message: `Connexion OpenAI fermée: ${event.reason || 'Connexion interrompue'}`,
+          message: closeMessage,
           code: event.code
         });
         
-        // Retry après un délai si ce n'est pas une fermeture volontaire
-        if (event.code !== 1000 && connectionState.reconnectAttempts < maxReconnectAttempts) {
+        // Retry après un délai si ce n'est pas une fermeture volontaire ou erreur d'auth
+        if (event.code !== 1000 && event.code !== 3000 && connectionState.reconnectAttempts < maxReconnectAttempts) {
           connectionState.reconnectAttempts++;
           const delay = Math.min(2000 * Math.pow(2, connectionState.reconnectAttempts - 1), 10000);
           
+          console.log(`🔄 Programmation reconnexion dans ${delay}ms...`);
           reconnectTimeout = setTimeout(() => {
-            console.log(`🔄 Reconnexion OpenAI dans ${delay}ms...`);
+            console.log(`🔄 Reconnexion OpenAI automatique...`);
             connectToOpenAI();
           }, delay);
+        } else if (event.code === 3000) {
+          safeSend(socket, {
+            type: 'error',
+            message: 'Erreur d\'authentification OpenAI',
+            details: 'Votre clé API OpenAI est invalide ou expirée',
+            fatal: true
+          });
         }
       };
 
@@ -289,7 +333,7 @@ serve(async (req) => {
   };
 
   socket.onopen = () => {
-    console.log("🎉 Client WebSocket connecté");
+    console.log("🎉 Client WebSocket connecté, démarrage connexion OpenAI");
     connectToOpenAI();
   };
 
@@ -313,7 +357,9 @@ serve(async (req) => {
         safeSend(socket, { 
           type: 'pong', 
           timestamp: Date.now(),
-          serverTime: new Date().toISOString()
+          serverTime: new Date().toISOString(),
+          openaiConnected: connectionState.isConnected,
+          sessionReady: connectionState.sessionConfigured
         });
         return;
       }
