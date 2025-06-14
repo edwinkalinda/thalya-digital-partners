@@ -33,9 +33,9 @@ const TextRotate = ({ text, className = '' }: TextRotateProps) => {
     <div ref={containerRef} className={`text-rotate ${className}`}>
       <span className="text-rotate-sr-only">{text}</span>
       
-      <div className="text-rotate-lines" aria-hidden="true">
+      <div className="text-rotate-lines flex flex-wrap" aria-hidden="true">
         {words.map((word, wordIndex) => (
-          <span key={wordIndex} className="text-rotate-word inline-block">
+          <span key={wordIndex} className="text-rotate-word inline-flex">
             {word.split('').map((char, charIndex) => (
               <span
                 key={charIndex}
