@@ -102,11 +102,32 @@
   }
 }
 
-/* Distortion effect */
+/* Distortion effect with visual impact */
 .distortion-container {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  filter: blur(0.5px) contrast(1.1) brightness(1.05);
+  animation: distortionWave 8s ease-in-out infinite;
+}
+
+@keyframes distortionWave {
+  0%, 100% {
+    transform: scale(1) skew(0deg, 0deg);
+    filter: blur(0.5px) contrast(1.1) brightness(1.05);
+  }
+  25% {
+    transform: scale(1.001) skew(0.1deg, 0deg);
+    filter: blur(0.3px) contrast(1.15) brightness(1.1);
+  }
+  50% {
+    transform: scale(0.999) skew(0deg, 0.1deg);
+    filter: blur(0.7px) contrast(1.05) brightness(1.02);
+  }
+  75% {
+    transform: scale(1.001) skew(-0.1deg, 0deg);
+    filter: blur(0.4px) contrast(1.12) brightness(1.08);
+  }
 }
 
 /* Text rotation effect styles */
