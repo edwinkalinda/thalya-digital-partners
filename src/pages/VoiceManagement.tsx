@@ -2,7 +2,7 @@
 import { Phone } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { VoiceTestCard } from "@/components/voice/VoiceTestCard";
-import { RealtimeVoiceChat } from "@/components/voice/RealtimeVoiceChat";
+import { ConversationInterface } from "@/components/voice/ConversationInterface";
 import { TwilioConfigCard } from "@/components/voice/TwilioConfigCard";
 import { VoiceCallTestCard } from "@/components/voice/VoiceCallTestCard";
 import { SystemStatusCard } from "@/components/voice/SystemStatusCard";
@@ -19,16 +19,16 @@ const VoiceManagement = () => {
             <div className="flex items-center justify-center mb-4">
               <Phone className="w-12 h-12 text-electric-blue mr-4" />
               <h1 className="text-4xl font-bold text-deep-black">
-                Test Système Vocal Thalya
+                Chat Vocal Intelligent Thalya
               </h1>
             </div>
             <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-              Testez et configurez votre agent IA réceptionniste vocal avec optimisations ultra-avancées
+              Conversez naturellement avec Clara, votre assistante IA vocale ultra-optimisée
             </p>
           </div>
 
-          {/* Chat Vocal Temps Réel Ultra-Optimisé */}
-          <RealtimeVoiceChat />
+          {/* Interface de Conversation Principale */}
+          <ConversationInterface />
 
           {/* Voice Testing */}
           <VoiceTestCard />
