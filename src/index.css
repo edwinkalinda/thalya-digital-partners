@@ -102,6 +102,13 @@
   }
 }
 
+/* Distortion effect */
+.distortion-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Text rotation effect styles */
 .text-rotate {
   display: flex;
