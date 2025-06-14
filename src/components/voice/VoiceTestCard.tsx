@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,10 +40,10 @@ export const VoiceTestCard = () => {
       }
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-        body: JSON.stringify({
+        body: {
           text: testText,
           voiceId: selectedVoice
-        })
+        }
       });
 
       if (error) {
