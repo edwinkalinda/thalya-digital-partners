@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -64,7 +63,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
               <AnimatePresence>
                 {fieldState.error && (
                   <motion.div
-                    key="email-error"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
@@ -107,7 +105,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
               <AnimatePresence>
                 {fieldState.error && (
                   <motion.div
-                    key="password-error"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
@@ -137,39 +134,36 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
         >
           <Button 
             type="submit" 
-            className="w-full h-14 relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 border-0 group transform hover:scale-[1.02]"
+            className="w-full h-12 sm:h-14 relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border-0 group"
             disabled={isLoading}
-            style={{
-              backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)'
-            }}
           >
-            {/* Effet de brillance qui traverse le bouton */}
-            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
             
-            {/* Bordure lumineuse animée */}
-            <div className="absolute inset-0 rounded-2xl border-2 border-white/20 group-hover:border-white/40 transition-colors duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
-            {/* Effet de lueur externe */}
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 opacity-75 blur group-hover:opacity-100 group-hover:blur-md transition-all duration-300 -z-10" />
+            
+            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            
+            
+            <div className="absolute inset-0 rounded-xl bg-blue-400/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+            
             
             <div className="relative z-10 flex items-center justify-center">
               {isLoading ? (
                 <div className="flex items-center">
                   <motion.div 
-                    className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full mr-3"
+                    className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-3"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   />
-                  <span className="text-white font-semibold">Connexion en cours...</span>
+                  <span className="text-white">Connexion en cours...</span>
                 </div>
               ) : (
-                <span className="flex items-center font-semibold">
+                <span className="flex items-center">
                   Se connecter
                   <motion.div
-                    className="ml-3"
-                    animate={{ x: [0, 6, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="ml-2"
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                   >
                     →
                   </motion.div>
