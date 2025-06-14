@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { User } from 'lucide-react';
@@ -14,21 +13,59 @@ interface ChatInterfaceProps {
   className?: string;
 }
 
-const ThalyaIcon = ({ className }: { className?: string }) => (
+const ThalyaLogo = ({ className }: { className?: string }) => (
   <svg 
     className={className} 
-    viewBox="0 0 24 24" 
+    viewBox="0 0 200 200" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path 
-      d="M8 4C5.79086 4 4 5.79086 4 8C4 10.2091 5.79086 12 8 12C10.2091 12 12 10.2091 12 8C12 5.79086 10.2091 4 8 4ZM8 4C8 6.20914 9.79086 8 12 8C14.2091 8 16 6.20914 16 4C16 1.79086 14.2091 0 12 0C9.79086 0 8 1.79086 8 4Z" 
-      fill="currentColor"
-    />
-    <path 
-      d="M16 20C18.2091 20 20 18.2091 20 16C20 13.7909 18.2091 12 16 12C13.7909 12 12 13.7909 12 16C12 18.2091 13.7909 20 16 20ZM16 20C16 17.7909 14.2091 16 12 16C9.79086 16 8 17.7909 8 20C8 22.2091 9.79086 24 12 24C14.2091 24 16 22.2091 16 20Z" 
-      fill="currentColor"
-    />
+    {/* Boucle supérieure gauche */}
+    <path d="M 30 70
+             C 30 40, 60 40, 60 70
+             C 60 85, 75 100, 100 100
+             C 125 100, 140 85, 140 70
+             C 140 40, 170 40, 170 70
+             C 170 130, 100 130, 100 70
+             C 100 55, 85 40, 70 40
+             C 45 40, 30 55, 30 70 Z" 
+          fill="currentColor"/>
+    
+    {/* Boucle supérieure droite */}
+    <path d="M 170 70
+             C 170 40, 140 40, 140 70
+             C 140 85, 125 100, 100 100
+             C 75 100, 60 85, 60 70
+             C 60 40, 30 40, 30 70
+             C 30 130, 100 130, 100 70
+             C 100 55, 115 40, 130 40
+             C 155 40, 170 55, 170 70 Z" 
+          fill="currentColor"/>
+    
+    {/* Boucle inférieure gauche */}
+    <path d="M 30 130
+             C 30 160, 60 160, 60 130
+             C 60 115, 75 100, 100 100
+             C 125 100, 140 115, 140 130
+             C 140 160, 170 160, 170 130
+             C 170 70, 100 70, 100 130
+             C 100 145, 85 160, 70 160
+             C 45 160, 30 145, 30 130 Z" 
+          fill="currentColor"/>
+    
+    {/* Boucle inférieure droite */}
+    <path d="M 170 130
+             C 170 160, 140 160, 140 130
+             C 140 115, 125 100, 100 100
+             C 75 100, 60 115, 60 130
+             C 60 160, 30 160, 30 130
+             C 30 70, 100 70, 100 130
+             C 100 145, 115 160, 130 160
+             C 155 160, 170 145, 170 130 Z" 
+          fill="currentColor"/>
+    
+    {/* Zone centrale d'intersection */}
+    <circle cx="100" cy="100" r="25" fill="currentColor"/>
   </svg>
 );
 
@@ -70,7 +107,7 @@ const ChatInterface = ({ conversation, className }: ChatInterfaceProps) => {
                 : "bg-graphite-200 text-graphite-700"
             )}>
               {msg.role === 'ai' ? (
-                <ThalyaIcon className="w-5 h-5" />
+                <ThalyaLogo className="w-6 h-6" />
               ) : (
                 <User className="w-5 h-5" />
               )}
