@@ -137,7 +137,7 @@ serve(async (req) => {
     return { errorMessage, shouldReconnect };
   };
 
-  // Connexion à l'API OpenAI Realtime via proxy avec authentification correcte
+  // Connexion directe à l'API OpenAI Realtime avec authentification dans l'URL
   const connectToOpenAI = async () => {
     if (connectionState.reconnectAttempts >= maxReconnectAttempts) {
       console.error("❌ Trop de tentatives de reconnexion");
@@ -158,42 +158,14 @@ serve(async (req) => {
         openAISocket = null;
       }
       
-      // Utiliser notre propre endpoint avec proxy vers OpenAI
-      const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-realtime-preview-2024-10-01',
-          voice: 'alloy',
-          instructions: 'Tu es Clara, une réceptionniste IA française très amicale et professionnelle. Tu parles français naturellement. Réponds de manière concise et utile.',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Session creation failed: ${response.status} ${errorText}`);
-      }
-
-      const sessionData = await response.json();
-      console.log("✅ Session OpenAI créée:", sessionData);
-
-      if (!sessionData.client_secret?.value) {
-        throw new Error("Pas de token client reçu de OpenAI");
-      }
-
-      // Maintenant se connecter avec le token ephémère
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`;
-      console.log("📡 Connexion WebSocket avec token ephémère");
+      // Connexion directe avec authentification dans l'URL pour Deno
+      const encodedKey = encodeURIComponent(OPENAI_API_KEY);
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01&authorization=Bearer%20${encodedKey}`;
       
-      openAISocket = new WebSocket(wsUrl, {
-        headers: {
-          'Authorization': `Bearer ${sessionData.client_secret.value}`,
-          'OpenAI-Beta': 'realtime=v1'
-        }
-      });
+      console.log("📡 Connexion WebSocket OpenAI directe avec clé dans l'URL");
+      
+      // Créer le WebSocket sans headers (pas supporté par Deno)
+      openAISocket = new WebSocket(wsUrl);
 
       // Timeout pour la connexion
       const connectionTimeout = setTimeout(() => {
@@ -211,17 +183,11 @@ serve(async (req) => {
         connectionState.isConnected = true;
         connectionState.reconnectAttempts = 0;
         connectionState.lastError = null;
-        connectionState.sessionConfigured = true; // Pas besoin de configuration supplémentaire
         
         safeSend(socket, {
           type: 'connection_status',
           status: 'connected',
           message: 'Connexion OpenAI établie avec succès'
-        });
-
-        safeSend(socket, {
-          type: 'session_ready',
-          message: 'Chat vocal temps réel prêt'
         });
       };
 
