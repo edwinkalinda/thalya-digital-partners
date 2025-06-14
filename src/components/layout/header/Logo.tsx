@@ -37,16 +37,16 @@ const Logo = () => {
   return (
     <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
       <div className="relative">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 relative">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 relative overflow-hidden rounded-lg">
           {logoImageData ? (
             <MetallicPaint 
               imageData={logoImageData}
               params={{
                 patternScale: 1.8,
                 refraction: 0.12,
-                edge: 0.6,
-                patternBlur: 0.003,
-                liquid: 0.4,
+                edge: 0.8,
+                patternBlur: 0.002,
+                liquid: 0.3,
                 speed: 1.2,
               }}
             />
