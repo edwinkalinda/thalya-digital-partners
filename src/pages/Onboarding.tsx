@@ -87,35 +87,39 @@ const Onboarding = () => {
       <Header />
       
       {/* Main Header */}
-      <div className="pt-16 p-4 sm:p-6 border-b border-graphite-200">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
-            <p className="text-sm sm:text-base text-graphite-600">
-              Créons ensemble votre agent IA personnalisé
-              {isProcessing && (
-                <span className="ml-2 inline-flex items-center text-electric-blue">
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  Thalya réfléchit...
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="w-full sm:w-auto">
-            <ProgressIndicator 
-              steps={onboardingSteps} 
-              currentStep={currentStep} 
-            />
+      <div className="pt-16 p-3 sm:p-4 lg:p-6 border-b border-graphite-200 flex-shrink-0">
+        <div className="max-w-6xl mx-auto flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-deep-black truncate">
+                Configuration de votre IA
+              </h1>
+              <p className="text-xs sm:text-sm lg:text-base text-graphite-600 mt-1">
+                Créons ensemble votre agent IA personnalisé
+                {isProcessing && (
+                  <span className="ml-2 inline-flex items-center text-electric-blue">
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    Thalya réfléchit...
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <ProgressIndicator 
+                steps={onboardingSteps} 
+                currentStep={currentStep} 
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
         {/* Avatar Section */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 min-h-[300px] lg:min-h-0">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-4 lg:p-8 min-h-[280px] lg:min-h-0">
           <div className="text-center">
-            <div className="mb-6 w-48 h-48 sm:w-64 sm:h-64 mx-auto">
+            <div className="mb-4 sm:mb-6 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 mx-auto">
               <Orb 
                 hue={240}
                 hoverIntensity={0.3}
@@ -123,10 +127,10 @@ const Onboarding = () => {
                 forceHoverState={isListening || isProcessing}
               />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-deep-black mb-2">
+            <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-deep-black mb-1 sm:mb-2">
               Thalya
             </h2>
-            <p className="text-sm sm:text-base text-graphite-600">
+            <p className="text-xs sm:text-sm lg:text-base text-graphite-600">
               Je vous guide dans la création de votre IA
             </p>
             {isProcessing && (
@@ -138,48 +142,48 @@ const Onboarding = () => {
         </div>
 
         {/* Chat Section */}
-        <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col min-h-[400px] lg:min-h-0">
+        <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col min-h-0 flex-1">
           <ChatInterface 
             conversation={conversation}
-            className="flex-1"
+            className="flex-1 min-h-0"
           />
           
           {/* Input Section */}
-          <div className="p-4 sm:p-6 border-t border-graphite-200 bg-pure-white">
-            <div className="flex gap-2 sm:gap-4 items-end">
-              <div className="flex-1">
+          <div className="p-3 sm:p-4 lg:p-6 border-t border-graphite-200 bg-pure-white flex-shrink-0">
+            <div className="flex gap-2 sm:gap-3 lg:gap-4 items-end">
+              <div className="flex-1 min-w-0">
                 <Input
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   placeholder={isProcessing ? "Thalya traite votre réponse..." : "Tapez votre réponse..."}
                   onKeyPress={handleKeyPress}
                   disabled={isProcessing}
-                  className="resize-none text-sm sm:text-base"
+                  className="resize-none text-xs sm:text-sm lg:text-base w-full"
                 />
               </div>
               <Button
                 onClick={toggleListening}
                 variant={isListening ? "destructive" : "outline"}
                 size="icon"
-                className="h-10 w-10 flex-shrink-0"
+                className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 flex-shrink-0"
                 disabled={isProcessing}
                 title="Reconnaissance vocale (à venir)"
               >
-                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {isListening ? <MicOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Mic className="h-3 w-3 sm:h-4 sm:w-4" />}
               </Button>
               <Button
                 onClick={handleSendMessage}
                 disabled={!userInput.trim() || isProcessing}
-                className="h-10 flex-shrink-0"
+                className="h-8 sm:h-9 lg:h-10 flex-shrink-0 px-3 sm:px-4"
               >
                 {isProcessing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-3 w-3 sm:h-4 sm:w-4" />
                 )}
               </Button>
             </div>
-            <p className="text-xs text-graphite-500 mt-2">
+            <p className="text-xs text-graphite-500 mt-2 lg:mt-3">
               {isProcessing 
                 ? "Conversation en temps réel avec Thalya..." 
                 : "Cliquez sur le micro pour parler ou tapez votre réponse"
