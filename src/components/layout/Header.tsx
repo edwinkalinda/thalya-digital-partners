@@ -19,13 +19,27 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth'
-      });
+    // Si on n'est pas sur la page d'accueil, naviguer d'abord vers l'accueil
+    if (!isHomePage) {
+      navigate('/');
+      // Attendre que la navigation soit terminée avant de scroller
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
     }
-    setIsOpen(false); // Fermer le menu après navigation
+    setIsOpen(false);
   };
 
   const handleBack = () => {
@@ -33,6 +47,17 @@ const Header = () => {
       navigate(-1);
     } else {
       navigate('/');
+    }
+  };
+
+  const handleLogoClick = () => {
+    navigate('/');
+    // Si on est déjà sur la page d'accueil, scroller vers le haut
+    if (isHomePage) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -61,7 +86,8 @@ const Header = () => {
               </Button>
             )}
             
-            <div className="flex items-center group cursor-pointer" onClick={() => navigate('/')}>
+            {/* Logo cliquable */}
+            <div className="flex items-center group cursor-pointer" onClick={handleLogoClick}>
               <div className="relative">
                 {/* Logo minimaliste */}
                 <div className="w-8 h-8 sm:w-10 sm:h-10 relative mr-2 sm:mr-3 transition-all duration-300 group-hover:scale-110">
@@ -85,31 +111,29 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Navigation Desktop - affichée seulement sur la page d'accueil */}
-          {isHomePage && (
-            <nav className="hidden lg:flex items-center space-x-8">
-              {navigationItems.map((item) => (
-                <button 
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)} 
-                  className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
-                >
-                  {item.label}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-                </button>
-              ))}
-            </nav>
-          )}
+          {/* Navigation Desktop - toujours visible */}
+          <nav className="hidden lg:flex items-center space-x-8">
+            {navigationItems.map((item) => (
+              <button 
+                key={item.id}
+                onClick={() => scrollToSection(item.id)} 
+                className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
+              >
+                {item.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
+              </button>
+            ))}
+          </nav>
 
           {/* CTA Buttons Desktop */}
           <div className="hidden sm:flex items-center space-x-3 lg:space-x-4">
-            {/* Bouton de connexion */}
+            {/* Bouton de connexion amélioré */}
             <button
               onClick={() => navigate('/login')}
-              className="group relative inline-flex items-center gap-2 px-3 py-2 lg:px-5 lg:py-2.5 text-xs lg:text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
+              className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
             >
-              <LogIn className="h-3 w-3 lg:h-4 lg:w-4 transition-transform duration-300 group-hover:scale-110" />
-              <span className="hidden md:inline">Connexion</span>
+              <LogIn className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Connexion</span>
               
               {/* Effet de brillance au hover */}
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-electric-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -117,7 +141,7 @@ const Header = () => {
 
             <div className="scale-90 lg:scale-100">
               <StarBorder color="#0066FF" speed="4s" className="transition-all duration-300 hover:scale-105" onClick={() => navigate('/onboarding')}>
-                <span className="text-xs lg:text-sm px-2 lg:px-0">Demander une démo</span>
+                <span className="text-sm px-2 lg:px-0">Demander une démo</span>
               </StarBorder>
             </div>
           </div>
@@ -141,21 +165,19 @@ const Header = () => {
                 </SheetHeader>
                 
                 <div className="flex flex-col space-y-6">
-                  {/* Navigation Mobile - seulement sur la page d'accueil */}
-                  {isHomePage && (
-                    <nav className="flex flex-col space-y-4">
-                      <h3 className="text-sm font-semibold text-graphite-500 uppercase tracking-wide">Navigation</h3>
-                      {navigationItems.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => scrollToSection(item.id)}
-                          className="text-left py-3 px-4 rounded-lg text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue transition-all duration-300 border border-transparent hover:border-electric-blue/20"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </nav>
-                  )}
+                  {/* Navigation Mobile - toujours visible */}
+                  <nav className="flex flex-col space-y-4">
+                    <h3 className="text-sm font-semibold text-graphite-500 uppercase tracking-wide">Navigation</h3>
+                    {navigationItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => scrollToSection(item.id)}
+                        className="text-left py-3 px-4 rounded-lg text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue transition-all duration-300 border border-transparent hover:border-electric-blue/20"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </nav>
                   
                   {/* Actions Mobile */}
                   <div className="flex flex-col space-y-4 pt-4 border-t border-graphite-200">
