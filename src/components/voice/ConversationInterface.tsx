@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, MicOff, Activity, MessageSquare, Volume2, VolumeX, Users, Zap } from "lucide-react";
+import { Mic, MicOff, Activity, MessageSquare, Volume2, VolumeX, Users, Zap, AlertTriangle } from "lucide-react";
 
 interface ConversationMessage {
   id: string;
@@ -12,6 +11,8 @@ interface ConversationMessage {
   audioData?: string;
   timestamp: number;
   isPlaying?: boolean;
+  source?: string;
+  latency?: number;
 }
 
 // Fonction utilitaire pour détecter le format audio supporté
@@ -34,17 +35,19 @@ const getSupportedMimeType = (): string => {
   return 'audio/webm';
 };
 
-// VAD ultra-agressive pour latence minimale
-class UltraFastVAD {
+// VAD optimisé avec détection intelligente
+class IntelligentVAD {
   private audioContext: AudioContext;
   private analyser: AnalyserNode;
   private dataArray: Uint8Array;
   private silenceStart: number = 0;
   private isSpeaking: boolean = false;
-  private silenceThreshold: number = 30; // Seuil très bas pour détecter rapidement
-  private silenceDuration: number = 800; // Seulement 800ms de silence
-  private minSpeechDuration: number = 200; // Minimum 200ms de parole
+  private silenceThreshold: number = 25;
+  private silenceDuration: number = 1000; // 1 seconde plus stable
+  private minSpeechDuration: number = 500; // 500ms minimum
   private speechStartTime: number = 0;
+  private consecutiveSilenceFrames: number = 0;
+  private isProcessing: boolean = false;
 
   constructor(
     private stream: MediaStream,
@@ -53,8 +56,8 @@ class UltraFastVAD {
   ) {
     this.audioContext = new AudioContext();
     this.analyser = this.audioContext.createAnalyser();
-    this.analyser.fftSize = 512; // Plus petit pour plus de vitesse
-    this.analyser.smoothingTimeConstant = 0.1; // Moins de lissage = plus réactif
+    this.analyser.fftSize = 1024;
+    this.analyser.smoothingTimeConstant = 0.3; // Plus de lissage
     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     
     const source = this.audioContext.createMediaStreamSource(stream);
@@ -65,27 +68,41 @@ class UltraFastVAD {
 
   private startDetection() {
     const checkAudio = () => {
+      if (this.isProcessing) {
+        requestAnimationFrame(checkAudio);
+        return;
+      }
+
       this.analyser.getByteFrequencyData(this.dataArray);
       
-      // Analyse ultra-rapide du volume
-      const volume = this.dataArray.slice(1, 30).reduce((acc, val) => acc + val, 0) / 29;
+      // Analyse plus précise du volume
+      const volume = this.dataArray.slice(10, 100).reduce((acc, val) => acc + val, 0) / 90;
       const now = Date.now();
       
       if (volume > this.silenceThreshold) {
+        this.consecutiveSilenceFrames = 0;
         if (!this.isSpeaking) {
-          console.log(`🎤 DÉBUT parole ULTRA-RAPIDE (volume: ${volume.toFixed(1)})`);
+          console.log(`🎤 DÉBUT parole intelligent (volume: ${volume.toFixed(1)})`);
           this.isSpeaking = true;
           this.speechStartTime = now;
           this.onSpeechStart();
         }
         this.silenceStart = now;
       } else {
+        this.consecutiveSilenceFrames++;
+        
         if (this.isSpeaking && (now - this.silenceStart) > this.silenceDuration) {
           const speechDuration = now - this.speechStartTime;
-          if (speechDuration >= this.minSpeechDuration) {
-            console.log(`🔇 FIN parole ULTRA-RAPIDE (durée: ${speechDuration}ms)`);
+          if (speechDuration >= this.minSpeechDuration && this.consecutiveSilenceFrames > 10) {
+            console.log(`🔇 FIN parole intelligent (durée: ${speechDuration}ms)`);
             this.isSpeaking = false;
+            this.isProcessing = true;
             this.onSpeechEnd();
+            
+            // Reset après traitement
+            setTimeout(() => {
+              this.isProcessing = false;
+            }, 2000);
           }
         }
       }
@@ -110,34 +127,50 @@ export const ConversationInterface = () => {
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<string>('');
+  const [averageLatency, setAverageLatency] = useState<number>(0);
+  const [errorCount, setErrorCount] = useState<number>(0);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  const vadRef = useRef<UltraFastVAD | null>(null);
+  const vadRef = useRef<IntelligentVAD | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
   const isProcessingRef = useRef<boolean>(false);
-  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const latencyHistoryRef = useRef<number[]>([]);
+
+  // Calcul latence moyenne
+  const updateLatencyStats = useCallback((latency: number) => {
+    latencyHistoryRef.current.push(latency);
+    if (latencyHistoryRef.current.length > 10) {
+      latencyHistoryRef.current.shift();
+    }
+    const avg = latencyHistoryRef.current.reduce((a, b) => a + b, 0) / latencyHistoryRef.current.length;
+    setAverageLatency(Math.round(avg));
+  }, []);
 
   const connectWebSocket = useCallback(() => {
     if (isConnected || isConnecting) return;
     
     setIsConnecting(true);
-    console.log('🔌 Connexion WebSocket ULTRA-OPTIMISÉE...');
+    setConnectionStatus('Connexion en cours...');
+    console.log('🔌 Connexion WebSocket optimisée...');
     
     try {
       const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
       
       websocket.onopen = () => {
-        console.log('✅ WebSocket connecté - Mode ULTRA-RAPIDE activé');
+        console.log('✅ WebSocket connecté avec optimisations');
         setIsConnected(true);
         setIsConnecting(false);
         setWs(websocket);
+        setConnectionStatus('Connecté avec optimisations');
+        setErrorCount(0);
         
         toast({
-          title: "🚀 Mode ULTRA-RAPIDE activé",
-          description: "Latence minimisée à l'extrême",
+          title: "🚀 Système optimisé connecté",
+          description: "Rate limiting et anti-spam activés",
         });
       };
 
@@ -147,35 +180,49 @@ export const ConversationInterface = () => {
           
           switch (data.type) {
             case 'connection_established':
-              console.log(`🎊 Système ULTRA-RAPIDE prêt`);
+              console.log(`🎊 ${data.message}`);
+              setConnectionStatus(data.message);
               break;
               
             case 'transcription':
-              console.log(`👤 Transcription ULTRA-RAPIDE (${data.latency}ms): ${data.text}`);
+              console.log(`👤 Transcription (${data.latency}ms): ${data.text}`);
+              
+              if (data.latency) updateLatencyStats(data.latency);
               
               const userMessage: ConversationMessage = {
                 id: Date.now().toString(),
                 type: 'user',
                 text: data.text,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                latency: data.latency
               };
               
               setConversation(prev => [...prev, userMessage]);
               break;
               
+            case 'transcription_preview':
+              console.log(`📝 Aperçu: ${data.text}`);
+              break;
+              
             case 'audio_response':
-              const latencyInfo = data.source === 'instant_cache' ? 
+              const sourceInfo = data.source === 'instant_cache' ? 
                 `INSTANTANÉ (${data.latency}ms)` : 
-                `${data.latency}ms`;
+                data.source === 'cache' ? 
+                `CACHE (${data.latency}ms)` :
+                `GÉNÉRÉ (${data.latency}ms)`;
                 
-              console.log(`🤖 Réponse ULTRA-RAPIDE ${latencyInfo}: ${data.response}`);
+              console.log(`🤖 ${sourceInfo}: ${data.response}`);
+              
+              if (data.latency) updateLatencyStats(data.latency);
               
               const aiMessage: ConversationMessage = {
                 id: Date.now().toString() + '_ai',
                 type: 'ai',
                 text: data.response,
                 audioData: data.audioData,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                source: data.source,
+                latency: data.latency
               };
               
               setConversation(prev => [...prev, aiMessage]);
@@ -184,43 +231,44 @@ export const ConversationInterface = () => {
                 await playAIResponse(data.audioData, aiMessage.id);
               }
               
-              // Redémarrage IMMÉDIAT de l'écoute
+              // Reset traitement
               setTimeout(() => {
-                if (isListening && !isProcessingRef.current) {
-                  startNewRecording();
-                }
-              }, 50); // Réduit à 50ms
+                isProcessingRef.current = false;
+              }, 100);
               break;
               
             case 'error':
-              console.error('❌ Erreur conversation:', data.message);
+              console.error('❌ Erreur:', data.message);
+              setErrorCount(prev => prev + 1);
               toast({
-                title: "Erreur de conversation",
+                title: "Erreur temporaire",
                 description: data.message,
                 variant: "destructive"
               });
+              isProcessingRef.current = false;
               break;
           }
         } catch (error) {
           console.error('❌ Erreur parsing message:', error);
+          setErrorCount(prev => prev + 1);
         }
       };
 
       websocket.onclose = (event) => {
-        console.log('🔌 Conversation disconnected', event.code, event.reason);
+        console.log('🔌 WebSocket fermé', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
         setWs(null);
+        setConnectionStatus('Déconnecté');
         stopListening();
         
-        if (event.code !== 1000) {
+        if (event.code !== 1000 && errorCount < 3) {
           toast({
             title: "Connexion fermée",
-            description: "Reconnexion automatique en cours...",
+            description: "Reconnexion automatique...",
             variant: "destructive"
           });
           
-          // Tentative de reconnexion automatique
           setTimeout(() => {
             if (!isConnected) {
               connectWebSocket();
@@ -230,11 +278,14 @@ export const ConversationInterface = () => {
       };
 
       websocket.onerror = (error) => {
-        console.error('❌ Conversation WebSocket error:', error);
+        console.error('❌ Erreur WebSocket:', error);
         setIsConnecting(false);
+        setConnectionStatus('Erreur de connexion');
+        setErrorCount(prev => prev + 1);
+        
         toast({
           title: "Erreur de connexion",
-          description: "Impossible de se connecter au serveur vocal",
+          description: "Impossible de se connecter",
           variant: "destructive"
         });
       };
@@ -242,13 +293,10 @@ export const ConversationInterface = () => {
     } catch (error) {
       console.error('❌ Erreur WebSocket:', error);
       setIsConnecting(false);
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer la connexion WebSocket",
-        variant: "destructive"
-      });
+      setConnectionStatus('Erreur');
+      setErrorCount(prev => prev + 1);
     }
-  }, [isConnected, isConnecting, toast, isAudioEnabled, isListening]);
+  }, [isConnected, isConnecting, toast, isAudioEnabled, errorCount, updateLatencyStats]);
 
   const playAIResponse = async (base64Audio: string, messageId: string) => {
     try {
@@ -257,7 +305,7 @@ export const ConversationInterface = () => {
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext({ 
           sampleRate: 24000,
-          latencyHint: 'interactive' // Optimisation latence
+          latencyHint: 'interactive'
         });
       }
       
@@ -270,7 +318,6 @@ export const ConversationInterface = () => {
         currentAudioRef.current = null;
       }
       
-      // Conversion optimisée
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -281,7 +328,7 @@ export const ConversationInterface = () => {
       const audioUrl = URL.createObjectURL(audioBlob);
       
       const audio = new Audio(audioUrl);
-      audio.preload = 'auto'; // Pré-chargement
+      audio.preload = 'auto';
       currentAudioRef.current = audio;
       
       audio.onended = () => {
@@ -309,19 +356,19 @@ export const ConversationInterface = () => {
     if (isProcessingRef.current || audioChunksRef.current.length === 0) return;
     
     isProcessingRef.current = true;
-    console.log(`🎬 Traitement audio ULTRA-RAPIDE (${audioChunksRef.current.length} chunks)...`);
+    console.log(`🎬 Traitement audio optimisé (${audioChunksRef.current.length} chunks)...`);
     
     const supportedMimeType = getSupportedMimeType();
     const audioBlob = new Blob(audioChunksRef.current, { 
       type: supportedMimeType
     });
     
-    console.log(`📋 Audio blob: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+    console.log(`📋 Audio: ${audioBlob.size} bytes`);
     
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Audio = (reader.result as string).split(',')[1];
-      console.log(`📤 Envoi audio ULTRA-RAPIDE: ${base64Audio.length} caractères`);
+      console.log(`📤 Envoi audio: ${base64Audio.length} caractères`);
       
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -331,7 +378,6 @@ export const ConversationInterface = () => {
       }
       
       audioChunksRef.current = [];
-      isProcessingRef.current = false;
     };
     reader.readAsDataURL(audioBlob);
   }, [ws]);
@@ -342,7 +388,7 @@ export const ConversationInterface = () => {
     try {
       const supportedMimeType = getSupportedMimeType();
       const mediaRecorderOptions: MediaRecorderOptions = {
-        audioBitsPerSecond: 64000 // Réduit pour plus de vitesse
+        audioBitsPerSecond: 64000
       };
       
       if (supportedMimeType) {
@@ -354,28 +400,29 @@ export const ConversationInterface = () => {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          console.log(`📦 Chunk ULTRA-RAPIDE: ${event.data.size} bytes`);
+          console.log(`📦 Chunk: ${event.data.size} bytes`);
         }
       };
       
       mediaRecorder.onstop = () => {
-        console.log('⏹️ Enregistrement terminé, traitement IMMÉDIAT...');
+        console.log('⏹️ Enregistrement terminé, traitement...');
         processAudioChunks();
       };
       
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(500); // Chunks plus gros pour moins d'appels réseau
+      mediaRecorder.start(1000); // Chunks de 1 seconde plus stables
       
-      console.log('🎤 Enregistrement ULTRA-RAPIDE démarré');
+      console.log('🎤 Enregistrement optimisé démarré');
       
     } catch (error) {
       console.error('❌ Erreur enregistrement:', error);
+      isProcessingRef.current = false;
     }
   }, [isConnected, processAudioChunks]);
 
   const stopCurrentRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      console.log('🛑 Arrêt enregistrement ULTRA-RAPIDE...');
+      console.log('🛑 Arrêt enregistrement...');
       mediaRecorderRef.current.stop();
     }
   }, []);
@@ -384,44 +431,45 @@ export const ConversationInterface = () => {
     if (!isConnected) {
       toast({
         title: "Non connecté",
-        description: "Veuillez d'abord vous connecter",
+        description: "Connectez-vous d'abord",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      console.log('🎤 Configuration microphone ULTRA-RAPIDE...');
+      console.log('🎤 Configuration microphone optimisée...');
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 48000, // Qualité maximale pour meilleure transcription
+          sampleRate: 48000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          latency: 0.01
         }
       });
       
       streamRef.current = stream;
       setIsListening(true);
       
-      // VAD ULTRA-AGRESSIVE
-      vadRef.current = new UltraFastVAD(
+      // VAD intelligent
+      vadRef.current = new IntelligentVAD(
         stream,
         () => {
-          console.log('🗣️ DÉBUT parole - enregistrement ULTRA-RAPIDE');
+          console.log('🗣️ DÉBUT parole');
           startNewRecording();
         },
         () => {
-          console.log('🤐 FIN parole - traitement IMMÉDIAT');
+          console.log('🤐 FIN parole');
           stopCurrentRecording();
         }
       );
       
       toast({
-        title: "🎤 Mode ULTRA-RAPIDE activé",
-        description: "Latence minimisée - Parlez naturellement",
+        title: "🎤 Mode optimisé activé",
+        description: "Parlez naturellement",
       });
       
     } catch (error) {
@@ -430,9 +478,9 @@ export const ConversationInterface = () => {
       let errorMessage = "Impossible d'accéder au microphone";
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMessage = "Permission microphone refusée. Veuillez autoriser l'accès.";
+          errorMessage = "Permission microphone refusée";
         } else if (error.name === 'NotFoundError') {
-          errorMessage = "Aucun microphone trouvé.";
+          errorMessage = "Aucun microphone trouvé";
         }
       }
       
@@ -445,15 +493,10 @@ export const ConversationInterface = () => {
   };
 
   const stopListening = useCallback(() => {
-    console.log('🔇 Arrêt du mode conversation ULTRA-RAPIDE...');
+    console.log('🔇 Arrêt conversation...');
     
     setIsListening(false);
     isProcessingRef.current = false;
-    
-    if (recordingTimeoutRef.current) {
-      clearTimeout(recordingTimeoutRef.current);
-      recordingTimeoutRef.current = null;
-    }
     
     if (vadRef.current) {
       vadRef.current.stop();
@@ -468,17 +511,15 @@ export const ConversationInterface = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => {
         track.stop();
-        console.log('🔇 Track audio arrêté');
       });
       streamRef.current = null;
     }
     
-    // Reset chunks
     audioChunksRef.current = [];
     
     toast({
-      title: "🔇 Mode conversation ULTRA-RAPIDE arrêté",
-      description: "Conversation terminée",
+      title: "🔇 Conversation arrêtée",
+      description: "Mode écoute désactivé",
     });
   }, []);
 
@@ -494,7 +535,7 @@ export const ConversationInterface = () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       toast({
         title: "Non connecté",
-        description: "Veuillez d'abord vous connecter",
+        description: "Connectez-vous d'abord",
         variant: "destructive"
       });
       return;
@@ -536,10 +577,11 @@ export const ConversationInterface = () => {
         <CardTitle className="text-3xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
             <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
-            Conversation ULTRA-RAPIDE avec Clara
+            Clara Optimisée
             {isAISpeaking && <Activity className="w-5 h-5 ml-3 text-green-500 animate-pulse" />}
             {isConnecting && <Zap className="w-5 h-5 ml-3 text-blue-500 animate-spin" />}
             {isListening && <Activity className="w-5 h-5 ml-3 text-red-500 animate-pulse" />}
+            {errorCount > 0 && <AlertTriangle className="w-5 h-5 ml-3 text-orange-500" />}
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -551,14 +593,14 @@ export const ConversationInterface = () => {
               {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </Button>
             <Button onClick={() => setConversation([])} size="sm" variant="ghost">
-              Nouvelle conversation
+              Effacer
             </Button>
           </div>
         </CardTitle>
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Status Banner */}
+        {/* Status avec métriques */}
         <div className={`p-4 rounded-lg border-l-4 ${
           isConnected 
             ? 'bg-green-50 border-green-500' 
@@ -567,35 +609,41 @@ export const ConversationInterface = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Users className="w-5 h-5 mr-2" />
-              <span className="font-semibold">
-                {isConnected ? 
-                  (isListening ? '🎤 Mode ULTRA-RAPIDE activé - Latence <100ms' : '✅ Connecté à Clara (ULTRA-OPTIMISÉ)') 
-                  : isConnecting ? '🔄 Connexion ULTRA-RAPIDE...' : '❌ Déconnecté'}
-              </span>
+              <div>
+                <span className="font-semibold">
+                  {connectionStatus}
+                </span>
+                {averageLatency > 0 && (
+                  <p className="text-xs text-gray-600">
+                    Latence moyenne: {averageLatency}ms | Erreurs: {errorCount}
+                  </p>
+                )}
+              </div>
             </div>
             {isConnected ? (
               <Button 
                 onClick={isListening ? stopListening : startListening} 
                 size="sm"
                 variant={isListening ? "destructive" : "default"}
+                disabled={isProcessingRef.current}
               >
-                {isListening ? 'Arrêter conversation' : 'Mode ULTRA-RAPIDE'}
+                {isListening ? 'Arrêter' : 'Démarrer'}
               </Button>
             ) : (
-              <Button onClick={connectWebSocket} size="sm">
-                Se connecter
+              <Button onClick={connectWebSocket} size="sm" disabled={isConnecting}>
+                {isConnecting ? 'Connexion...' : 'Se connecter'}
               </Button>
             )}
           </div>
         </div>
 
-        {/* Conversation Display */}
+        {/* Conversation avec métriques */}
         <div className="max-h-96 overflow-y-auto space-y-4 p-4 bg-gray-50 rounded-lg">
           {conversation.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">Conversation Ultra-Rapide avec Clara !</p>
-              <p className="text-sm">Connectez-vous puis démarrez la conversation pour parler naturellement</p>
+              <p className="text-lg">Conversation Optimisée</p>
+              <p className="text-sm">Rate limiting et cache intelligent activés</p>
             </div>
           ) : (
             conversation.map((message) => (
@@ -614,13 +662,23 @@ export const ConversationInterface = () => {
                     <span className="text-xs font-semibold">
                       {message.type === 'user' ? 'Vous' : 'Clara'}
                     </span>
-                    <span className="text-xs opacity-75">
+                    <div className="text-xs opacity-75">
                       {new Date(message.timestamp).toLocaleTimeString()}
-                    </span>
+                      {message.latency && (
+                        <span className="ml-1 text-xs">
+                          ({message.latency}ms)
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm">{message.text}</p>
+                  {message.source && (
+                    <p className="text-xs opacity-60 mt-1">
+                      Source: {message.source}
+                    </p>
+                  )}
                   {message.audioData && message.type === 'ai' && (
-                    <div className="mt-2 flex items-center">
+                    <div className="mt-2">
                       <Button
                         onClick={() => playAIResponse(message.audioData!, message.id)}
                         size="sm"
@@ -637,7 +695,7 @@ export const ConversationInterface = () => {
           )}
         </div>
 
-        {/* Status Text */}
+        {/* Status intelligent */}
         <div className="text-center">
           {isAISpeaking ? (
             <p className="text-green-600 font-medium animate-pulse">
@@ -645,41 +703,41 @@ export const ConversationInterface = () => {
             </p>
           ) : isListening ? (
             <p className="text-red-600 font-medium">
-              🎤 Mode conversation ultra-rapide activé - Parlez naturellement !
+              🎤 Écoute active - Parlez naturellement
             </p>
           ) : isConnected ? (
             <p className="text-blue-600 font-medium">
-              💬 Cliquez sur "Démarrer conversation" pour un mode ultra-rapide
+              💬 Prêt pour conversation optimisée
             </p>
           ) : isConnecting ? (
             <p className="text-blue-600 font-medium animate-pulse">
-              🔄 Connexion ultra-rapide en cours...
+              🔄 Connexion optimisée...
             </p>
           ) : (
             <p className="text-gray-500">
-              🔌 Cliquez sur "Se connecter" pour démarrer
+              🔌 Cliquez pour vous connecter
             </p>
           )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Messages rapides */}
         {isConnected && !isListening && (
           <div className="grid grid-cols-2 gap-2">
             <Button
-              onClick={() => sendQuickMessage('Bonjour Clara, comment allez-vous ?')}
+              onClick={() => sendQuickMessage('Bonjour Clara')}
               variant="outline"
               size="sm"
               disabled={isAISpeaking}
             >
-              👋 Saluer Clara
+              👋 Bonjour
             </Button>
             <Button
-              onClick={() => sendQuickMessage('Pouvez-vous me parler de vos capacités ?')}
+              onClick={() => sendQuickMessage('Comment ça va ?')}
               variant="outline"
               size="sm"
               disabled={isAISpeaking}
             >
-              🤖 Capacités
+              💬 Comment ça va ?
             </Button>
           </div>
         )}

@@ -7,31 +7,88 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Cache ULTRA-optimisé avec prédiction intelligente
-const ultraCache = new Map<string, { audio: string; response: string; timestamp: number; hitCount: number; prediction: number }>();
-const CACHE_TTL = 60 * 60 * 1000; // 1 heure
-const MAX_CACHE_SIZE = 150;
+// Rate limiting intelligent
+const rateLimiter = {
+  stt: { requests: 0, resetTime: 0, maxRequests: 2 }, // Plus conservateur
+  tts: { requests: 0, resetTime: 0, maxRequests: 2 },
+  chat: { requests: 0, resetTime: 0, maxRequests: 8 }
+};
 
-// Réponses pré-générées avec prédiction
+const checkRateLimit = (service: 'stt' | 'tts' | 'chat'): boolean => {
+  const now = Date.now();
+  const limiter = rateLimiter[service];
+  
+  // Reset si 60 secondes passées
+  if (now > limiter.resetTime) {
+    limiter.requests = 0;
+    limiter.resetTime = now + 60000;
+  }
+  
+  if (limiter.requests >= limiter.maxRequests) {
+    console.log(`⚠️ Rate limit atteint pour ${service}, attente...`);
+    return false;
+  }
+  
+  limiter.requests++;
+  return true;
+};
+
+// Cache ULTRA-optimisé avec prédiction intelligente
+const ultraCache = new Map<string, { audio: string; response: string; timestamp: number; hitCount: number }>();
+const CACHE_TTL = 60 * 60 * 1000; // 1 heure
+const MAX_CACHE_SIZE = 100;
+
+// Réponses pré-générées avec audio
 const instantResponses = new Map([
-  ['bonjour', { text: 'Bonjour ! Comment puis-je vous aider ?', audio: null, priority: 10 }],
-  ['hello', { text: 'Bonjour ! Comment puis-je vous aider ?', audio: null, priority: 10 }],
-  ['salut', { text: 'Salut ! Comment ça va ?', audio: null, priority: 8 }],
+  ['bonjour', { text: 'Bonjour ! Comment allez-vous ?', audio: null, priority: 10 }],
+  ['hello', { text: 'Hello ! How are you ?', audio: null, priority: 10 }],
+  ['salut', { text: 'Salut ! Ça va ?', audio: null, priority: 8 }],
+  ['ça va', { text: 'Ça va bien ! Et vous ?', audio: null, priority: 9 }],
   ['comment allez-vous', { text: 'Très bien merci ! Et vous ?', audio: null, priority: 7 }],
-  ['ça va', { text: 'Ça va bien ! Comment puis-je vous aider ?', audio: null, priority: 9 }],
-  ['merci', { text: 'De rien ! Autre chose ?', audio: null, priority: 6 }],
+  ['merci', { text: 'De rien !', audio: null, priority: 6 }],
   ['au revoir', { text: 'Au revoir ! Bonne journée !', audio: null, priority: 5 }],
-  ['oui', { text: 'Parfait ! Continuons.', audio: null, priority: 8 }],
-  ['non', { text: 'D\'accord, pas de problème.', audio: null, priority: 7 }],
+  ['oui', { text: 'Parfait !', audio: null, priority: 8 }],
+  ['non', { text: 'D\'accord.', audio: null, priority: 7 }],
   ['ok', { text: 'Très bien !', audio: null, priority: 9 }]
 ]);
 
+// Détection de spam/boucles
+const spamDetection = new Map<string, { count: number, lastTime: number }>();
+
+const isSpam = (message: string): boolean => {
+  const normalized = message.toLowerCase().trim();
+  const now = Date.now();
+  const spam = spamDetection.get(normalized) || { count: 0, lastTime: 0 };
+  
+  // Reset si plus de 30 secondes
+  if (now - spam.lastTime > 30000) {
+    spam.count = 0;
+  }
+  
+  spam.count++;
+  spam.lastTime = now;
+  spamDetection.set(normalized, spam);
+  
+  // Considéré comme spam si plus de 3 fois en 30 secondes
+  if (spam.count > 3) {
+    console.log(`🚫 Spam détecté: "${normalized}" (${spam.count} fois)`);
+    return true;
+  }
+  
+  return false;
+};
+
 let audioPreGenerated = false;
 
-// TTS ULTRA-optimisé avec compression
-const generateUltraFastTTS = async (text: string): Promise<string | null> => {
+// TTS avec rate limiting et retry
+const generateOptimizedTTS = async (text: string): Promise<string | null> => {
   try {
-    console.log(`🎤 TTS ULTRA-RAPIDE: "${text.substring(0, 30)}..."`);
+    if (!checkRateLimit('tts')) {
+      console.log('⚠️ TTS rate limit atteint, utilisation du cache uniquement');
+      return null;
+    }
+
+    console.log(`🎤 TTS optimisé: "${text.substring(0, 30)}..."`);
     const startTime = Date.now();
 
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
@@ -47,25 +104,26 @@ const generateUltraFastTTS = async (text: string): Promise<string | null> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1', // Plus rapide que tts-1-hd
+        model: 'tts-1', // Plus rapide
         input: text,
         voice: 'alloy',
         response_format: 'mp3',
-        speed: 1.25 // Plus rapide pour réduire latence perçue
+        speed: 1.1 // Légèrement plus rapide
       }),
     });
 
     if (!response.ok) {
-      console.error('❌ Erreur OpenAI TTS');
+      const errorText = await response.text();
+      console.error('❌ Erreur OpenAI TTS:', errorText);
       return null;
     }
 
     const audioBuffer = await response.arrayBuffer();
     const bytes = new Uint8Array(audioBuffer);
     
-    // Conversion base64 ultra-optimisée
+    // Conversion base64 optimisée
     let binaryString = '';
-    const CHUNK_SIZE = 32768; // Plus gros chunks
+    const CHUNK_SIZE = 32768;
     
     for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
       const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
@@ -74,7 +132,7 @@ const generateUltraFastTTS = async (text: string): Promise<string | null> => {
     
     const base64Audio = btoa(binaryString);
     const latency = Date.now() - startTime;
-    console.log(`✅ TTS ULTRA-RAPIDE: ${latency}ms`);
+    console.log(`✅ TTS généré en ${latency}ms`);
     
     return base64Audio;
   } catch (error) {
@@ -83,28 +141,33 @@ const generateUltraFastTTS = async (text: string): Promise<string | null> => {
   }
 };
 
-// Pré-génération ULTRA-aggressive
-const preGenerateUltraFast = async () => {
-  console.log('🚀 Pré-génération ULTRA-RAPIDE...');
+// Pré-génération avec rate limiting
+const preGenerateAudio = async () => {
+  console.log('🚀 Pré-génération audio...');
   
-  // Traitement en parallèle total
-  const promises = Array.from(instantResponses.entries()).map(async ([key, data]) => {
+  let generated = 0;
+  for (const [key, data] of instantResponses.entries()) {
+    if (generated >= 3) { // Limite pour éviter rate limit
+      console.log('⚠️ Arrêt pré-génération pour éviter rate limit');
+      break;
+    }
+    
     try {
-      const audio = await generateUltraFastTTS(data.text);
+      const audio = await generateOptimizedTTS(data.text);
       if (audio) {
         data.audio = audio;
-        console.log(`✅ Pré-généré: "${key}"`);
-        return true;
+        generated++;
+        console.log(`✅ Audio pré-généré: "${key}"`);
+        // Pause entre générations
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     } catch (error) {
       console.error(`❌ Erreur pré-génération "${key}":`, error);
     }
-    return false;
-  });
+  }
   
-  await Promise.all(promises);
   audioPreGenerated = true;
-  console.log(`🎉 Pré-génération terminée - ULTRA-RAPIDE activé`);
+  console.log(`🎉 Pré-génération terminée - ${generated} réponses prêtes`);
 };
 
 serve(async (req) => {
@@ -116,38 +179,36 @@ serve(async (req) => {
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
-  console.log("🚀 WebSocket ULTRA-RAPIDE établi");
+  console.log("🚀 WebSocket établi avec rate limiting");
 
   if (!audioPreGenerated) {
-    preGenerateUltraFast(); // Non-bloquant
+    preGenerateAudio(); // Non-bloquant
   }
 
-  // Nettoyage cache ULTRA-intelligent
-  const ultraCleanCache = () => {
+  // Nettoyage cache intelligent
+  const cleanCache = () => {
     if (ultraCache.size <= MAX_CACHE_SIZE) return;
     
     const entries = Array.from(ultraCache.entries());
-    // Tri par score (hitCount * prediction / age)
-    entries.sort((a, b) => {
-      const ageA = Date.now() - a[1].timestamp;
-      const ageB = Date.now() - b[1].timestamp;
-      const scoreA = (a[1].hitCount * a[1].prediction) / ageA;
-      const scoreB = (b[1].hitCount * b[1].prediction) / ageB;
-      return scoreA - scoreB;
-    });
+    entries.sort((a, b) => a[1].hitCount - b[1].hitCount);
     
     const toRemove = Math.floor(ultraCache.size * 0.3);
     for (let i = 0; i < toRemove; i++) {
       ultraCache.delete(entries[i][0]);
     }
     
-    console.log(`🧹 Cache ULTRA nettoyé: ${toRemove} entrées`);
+    console.log(`🧹 Cache nettoyé: ${toRemove} entrées`);
   };
 
-  // IA ULTRA-rapide avec contraintes strictes
-  const generateUltraFastAI = async (message: string): Promise<string> => {
+  // IA optimisée avec rate limiting
+  const generateOptimizedAI = async (message: string): Promise<string> => {
     try {
-      console.log(`🤖 IA ULTRA-RAPIDE: "${message}"`);
+      if (!checkRateLimit('chat')) {
+        console.log('⚠️ Chat rate limit atteint, réponse générique');
+        return "Je vous écoute.";
+      }
+
+      console.log(`🤖 IA optimisée: "${message}"`);
       const startTime = Date.now();
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -157,35 +218,35 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini', // Le plus rapide
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
-              content: `Tu es Clara, assistante vocale ULTRA-RAPIDE de Thalya. 
-              IMPÉRATIF: Réponds en 1 phrase TRÈS courte (max 10 mots) pour latence minimale.
-              Sois directe, amicale, efficace. Français naturel. Zéro formule de politesse répétitive.`
+              content: `Tu es Clara, assistante vocale optimisée de Thalya. 
+              IMPÉRATIF: Réponds en 1 phrase TRÈS courte (max 8 mots français).
+              Sois naturelle, amicale, directe. Évite les répétitions.`
             },
             {
               role: 'user',
               content: message
             }
           ],
-          max_tokens: 25, // Très limité pour vitesse max
-          temperature: 0.1, // Très déterministe
-          presence_penalty: 0,
-          frequency_penalty: 0
+          max_tokens: 20,
+          temperature: 0.3,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI error: ${await response.text()}`);
+        const errorText = await response.text();
+        console.error('❌ Erreur OpenAI Chat:', errorText);
+        return "Désolée, problème technique.";
       }
 
       const result = await response.json();
       const aiResponse = result.choices[0].message.content;
       const latency = Date.now() - startTime;
       
-      console.log(`✅ IA ULTRA-RAPIDE: ${latency}ms - "${aiResponse}"`);
+      console.log(`✅ IA générée en ${latency}ms: "${aiResponse}"`);
       return aiResponse;
     } catch (error) {
       console.error('❌ Erreur IA:', error);
@@ -193,18 +254,30 @@ serve(async (req) => {
     }
   };
 
-  // Traitement ULTRA-optimisé
-  const processUltraFast = async (message: string) => {
+  // Traitement avec rate limiting et anti-spam
+  const processMessage = async (message: string) => {
     const startTime = Date.now();
-    console.log(`📝 Traitement ULTRA-RAPIDE: "${message}"`);
+    console.log(`📝 Traitement: "${message}"`);
 
     const normalizedMessage = message.toLowerCase().trim();
     
-    // ÉTAPE 1: Réponses INSTANTANÉES (0-2ms)
+    // Détection spam
+    if (isSpam(normalizedMessage)) {
+      socket.send(JSON.stringify({
+        type: 'audio_response',
+        audioData: null,
+        response: "Merci de varier vos questions.",
+        latency: Date.now() - startTime,
+        source: 'spam_detection'
+      }));
+      return;
+    }
+    
+    // ÉTAPE 1: Réponses instantanées
     for (const [key, data] of instantResponses.entries()) {
       if (normalizedMessage.includes(key)) {
         const latency = Date.now() - startTime;
-        console.log(`⚡ RÉPONSE INSTANTANÉE "${key}" en ${latency}ms`);
+        console.log(`⚡ Réponse instantanée "${key}" en ${latency}ms`);
         
         if (data.audio && audioPreGenerated) {
           socket.send(JSON.stringify({
@@ -219,95 +292,85 @@ serve(async (req) => {
       }
     }
 
-    // ÉTAPE 2: Cache ULTRA-intelligent
-    ultraCleanCache();
-    const cacheKey = normalizedMessage.substring(0, 80);
+    // ÉTAPE 2: Cache intelligent
+    cleanCache();
+    const cacheKey = normalizedMessage.substring(0, 50);
     const cached = ultraCache.get(cacheKey);
     
     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
       cached.hitCount++;
-      cached.prediction++;
       const latency = Date.now() - startTime;
-      console.log(`🚀 Cache ULTRA-HIT en ${latency}ms`);
+      console.log(`🚀 Cache hit en ${latency}ms`);
       
       socket.send(JSON.stringify({
         type: 'audio_response',
         audioData: cached.audio,
         response: cached.response,
         latency: latency,
-        source: 'ultra_cache'
+        source: 'cache'
       }));
       return;
     }
 
-    // ÉTAPE 3: Génération parallèle ULTRA-optimisée
+    // ÉTAPE 3: Génération avec rate limiting
     try {
-      const [aiResponse] = await Promise.all([
-        generateUltraFastAI(message)
-      ]);
-      
+      const aiResponse = await generateOptimizedAI(message);
       const aiLatency = Date.now() - startTime;
       
-      // TTS en parallèle avec envoi immédiat du texte
-      const ttsPromise = generateUltraFastTTS(aiResponse);
-      
-      // Envoi immédiat de la transcription
+      // Envoi immédiat du texte
       socket.send(JSON.stringify({
         type: 'transcription_preview',
         text: aiResponse,
         latency: aiLatency
       }));
       
-      const audioData = await ttsPromise;
+      // TTS en arrière-plan
+      const audioData = await generateOptimizedTTS(aiResponse);
       const totalLatency = Date.now() - startTime;
       
-      console.log(`⚡ Traitement ULTRA-TOTAL: ${totalLatency}ms`);
+      console.log(`⚡ Traitement total: ${totalLatency}ms`);
 
+      // Cache avec audio
       if (audioData) {
-        // Cache ULTRA-intelligent
         ultraCache.set(cacheKey, {
           audio: audioData,
           response: aiResponse,
           timestamp: Date.now(),
-          hitCount: 1,
-          prediction: 5
+          hitCount: 1
         });
-
-        socket.send(JSON.stringify({
-          type: 'audio_response',
-          audioData: audioData,
-          response: aiResponse,
-          latency: totalLatency,
-          source: 'ultra_generated'
-        }));
-      } else {
-        throw new Error('Échec TTS');
       }
+
+      socket.send(JSON.stringify({
+        type: 'audio_response',
+        audioData: audioData,
+        response: aiResponse,
+        latency: totalLatency,
+        source: audioData ? 'generated' : 'text_only'
+      }));
+
     } catch (error) {
-      console.error('❌ Erreur traitement ULTRA:', error);
+      console.error('❌ Erreur traitement:', error);
       socket.send(JSON.stringify({
         type: 'error',
-        message: 'Erreur technique',
+        message: 'Erreur technique temporaire',
         latency: Date.now() - startTime
       }));
     }
   };
 
   socket.onopen = () => {
-    console.log("🎉 WebSocket ULTRA-RAPIDE ouvert");
+    console.log("🎉 WebSocket ouvert avec optimisations");
     
     socket.send(JSON.stringify({
       type: 'connection_established',
-      message: 'Système ULTRA-RAPIDE activé',
+      message: 'Système optimisé avec rate limiting',
       preGenerationStatus: audioPreGenerated ? 'completed' : 'in_progress',
       optimizations: [
-        'Réponses instantanées 0-2ms',
-        'Cache ULTRA-intelligent',
-        'TTS OpenAI vitesse 1.25x',
-        'IA ultra-contrainte (10 mots max)',
-        'Traitement parallèle total',
-        'Prédiction cache intelligente',
-        'Objectif: <50ms toutes réponses'
+        'Rate limiting intelligent',
+        'Détection anti-spam',
+        'Cache avec priorités',
+        'Réponses instantanées',
+        'Génération parallèle'
       ]
     }));
   };
@@ -318,12 +381,21 @@ serve(async (req) => {
       
       switch (data.type) {
         case 'text_message':
-          await processUltraFast(data.message);
+          await processMessage(data.message);
           break;
           
         case 'audio_message':
           try {
-            console.log(`🎤 Traitement audio ULTRA-RAPIDE...`);
+            if (!checkRateLimit('stt')) {
+              console.log('⚠️ STT rate limit atteint, ignoré');
+              socket.send(JSON.stringify({
+                type: 'error',
+                message: 'Trop de requêtes, patientez un moment'
+              }));
+              return;
+            }
+
+            console.log(`🎤 Traitement audio...`);
             
             const audioBlob = new Blob([Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], { 
               type: 'audio/webm' 
@@ -333,8 +405,7 @@ serve(async (req) => {
             formData.append('file', audioBlob, 'audio.webm');
             formData.append('model', 'whisper-1');
             formData.append('language', 'fr');
-            formData.append('temperature', '0'); // Plus déterministe
-            formData.append('prompt', 'Clara, bonjour, merci, au revoir, oui, non, ok'); // Contexte
+            formData.append('prompt', 'Clara, bonjour, salut, merci, au revoir, oui, non, ok, comment allez-vous');
 
             const sttStartTime = Date.now();
             const sttResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -349,7 +420,7 @@ serve(async (req) => {
               const sttResult = await sttResponse.json();
               const sttLatency = Date.now() - sttStartTime;
               
-              console.log(`✅ STT ULTRA-RAPIDE: ${sttLatency}ms - "${sttResult.text}"`);
+              console.log(`✅ STT en ${sttLatency}ms: "${sttResult.text}"`);
               
               socket.send(JSON.stringify({
                 type: 'transcription',
@@ -357,15 +428,20 @@ serve(async (req) => {
                 latency: sttLatency
               }));
               
-              await processUltraFast(sttResult.text);
+              await processMessage(sttResult.text);
             } else {
-              throw new Error(`STT failed: ${await sttResponse.text()}`);
+              const errorText = await sttResponse.text();
+              console.error('❌ Erreur STT:', errorText);
+              socket.send(JSON.stringify({
+                type: 'error',
+                message: 'Erreur transcription, réessayez'
+              }));
             }
           } catch (error) {
-            console.error('❌ Erreur STT:', error);
+            console.error('❌ Erreur audio:', error);
             socket.send(JSON.stringify({
               type: 'error',
-              message: 'Erreur transcription'
+              message: 'Erreur traitement audio'
             }));
           }
           break;
@@ -379,7 +455,7 @@ serve(async (req) => {
     }
   };
 
-  socket.onclose = () => console.log("🔌 WebSocket ULTRA-RAPIDE fermé");
+  socket.onclose = () => console.log("🔌 WebSocket fermé");
   socket.onerror = (error) => console.error("❌ Erreur WebSocket:", error);
 
   return response;
