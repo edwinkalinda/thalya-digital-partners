@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, MicOff, Zap, Clock, Activity, Play, Pause, MessageCircle, RefreshCw, Wifi, Brain } from "lucide-react";
+import { Mic, MicOff, Zap, Clock, Activity, Play, Pause, MessageCircle, RefreshCw, Wifi, Brain, TestTube, CheckCircle } from "lucide-react";
 
 interface VoiceMessage {
   id: string;
@@ -495,6 +495,73 @@ export const RealtimeVoiceChat = () => {
     setConnectionError(null);
   };
 
+  // Tests spécifiques pour l'API Google Gemini
+  const runGeminiApiTest = (testType: string, message: string) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "❌ Test échoué",
+        description: "Connexion WebSocket fermée",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log(`🧪 Test Gemini: ${testType}`);
+    
+    ws.send(JSON.stringify({
+      type: 'text_message',
+      message: message,
+      test_mode: true
+    }));
+    
+    const testMessage: VoiceMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      text: `[TEST ${testType}] ${message}`,
+      timestamp: Date.now()
+    };
+    
+    setMessages(prev => [...prev, testMessage]);
+    
+    toast({
+      title: `🧪 Test ${testType}`,
+      description: "Test envoyé à Google Gemini Pro",
+    });
+  };
+
+  const geminiTests = [
+    { 
+      name: "Salutation", 
+      message: "Bonjour Clara, dis-moi juste 'Test réussi' pour confirmer que tu fonctionnes bien.",
+      icon: "👋"
+    },
+    { 
+      name: "Calcul Simple", 
+      message: "Calcule 15 + 27 et réponds juste avec le résultat.",
+      icon: "🔢"
+    },
+    { 
+      name: "Date/Heure", 
+      message: "Quelle est la date d'aujourd'hui ?",
+      icon: "📅"
+    },
+    { 
+      name: "Conversation FR", 
+      message: "Réponds en français : Comment te sens-tu aujourd'hui ?",
+      icon: "🇫🇷"
+    },
+    { 
+      name: "Créativité", 
+      message: "Invente une phrase avec les mots : intelligence, robot, futur.",
+      icon: "💡"
+    },
+    { 
+      name: "Logique", 
+      message: "Si tous les chats sont des animaux et que Félix est un chat, que peux-tu dire de Félix ?",
+      icon: "🧠"
+    }
+  ];
+
   useEffect(() => {
     connectWebSocket();
     
@@ -574,6 +641,35 @@ export const RealtimeVoiceChat = () => {
           </div>
         )}
 
+        {/* Tests API Google Gemini */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+          <h3 className="font-semibold text-purple-800 mb-3 flex items-center">
+            <TestTube className="w-4 h-4 mr-2" />
+            🧪 Tests API Google Gemini Pro
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {geminiTests.map((test, index) => (
+              <Button
+                key={index}
+                onClick={() => runGeminiApiTest(test.name, test.message)}
+                disabled={!isConnected}
+                size="sm"
+                variant="outline"
+                className="text-left justify-start h-auto py-2"
+              >
+                <span className="mr-2">{test.icon}</span>
+                <div>
+                  <div className="font-medium text-xs">{test.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{test.message.substring(0, 30)}...</div>
+                </div>
+              </Button>
+            ))}
+          </div>
+          <div className="mt-3 text-xs text-purple-600">
+            💡 Ces tests vérifient différents aspects de l'API Gemini : réactivité, calculs, langue française, créativité et logique.
+          </div>
+        </div>
+
         {/* Statistiques de latence */}
         {latencyStats && (
           <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
@@ -610,9 +706,9 @@ export const RealtimeVoiceChat = () => {
           </div>
         )}
 
-        {/* Tests rapides */}
+        {/* Tests rapides originaux */}
         <div className="space-y-2">
-          <h4 className="font-semibold text-gray-700">🚀 Tests Rapides:</h4>
+          <h4 className="font-semibold text-gray-700">🚀 Tests Rapides Basiques:</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Button 
               onClick={() => sendQuickTest("Bonjour Clara")}
