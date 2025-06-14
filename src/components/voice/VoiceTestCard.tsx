@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Voix ElevenLabs optimisées pour le français
@@ -24,6 +24,7 @@ export const VoiceTestCard = () => {
   const [selectedVoice, setSelectedVoice] = useState('pFZP5JQG7iQjIQuC4Bku');
   const [isTestingVoice, setIsTestingVoice] = useState(false);
   const [testText, setTestText] = useState("Bonjour, je suis votre assistante vocale Thalya. Comment puis-je vous aider aujourd'hui ?");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const handleTestVoice = async () => {
     setIsTestingVoice(true);
@@ -43,22 +44,49 @@ export const VoiceTestCard = () => {
         throw new Error(error.message);
       }
 
-      // L'edge function retourne directement l'audio
-      const audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      // Vérifier si data est déjà un ArrayBuffer ou un Blob
+      let audioBlob;
+      if (data instanceof ArrayBuffer) {
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      } else if (data instanceof Blob) {
+        audioBlob = data;
+      } else {
+        // Si c'est autre chose, essayer de le convertir
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      }
+      
       const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
+      setAudioUrl(audioUrl);
       
-      await audio.play();
-      
-      toast({
-        title: "Test vocal réussi ✅",
-        description: `La voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} a été testée avec succès.`,
-      });
+      // Essayer de jouer l'audio avec gestion d'erreur améliorée
+      try {
+        const audio = new Audio(audioUrl);
+        
+        // Ajouter des événements pour déboguer
+        audio.addEventListener('loadstart', () => console.log('Audio loading started'));
+        audio.addEventListener('canplay', () => console.log('Audio can play'));
+        audio.addEventListener('error', (e) => console.error('Audio error:', e));
+        
+        // Jouer l'audio
+        await audio.play();
+        
+        toast({
+          title: "Test vocal réussi ✅",
+          description: `La voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} a été testée avec succès.`,
+        });
 
-      // Nettoyer l'URL après lecture
-      audio.addEventListener('ended', () => {
-        URL.revokeObjectURL(audioUrl);
-      });
+        // Nettoyer l'URL après lecture
+        audio.addEventListener('ended', () => {
+          URL.revokeObjectURL(audioUrl);
+        });
+        
+      } catch (playError) {
+        console.error('Erreur de lecture audio:', playError);
+        toast({
+          title: "Audio généré avec succès 🎵",
+          description: `Le fichier audio a été généré. Utilisez le bouton de téléchargement pour l'écouter.`,
+        });
+      }
       
     } catch (error) {
       console.error('Voice test error:', error);
@@ -69,6 +97,17 @@ export const VoiceTestCard = () => {
       });
     } finally {
       setIsTestingVoice(false);
+    }
+  };
+
+  const handleDownloadAudio = () => {
+    if (audioUrl) {
+      const a = document.createElement('a');
+      a.href = audioUrl;
+      a.download = `thalya-voice-test-${selectedVoice}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   };
 
@@ -119,23 +158,36 @@ export const VoiceTestCard = () => {
             />
           </div>
 
-          <Button 
-            onClick={handleTestVoice}
-            disabled={isTestingVoice || !testText.trim()}
-            className="w-full bg-electric-blue hover:bg-blue-600"
-          >
-            {isTestingVoice ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Test en cours...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Tester la voix sélectionnée
-              </>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleTestVoice}
+              disabled={isTestingVoice || !testText.trim()}
+              className="flex-1 bg-electric-blue hover:bg-blue-600"
+            >
+              {isTestingVoice ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Test en cours...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Tester la voix sélectionnée
+                </>
+              )}
+            </Button>
+            
+            {audioUrl && (
+              <Button 
+                onClick={handleDownloadAudio}
+                variant="outline"
+                className="flex-shrink-0"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Télécharger
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
