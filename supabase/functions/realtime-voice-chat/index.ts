@@ -7,25 +7,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Cache en mémoire optimisé avec TTL et compression
-const responseCache = new Map<string, { audio: string; response: string; timestamp: number }>();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+// Cache en mémoire ultra-optimisé avec audio pré-généré
+const preGeneratedCache = new Map<string, { audio: string; response: string; timestamp: number }>();
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-// Phrases optimisées pour réponses instantanées
-const instantResponses = new Map([
-  ['bonjour', 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'],
-  ['hello', 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'],
-  ['salut', 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'],
-  ['comment allez-vous', 'Je vais très bien, merci ! Et vous, comment allez-vous ?'],
-  ['comment ça va', 'Ça va très bien ! Comment puis-je vous aider ?'],
-  ['ça va', 'Oui ça va bien ! Comment puis-je vous aider ?'],
-  ['merci', 'Je vous en prie ! Y a-t-il autre chose que je puisse faire pour vous ?'],
-  ['au revoir', 'Au revoir ! Passez une excellente journée !'],
-  ['bye', 'Au revoir ! Passez une excellente journée !'],
-  ['bonne journée', 'Merci ! Bonne journée à vous aussi !'],
-  ['un moment', 'Bien sûr, prenez votre temps.'],
-  ['répéter', 'Bien sûr, je peux répéter. Que souhaitez-vous que je répète ?']
+// Réponses instantanées avec audio pré-généré (0-5ms de latence)
+const instantResponsesWithAudio = new Map([
+  ['bonjour', {
+    text: 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?',
+    audio: null // Sera généré au démarrage
+  }],
+  ['hello', {
+    text: 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?',
+    audio: null
+  }],
+  ['salut', {
+    text: 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?',
+    audio: null
+  }],
+  ['comment allez-vous', {
+    text: 'Je vais très bien, merci ! Et vous, comment allez-vous ?',
+    audio: null
+  }],
+  ['comment ça va', {
+    text: 'Ça va très bien ! Comment puis-je vous aider ?',
+    audio: null
+  }],
+  ['ça va', {
+    text: 'Oui ça va bien ! Comment puis-je vous aider ?',
+    audio: null
+  }],
+  ['merci', {
+    text: 'Je vous en prie ! Y a-t-il autre chose que je puisse faire pour vous ?',
+    audio: null
+  }],
+  ['au revoir', {
+    text: 'Au revoir ! Passez une excellente journée !',
+    audio: null
+  }],
+  ['bye', {
+    text: 'Au revoir ! Passez une excellente journée !',
+    audio: null
+  }],
+  ['bonne journée', {
+    text: 'Merci ! Bonne journée à vous aussi !',
+    audio: null
+  }]
 ]);
+
+// Pré-génération de l'audio au démarrage pour les réponses instantanées
+const preGenerateInstantAudio = async () => {
+  console.log('🚀 Pre-generating audio for instant responses...');
+  
+  for (const [key, data] of instantResponsesWithAudio.entries()) {
+    try {
+      const audio = await generateTTSAudio(data.text);
+      if (audio) {
+        data.audio = audio;
+        console.log(`✅ Pre-generated audio for: ${key}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to pre-generate audio for ${key}:`, error);
+    }
+  }
+  
+  console.log('🎉 All instant responses audio pre-generated!');
+};
 
 serve(async (req) => {
   const upgrade = req.headers.get("upgrade") || "";
@@ -38,12 +85,17 @@ serve(async (req) => {
   
   console.log("🚀 WebSocket connection established for ultra-optimized voice chat");
 
+  // Pré-générer l'audio au premier démarrage
+  if (instantResponsesWithAudio.get('bonjour')?.audio === null) {
+    preGenerateInstantAudio();
+  }
+
   // Nettoyage du cache expiré
   const cleanExpiredCache = () => {
     const now = Date.now();
-    for (const [key, value] of responseCache.entries()) {
+    for (const [key, value] of preGeneratedCache.entries()) {
       if (now - value.timestamp > CACHE_TTL) {
-        responseCache.delete(key);
+        preGeneratedCache.delete(key);
       }
     }
   };
@@ -106,16 +158,6 @@ serve(async (req) => {
   // Génération de réponse IA ultra-optimisée
   const generateAIResponse = async (message: string): Promise<string> => {
     try {
-      const normalizedMessage = message.toLowerCase().trim();
-      
-      // Vérifier les réponses instantanées
-      for (const [key, value] of instantResponses) {
-        if (normalizedMessage.includes(key)) {
-          console.log(`⚡ Instant response for: ${key}`);
-          return value;
-        }
-      }
-
       console.log(`🤖 Generating AI response for: "${message}"`);
       const startTime = Date.now();
 
@@ -162,20 +204,43 @@ serve(async (req) => {
     }
   };
 
-  // Traitement ultra-optimisé des messages
+  // Traitement ultra-optimisé avec cache instantané
   const processMessage = async (message: string) => {
     const startTime = Date.now();
     console.log(`📝 Processing message: "${message}"`);
 
-    const cacheKey = message.toLowerCase().trim();
+    const normalizedMessage = message.toLowerCase().trim();
     
-    // Vérifier le cache d'abord
+    // ÉTAPE 1: Vérifier les réponses instantanées AVEC audio pré-généré
+    for (const [key, data] of instantResponsesWithAudio.entries()) {
+      if (normalizedMessage.includes(key)) {
+        const latency = Date.now() - startTime;
+        console.log(`⚡ INSTANT response found for "${key}" in ${latency}ms`);
+        
+        if (data.audio) {
+          console.log(`🚀 Using pre-generated audio for ultra-fast response`);
+          socket.send(JSON.stringify({
+            type: 'audio_response',
+            audioData: data.audio,
+            response: data.text,
+            latency: latency,
+            source: 'instant_cache'
+          }));
+          return;
+        } else {
+          console.log(`⚠️ Audio not pre-generated for ${key}, falling back to generation`);
+        }
+      }
+    }
+
+    // ÉTAPE 2: Vérifier le cache standard
     cleanExpiredCache();
-    const cached = responseCache.get(cacheKey);
+    const cacheKey = normalizedMessage;
+    const cached = preGeneratedCache.get(cacheKey);
     
     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
       const latency = Date.now() - startTime;
-      console.log(`🚀 Cache hit! Ultra-fast response in ${latency}ms`);
+      console.log(`🚀 Standard cache hit in ${latency}ms`);
       
       socket.send(JSON.stringify({
         type: 'audio_response',
@@ -187,8 +252,8 @@ serve(async (req) => {
       return;
     }
 
+    // ÉTAPE 3: Génération standard (IA + TTS)
     try {
-      // Génération parallèle IA et TTS
       const aiStartTime = Date.now();
       const aiResponse = await generateAIResponse(message);
       const aiLatency = Date.now() - aiStartTime;
@@ -202,8 +267,8 @@ serve(async (req) => {
       console.log(`⚡ Total processing: ${totalLatency}ms (AI: ${aiLatency}ms, TTS: ${ttsLatency}ms)`);
 
       if (audioData) {
-        // Mise en cache
-        responseCache.set(cacheKey, {
+        // Mise en cache standard
+        preGeneratedCache.set(cacheKey, {
           audio: audioData,
           response: aiResponse,
           timestamp: Date.now()
@@ -240,13 +305,14 @@ serve(async (req) => {
       type: 'connection_established',
       message: 'Connexion WebSocket établie - Système vocal ultra-optimisé activé',
       optimizations: [
-        'Réponses instantanées (0-5ms)',
-        'Cache intelligent avec TTL 15min',
+        'Réponses instantanées pré-générées (0-5ms)',
+        'Cache intelligent avec TTL 30min',
         'TTS streaming ElevenLabs Turbo v2.5',
         'Traitement parallélisé AI/TTS',
-        'Conversion base64 optimisée',
+        'Audio pré-généré pour phrases communes',
+        'Conversion base64 optimisée par chunks',
         'Nettoyage automatique du cache',
-        'Latence cible: 50-200ms'
+        'Latence cible: 0-5ms (instant) / 100-300ms (nouveau)'
       ]
     }));
   };
