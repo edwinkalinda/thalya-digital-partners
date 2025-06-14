@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,20 +52,29 @@ export const VoiceTestCard = () => {
 
       console.log('Response received from ElevenLabs function');
 
-      // Vérifier si on a bien reçu un ArrayBuffer
-      if (!data || !(data instanceof ArrayBuffer)) {
-        console.error('Invalid data type received:', typeof data);
-        throw new Error('Données audio invalides reçues du serveur');
+      // Vérifier si on a bien reçu les données audio en base64
+      if (!data || !data.audioData) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Données audio manquantes dans la réponse du serveur');
       }
 
-      console.log('Audio buffer size:', data.byteLength, 'bytes');
+      console.log('Base64 audio data length:', data.audioData.length);
       
-      if (data.byteLength === 0) {
+      // Décoder le base64 en ArrayBuffer
+      const binaryString = atob(data.audioData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      console.log('Audio buffer size:', bytes.byteLength, 'bytes');
+      
+      if (bytes.byteLength === 0) {
         throw new Error('Buffer audio vide');
       }
       
       // Créer le blob audio
-      const audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
       const newAudioUrl = URL.createObjectURL(audioBlob);
       setAudioUrl(newAudioUrl);
       

@@ -70,13 +70,19 @@ serve(async (req) => {
     
     console.log(`Successfully generated audio from ElevenLabs, size: ${audioBuffer.byteLength} bytes`);
 
-    return new Response(audioBuffer, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.byteLength.toString(),
-      },
-    });
+    // Convertir en base64 pour le transport JSON
+    const uint8Array = new Uint8Array(audioBuffer);
+    const base64Audio = btoa(String.fromCharCode(...uint8Array));
+
+    return new Response(
+      JSON.stringify({ audioData: base64Audio }),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
   } catch (error) {
     console.error('Error in elevenlabs-tts function:', error);
