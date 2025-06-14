@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import Logo from "@/components/layout/header/Logo";
 
 // Types pour les formulaires
 type LoginFormData = {
@@ -191,9 +192,9 @@ const Login = () => {
         <motion.div variants={itemVariants}>
           <Card className="shadow-2xl border-0 bg-pure-white/90 backdrop-blur-lg">
             <CardHeader className="text-center pb-4">
-              {/* Logo animé optimisé */}
+              {/* Logo Thalya remplace l'icône */}
               <motion.div 
-                className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-electric-blue to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 relative" 
+                className="flex justify-center mb-4 sm:mb-6" 
                 whileHover={{
                   scale: 1.05
                 }} 
@@ -203,20 +204,9 @@ const Login = () => {
                   damping: 30
                 }}
               >
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pure-white rounded-full flex items-center justify-center">
-                  <Sparkles className="text-electric-blue text-base sm:text-lg" />
+                <div className="scale-75 sm:scale-100">
+                  <Logo />
                 </div>
-                <motion.div 
-                  className="absolute inset-0 rounded-full border-2 border-electric-blue/20" 
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0, 0.3]
-                  }} 
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity
-                  }} 
-                />
               </motion.div>
 
               <CardTitle className="text-2xl sm:text-3xl font-bold text-deep-black mb-2">
