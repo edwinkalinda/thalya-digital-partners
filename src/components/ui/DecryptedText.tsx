@@ -5,15 +5,15 @@ import { motion } from 'framer-motion'
 const styles = {
   wrapper: {
     display: 'inline-block',
-    whiteSpace: 'pre-wrap',
+    whiteSpace: 'pre-wrap' as const,
   },
   srOnly: {
-    position: 'absolute',
+    position: 'absolute' as const,
     width: '1px',
     height: '1px',
     padding: 0,
     margin: '-1px',
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
     clip: 'rect(0,0,0,0)',
     border: 0,
   },
@@ -51,9 +51,9 @@ export default function DecryptedText({
   const [displayText, setDisplayText] = useState(text);
   const [isHovering, setIsHovering] = useState(false);
   const [isScrambling, setIsScrambling] = useState(false);
-  const [revealedIndices, setRevealedIndices] = useState(new Set());
+  const [revealedIndices, setRevealedIndices] = useState(new Set<number>());
   const [hasAnimated, setHasAnimated] = useState(false);
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout

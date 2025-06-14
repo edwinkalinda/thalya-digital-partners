@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
-import DecryptedText from "@/components/ui/DecryptedText";
 
 const FinalCTA = () => {
   return (
@@ -16,49 +15,18 @@ const FinalCTA = () => {
           <div className="flex items-center justify-center mb-6">
             <Sparkles className="w-8 h-8 text-electric-blue mr-3" />
             <span className="text-electric-blue font-semibold text-lg">
-              <DecryptedText 
-                text="L'avenir commence maintenant"
-                animateOn="view"
-                sequential={true}
-                speed={40}
-                className="text-electric-blue"
-                encryptedClassName="text-pure-white/50"
-              />
+              L'avenir commence maintenant
             </span>
           </div>
           
           <h2 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
-            <DecryptedText 
-              text="Prêt à transformer"
-              animateOn="view"
-              sequential={true}
-              speed={50}
-              revealDirection="center"
-              className="text-pure-white"
-              encryptedClassName="text-electric-blue/60"
-            />
+            Prêt à transformer
             <br />
-            <span className="text-gradient">
-              <DecryptedText 
-                text="votre business ?"
-                animateOn="view"
-                sequential={true}
-                speed={45}
-                className="text-gradient"
-                encryptedClassName="text-electric-blue/70"
-              />
-            </span>
+            <span className="text-gradient">votre business ?</span>
           </h2>
           
           <p className="text-xl md:text-2xl text-graphite-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            <DecryptedText 
-              text="Rejoignez les entreprises visionnaires qui ont déjà fait le choix de l'excellence avec Thalya. Votre première IA vous attend."
-              animateOn="view"
-              sequential={true}
-              speed={30}
-              className="text-graphite-300"
-              encryptedClassName="text-electric-blue/40"
-            />
+            Rejoignez les entreprises visionnaires qui ont déjà fait le choix de l'excellence avec Thalya. Votre première IA vous attend.
           </p>
           
           <div className="space-y-6">
@@ -66,38 +34,19 @@ const FinalCTA = () => {
               size="lg" 
               className="bg-electric-blue hover:bg-blue-600 text-pure-white px-12 py-6 text-xl font-semibold rounded-2xl transition-all duration-300 hover:scale-105 animate-glow group"
             >
-              <DecryptedText 
-                text="Donner Vie à votre IA"
-                animateOn="hover"
-                speed={25}
-                maxIterations={12}
-                className="text-pure-white"
-                encryptedClassName="text-electric-blue/80"
-              />
+              Donner Vie à votre IA
               <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
             
             <p className="text-graphite-400 text-sm">
-              <DecryptedText 
-                text="Configuration en moins de 5 minutes • Aucun engagement • Support premium inclus"
-                animateOn="view"
-                speed={20}
-                className="text-graphite-400"
-                encryptedClassName="text-electric-blue/30"
-              />
+              Configuration en moins de 5 minutes • Aucun engagement • Support premium inclus
             </p>
           </div>
           
           {/* Social proof */}
           <div className="mt-16 pt-12 border-t border-graphite-800">
             <p className="text-graphite-500 mb-8">
-              <DecryptedText 
-                text="Déjà adopté par plus de 500 entreprises"
-                animateOn="view"
-                speed={40}
-                className="text-graphite-500"
-                encryptedClassName="text-electric-blue/40"
-              />
+              Déjà adopté par plus de 500 entreprises
             </p>
             <div className="flex items-center justify-center space-x-12 opacity-50">
               {[1, 2, 3, 4, 5].map((i) => (
