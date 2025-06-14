@@ -37,28 +37,33 @@ const Logo = () => {
   return (
     <div className="flex items-center group cursor-pointer" onClick={handleLogoClick}>
       <div className="relative">
-        <div className="w-32 h-10 sm:w-40 sm:h-12 relative transition-all duration-300 group-hover:scale-105 group-hover:-rotate-1">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 relative transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
           {logoImageData ? (
             <MetallicPaint 
               imageData={logoImageData}
               params={{
-                patternScale: 1.2,
-                refraction: 0.03,
-                edge: 0.7,
-                patternBlur: 0.002,
-                liquid: 0.15,
-                speed: 0.5,
+                patternScale: 0.8,
+                refraction: 0.05,
+                edge: 0.6,
+                patternBlur: 0.003,
+                liquid: 0.2,
+                speed: 0.8,
               }}
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-r from-electric-blue via-purple-600 to-emerald-500 rounded-lg transition-all duration-300 group-hover:shadow-xl group-hover:shadow-electric-blue/40 animate-pulse flex items-center justify-center">
-              <span className="text-lg sm:text-xl font-black text-white tracking-widest">THALYA</span>
+            <div className="absolute inset-0 bg-gradient-to-br from-electric-blue via-purple-600 to-emerald-500 rounded-lg transition-all duration-300 group-hover:shadow-xl group-hover:shadow-electric-blue/40 animate-pulse flex items-center justify-center">
+              <span className="text-xl font-black text-white">T</span>
             </div>
           )}
         </div>
         
+        {/* Texte THALYA à côté */}
+        <div className="absolute left-16 top-1/2 -translate-y-1/2 hidden sm:block">
+          <span className="text-xl font-black text-graphite-800 tracking-wider">THALYA</span>
+        </div>
+        
         {/* Halo lumineux */}
-        <div className="absolute inset-0 w-32 h-10 sm:w-40 sm:h-12 bg-electric-blue/20 rounded-lg blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+        <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-electric-blue/20 rounded-lg blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
         
         {/* Particules brillantes */}
         <div className="absolute -top-1 -right-1 w-2 h-2 bg-electric-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300"></div>
