@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import StarBorder from "@/components/ui/StarBorder";
@@ -11,7 +10,7 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo Thalya ultra-simple */}
-          <div className="flex items-center group cursor-pointer">
+          <div className="flex items-center group cursor-pointer" onClick={() => navigate('/')}>
             <div className="relative">
               {/* Logo minimaliste */}
               <div className="w-10 h-10 relative mr-3 transition-all duration-300 group-hover:scale-110">
@@ -59,6 +58,7 @@ const Header = () => {
             <Button 
               variant="outline" 
               className="hidden md:inline-flex border-graphite-300 text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue hover:border-electric-blue/30 transition-all duration-300"
+              onClick={() => navigate('/login')}
             >
               Connexion
             </Button>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,9 @@ import Orb from '../components/ui/Orb';
 import ChatInterface from '../components/onboarding/ChatInterface';
 import ProgressIndicator from '../components/onboarding/ProgressIndicator';
 import Header from '../components/layout/Header';
+import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Send } from 'lucide-react';
+import { useAgents, useNotifications } from '../contexts/AppContext';
 
 interface Message {
   role: 'user' | 'ai';
@@ -17,6 +20,18 @@ const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [userInput, setUserInput] = useState('');
+  const [agentData, setAgentData] = useState({
+    name: '',
+    personality: '',
+    mission: '',
+    voice: '',
+    info: ''
+  });
+  
+  const navigate = useNavigate();
+  const { addAgent } = useAgents();
+  const { addNotification } = useNotifications();
+  
   const [conversation, setConversation] = useState<Message[]>([
     {
       role: 'ai' as const,
@@ -44,6 +59,15 @@ const Onboarding = () => {
     };
 
     setConversation(prev => [...prev, newUserMessage]);
+
+    // Store user data
+    const stepKeys = ['name', 'personality', 'mission', 'voice', 'info'];
+    if (currentStep < stepKeys.length) {
+      setAgentData(prev => ({
+        ...prev,
+        [stepKeys[currentStep]]: userInput
+      }));
+    }
 
     // Simulate AI response based on current step
     setTimeout(() => {
@@ -79,6 +103,23 @@ const Onboarding = () => {
       
       if (currentStep < onboardingSteps.length - 1) {
         setCurrentStep(prev => prev + 1);
+      } else {
+        // Onboarding completed, create the agent and redirect
+        setTimeout(() => {
+          const newAgent = {
+            name: agentData.name,
+            type: 'Réceptionniste',
+            status: 'active' as const,
+            personality: agentData.personality,
+            voice: agentData.voice,
+            calls: 0,
+            satisfaction: 0
+          };
+          
+          addAgent(newAgent);
+          addNotification('success', `L'IA ${agentData.name} a été créée avec succès !`);
+          navigate('/onboarding-success');
+        }, 2000);
       }
     }, 1500);
 
