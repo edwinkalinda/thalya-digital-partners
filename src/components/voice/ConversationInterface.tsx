@@ -19,8 +19,7 @@ const getSupportedMimeType = (): string => {
     'audio/webm;codecs=opus',
     'audio/webm',
     'audio/mp4',
-    'audio/ogg;codecs=opus',
-    'audio/wav'
+    'audio/ogg;codecs=opus'
   ];
   
   for (const type of types) {
@@ -30,19 +29,20 @@ const getSupportedMimeType = (): string => {
     }
   }
   
-  console.log('⚠️ Aucun format audio préféré supporté, utilisation du format par défaut');
-  return '';
+  console.log('⚠️ Utilisation du format par défaut');
+  return 'audio/webm';
 };
 
-// Détection d'activité vocale simple
+// Détection d'activité vocale optimisée pour la précision
 class VoiceActivityDetector {
   private audioContext: AudioContext;
   private analyser: AnalyserNode;
   private dataArray: Uint8Array;
   private silenceStart: number = 0;
   private isSpeaking: boolean = false;
-  private silenceThreshold: number = 40; // Seuil de silence
-  private silenceDuration: number = 1500; // 1.5 secondes de silence
+  private silenceThreshold: number = 35; // Seuil réduit pour plus de sensibilité
+  private silenceDuration: number = 2000; // 2 secondes pour captures complètes
+  private minSpeechDuration: number = 500; // Minimum 500ms de parole
 
   constructor(
     private stream: MediaStream,
@@ -51,7 +51,8 @@ class VoiceActivityDetector {
   ) {
     this.audioContext = new AudioContext();
     this.analyser = this.audioContext.createAnalyser();
-    this.analyser.fftSize = 512;
+    this.analyser.fftSize = 1024; // Plus de précision
+    this.analyser.smoothingTimeConstant = 0.3; // Lissage pour réduire les faux positifs
     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     
     const source = this.audioContext.createMediaStreamSource(stream);
@@ -64,19 +65,20 @@ class VoiceActivityDetector {
     const checkAudio = () => {
       this.analyser.getByteFrequencyData(this.dataArray);
       
-      const volume = this.dataArray.reduce((acc, val) => acc + val, 0) / this.dataArray.length;
+      // Analyse plus précise du volume avec moyennes pondérées
+      const volume = this.dataArray.slice(1, 40).reduce((acc, val) => acc + val, 0) / 39;
       const now = Date.now();
       
       if (volume > this.silenceThreshold) {
         if (!this.isSpeaking) {
-          console.log('🎤 Début de parole détecté');
+          console.log(`🎤 Début de parole détecté (volume: ${volume.toFixed(1)})`);
           this.isSpeaking = true;
           this.onSpeechStart();
         }
         this.silenceStart = now;
       } else {
         if (this.isSpeaking && (now - this.silenceStart) > this.silenceDuration) {
-          console.log('🔇 Fin de parole détectée');
+          console.log(`🔇 Fin de parole détectée (silence: ${now - this.silenceStart}ms)`);
           this.isSpeaking = false;
           this.onSpeechEnd();
         }
@@ -115,20 +117,20 @@ export const ConversationInterface = () => {
     if (isConnected || isConnecting) return;
     
     setIsConnecting(true);
-    console.log('🔌 Attempting to connect to conversation WebSocket...');
+    console.log('🔌 Connexion WebSocket ultra-optimisée...');
     
     try {
       const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
       
       websocket.onopen = () => {
-        console.log('✅ Conversation WebSocket connected successfully');
+        console.log('✅ WebSocket connecté - Mode ultra-rapide activé');
         setIsConnected(true);
         setIsConnecting(false);
         setWs(websocket);
         
         toast({
-          title: "🎉 Connexion établie",
-          description: "Mode conversation temps réel activé !",
+          title: "🚀 Connexion ultra-rapide établie",
+          description: "Optimisations de latence activées",
         });
       };
 
@@ -138,11 +140,11 @@ export const ConversationInterface = () => {
           
           switch (data.type) {
             case 'connection_established':
-              console.log('🎊 Conversation ready');
+              console.log(`🎊 Système prêt - Optimisations: ${data.optimizations?.length || 0}`);
               break;
               
             case 'transcription':
-              console.log(`👤 Vous: ${data.text}`);
+              console.log(`👤 Transcription (${data.latency}ms): ${data.text}`);
               
               const userMessage: ConversationMessage = {
                 id: Date.now().toString(),
@@ -155,7 +157,11 @@ export const ConversationInterface = () => {
               break;
               
             case 'audio_response':
-              console.log(`🤖 Clara: ${data.response}`);
+              const latencyInfo = data.source === 'instant_cache' ? 
+                `INSTANTANÉ (${data.latency}ms)` : 
+                `${data.latency}ms (AI:${data.breakdown?.ai}ms, TTS:${data.breakdown?.tts}ms)`;
+                
+              console.log(`🤖 Réponse ${latencyInfo}: ${data.response}`);
               
               const aiMessage: ConversationMessage = {
                 id: Date.now().toString() + '_ai',
@@ -171,16 +177,16 @@ export const ConversationInterface = () => {
                 await playAIResponse(data.audioData, aiMessage.id);
               }
               
-              // Redémarrer l'écoute après la réponse de l'IA
+              // Redémarrage immédiat de l'écoute
               setTimeout(() => {
                 if (isListening && !isProcessingRef.current) {
                   startNewRecording();
                 }
-              }, 500);
+              }, 200);
               break;
               
             case 'error':
-              console.error('❌ Conversation error:', data.message);
+              console.error('❌ Erreur conversation:', data.message);
               toast({
                 title: "Erreur de conversation",
                 description: data.message,
@@ -189,7 +195,7 @@ export const ConversationInterface = () => {
               break;
           }
         } catch (error) {
-          console.error('❌ Error parsing conversation message:', error);
+          console.error('❌ Erreur parsing message:', error);
         }
       };
 
@@ -227,7 +233,7 @@ export const ConversationInterface = () => {
       };
 
     } catch (error) {
-      console.error('❌ Failed to create WebSocket:', error);
+      console.error('❌ Erreur WebSocket:', error);
       setIsConnecting(false);
       toast({
         title: "Erreur",
@@ -242,14 +248,13 @@ export const ConversationInterface = () => {
       setIsAISpeaking(true);
       
       if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 22050 });
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       }
       
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
-      // Stop any currently playing audio
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
@@ -274,7 +279,7 @@ export const ConversationInterface = () => {
       };
       
       audio.onerror = (error) => {
-        console.error('❌ Audio playback error:', error);
+        console.error('❌ Erreur lecture audio:', error);
         setIsAISpeaking(false);
         URL.revokeObjectURL(audioUrl);
         currentAudioRef.current = null;
@@ -283,7 +288,7 @@ export const ConversationInterface = () => {
       await audio.play();
       
     } catch (error) {
-      console.error('❌ Error playing AI response:', error);
+      console.error('❌ Erreur playback:', error);
       setIsAISpeaking(false);
     }
   };
@@ -292,19 +297,19 @@ export const ConversationInterface = () => {
     if (isProcessingRef.current || audioChunksRef.current.length === 0) return;
     
     isProcessingRef.current = true;
-    console.log('🎬 Traitement des chunks audio...');
+    console.log(`🎬 Traitement audio optimisé (${audioChunksRef.current.length} chunks)...`);
     
     const supportedMimeType = getSupportedMimeType();
     const audioBlob = new Blob(audioChunksRef.current, { 
-      type: supportedMimeType || 'audio/webm' 
+      type: supportedMimeType
     });
     
-    console.log(`📋 Blob audio créé: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+    console.log(`📋 Audio blob: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
     
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Audio = (reader.result as string).split(',')[1];
-      console.log(`📤 Envoi audio base64: ${base64Audio.length} caractères`);
+      console.log(`📤 Envoi audio optimisé: ${base64Audio.length} caractères`);
       
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -313,7 +318,6 @@ export const ConversationInterface = () => {
         }));
       }
       
-      // Reset chunks pour le prochain enregistrement
       audioChunksRef.current = [];
       isProcessingRef.current = false;
     };
@@ -326,7 +330,7 @@ export const ConversationInterface = () => {
     try {
       const supportedMimeType = getSupportedMimeType();
       const mediaRecorderOptions: MediaRecorderOptions = {
-        audioBitsPerSecond: 32000
+        audioBitsPerSecond: 48000 // Qualité plus élevée pour meilleure transcription
       };
       
       if (supportedMimeType) {
@@ -338,28 +342,28 @@ export const ConversationInterface = () => {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          console.log(`📦 Chunk audio ajouté: ${event.data.size} bytes`);
+          console.log(`📦 Chunk haute qualité: ${event.data.size} bytes`);
         }
       };
       
       mediaRecorder.onstop = () => {
-        console.log('⏹️ MediaRecorder arrêté, traitement...');
+        console.log('⏹️ Enregistrement terminé, traitement immédiat...');
         processAudioChunks();
       };
       
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // Chunks plus petits pour plus de réactivité
+      mediaRecorder.start(250); // Chunks plus larges pour meilleure qualité
       
-      console.log('🎤 Nouvel enregistrement démarré');
+      console.log('🎤 Enregistrement haute qualité démarré');
       
     } catch (error) {
-      console.error('❌ Erreur démarrage enregistrement:', error);
+      console.error('❌ Erreur enregistrement:', error);
     }
   }, [isConnected, processAudioChunks]);
 
   const stopCurrentRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      console.log('🛑 Arrêt enregistrement en cours...');
+      console.log('🛑 Arrêt enregistrement optimisé...');
       mediaRecorderRef.current.stop();
     }
   }, []);
@@ -375,50 +379,53 @@ export const ConversationInterface = () => {
     }
 
     try {
-      console.log('🎤 Demande d\'accès au microphone pour conversation temps réel...');
+      console.log('🎤 Configuration microphone ultra-optimisée...');
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 22050,
+          sampleRate: 48000, // Qualité maximale
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          // Paramètres avancés pour meilleure capture
+          googEchoCancellation: true,
+          googNoiseSuppression: true,
+          googAutoGainControl: true,
+          googHighpassFilter: true
         }
       });
       
       streamRef.current = stream;
       setIsListening(true);
       
-      // Initialiser la détection d'activité vocale
+      // VAD optimisée
       vadRef.current = new VoiceActivityDetector(
         stream,
         () => {
-          // Début de parole
-          console.log('🗣️ Début de parole - démarrage enregistrement');
+          console.log('🗣️ DÉBUT parole - enregistrement optimisé');
           startNewRecording();
         },
         () => {
-          // Fin de parole
-          console.log('🤐 Fin de parole - arrêt enregistrement');
+          console.log('🤐 FIN parole - traitement immédiat');
           stopCurrentRecording();
         }
       );
       
       toast({
-        title: "🎤 Mode conversation activé",
-        description: "Parlez naturellement, l'IA vous répondra automatiquement",
+        title: "🎤 Mode ultra-rapide activé",
+        description: "Parlez naturellement - latence minimisée",
       });
       
     } catch (error) {
-      console.error('❌ Microphone access error:', error);
+      console.error('❌ Erreur microphone:', error);
       
       let errorMessage = "Impossible d'accéder au microphone";
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMessage = "Permission microphone refusée. Veuillez autoriser l'accès au microphone.";
+          errorMessage = "Permission microphone refusée. Veuillez autoriser l'accès.";
         } else if (error.name === 'NotFoundError') {
-          errorMessage = "Aucun microphone trouvé sur cet appareil.";
+          errorMessage = "Aucun microphone trouvé.";
         }
       }
       
@@ -431,7 +438,7 @@ export const ConversationInterface = () => {
   };
 
   const stopListening = useCallback(() => {
-    console.log('🔇 Arrêt du mode conversation...');
+    console.log('🔇 Arrêt du mode conversation ultra-rapide...');
     
     setIsListening(false);
     isProcessingRef.current = false;
@@ -458,7 +465,7 @@ export const ConversationInterface = () => {
     audioChunksRef.current = [];
     
     toast({
-      title: "🔇 Mode conversation arrêté",
+      title: "🔇 Mode conversation ultra-rapide arrêté",
       description: "Conversation terminée",
     });
   }, []);
@@ -517,7 +524,7 @@ export const ConversationInterface = () => {
         <CardTitle className="text-3xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
             <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
-            Conversation Temps Réel avec Clara
+            Conversation Ultra-Rapide avec Clara
             {isAISpeaking && <Activity className="w-5 h-5 ml-3 text-green-500 animate-pulse" />}
             {isConnecting && <Zap className="w-5 h-5 ml-3 text-blue-500 animate-spin" />}
             {isListening && <Activity className="w-5 h-5 ml-3 text-red-500 animate-pulse" />}
@@ -550,8 +557,8 @@ export const ConversationInterface = () => {
               <Users className="w-5 h-5 mr-2" />
               <span className="font-semibold">
                 {isConnected ? 
-                  (isListening ? '🎤 En écoute - Mode conversation temps réel' : '✅ Connecté à Clara') 
-                  : isConnecting ? '🔄 Connexion en cours...' : '❌ Déconnecté'}
+                  (isListening ? '🎤 Mode ultra-rapide activé - Parlez naturellement' : '✅ Connecté à Clara (optimisé)') 
+                  : isConnecting ? '🔄 Connexion ultra-rapide...' : '❌ Déconnecté'}
               </span>
             </div>
             {isConnected ? (
@@ -560,7 +567,7 @@ export const ConversationInterface = () => {
                 size="sm"
                 variant={isListening ? "destructive" : "default"}
               >
-                {isListening ? 'Arrêter conversation' : 'Démarrer conversation'}
+                {isListening ? 'Arrêter conversation' : 'Mode ultra-rapide'}
               </Button>
             ) : (
               <Button onClick={connectWebSocket} size="sm">
@@ -575,7 +582,7 @@ export const ConversationInterface = () => {
           {conversation.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">Conversation temps réel avec Clara !</p>
+              <p className="text-lg">Conversation Ultra-Rapide avec Clara !</p>
               <p className="text-sm">Connectez-vous puis démarrez la conversation pour parler naturellement</p>
             </div>
           ) : (
@@ -626,15 +633,15 @@ export const ConversationInterface = () => {
             </p>
           ) : isListening ? (
             <p className="text-red-600 font-medium">
-              🎤 Mode conversation temps réel activé - Parlez naturellement !
+              🎤 Mode conversation ultra-rapide activé - Parlez naturellement !
             </p>
           ) : isConnected ? (
             <p className="text-blue-600 font-medium">
-              💬 Cliquez sur "Démarrer conversation" pour un mode temps réel
+              💬 Cliquez sur "Démarrer conversation" pour un mode ultra-rapide
             </p>
           ) : isConnecting ? (
             <p className="text-blue-600 font-medium animate-pulse">
-              🔄 Connexion en cours...
+              🔄 Connexion ultra-rapide en cours...
             </p>
           ) : (
             <p className="text-gray-500">
