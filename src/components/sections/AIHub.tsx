@@ -35,7 +35,12 @@ const AIHub = () => {
           <h2 className="text-5xl md:text-6xl font-bold mb-6">
             <TextRotate text="Un agent pour " className="inline" />
             <span className="text-gradient">
-              <TextCycler texts={capabilities} />
+              <TextCycler
+              texts={capabilities}
+              className="text-2xl sm:text-3xl text-electric-blue font-bold"
+              interval={2500}
+              splitBy="characters"
+              staggerDuration={30}
             </span>
           </h2>
           <p className="text-xl text-graphite-600 max-w-3xl mx-auto">
