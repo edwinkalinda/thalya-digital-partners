@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, MicOff, Zap, Clock, Activity, Play, Pause, MessageCircle, RefreshCw, Wifi } from "lucide-react";
+import { Mic, MicOff, Zap, Clock, Activity, Play, Pause, MessageCircle, RefreshCw, Wifi, Brain } from "lucide-react";
 
 interface VoiceMessage {
   id: string;
@@ -11,15 +11,14 @@ interface VoiceMessage {
   text: string;
   audioData?: string;
   latency?: number;
-  source?: 'cache' | 'generated';
   timestamp: number;
 }
 
 interface LatencyStats {
   ai?: number;
   tts?: number;
-  total: number;
   stt?: number;
+  total: number;
 }
 
 export const RealtimeVoiceChat = () => {
@@ -32,10 +31,10 @@ export const RealtimeVoiceChat = () => {
   const [latencyStats, setLatencyStats] = useState<LatencyStats | null>(null);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
+  const [aiEngine, setAiEngine] = useState<string>('');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Formats audio supportés avec détection automatique
@@ -59,17 +58,17 @@ export const RealtimeVoiceChat = () => {
     return '';
   }, []);
 
-  // Connexion WebSocket ultra-optimisée
+  // Connexion WebSocket optimisée pour Gemini
   const connectWebSocket = useCallback(() => {
     if (isConnecting || isConnected) return;
     
     setIsConnecting(true);
-    console.log('🔌 Connecting to WebSocket...');
+    console.log('🔌 Connexion au chat vocal Gemini...');
     
     const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
     
     websocket.onopen = () => {
-      console.log('✅ WebSocket connected successfully');
+      console.log('✅ WebSocket connecté avec succès');
       setIsConnected(true);
       setIsConnecting(false);
       setWs(websocket);
@@ -80,8 +79,8 @@ export const RealtimeVoiceChat = () => {
       }
       
       toast({
-        title: "🚀 Connexion établie",
-        description: "Chat vocal ultra-optimisé activé",
+        title: "🧠 Chat Vocal Gemini Pro",
+        description: "Connexion établie avec Google Gemini",
       });
     };
 
@@ -90,16 +89,15 @@ export const RealtimeVoiceChat = () => {
         const data = JSON.parse(event.data);
         
         switch (data.type) {
-          case 'connection_established':
-            console.log('🎉 Optimizations activated:', data.optimizations);
-            toast({
-              title: "⚡ Optimisations activées",
-              description: "Latence ultra-faible, cache intelligent activé",
-            });
+          case 'connection_status':
+            console.log('🎉 Statut:', data.message);
+            if (data.engine) {
+              setAiEngine(data.engine);
+            }
             break;
             
           case 'transcription':
-            console.log(`📝 STT: ${data.text} (${data.latency}ms)`);
+            console.log(`📝 Transcription: ${data.text} (${data.latency}ms)`);
             
             const userMessage: VoiceMessage = {
               id: Date.now().toString(),
@@ -113,7 +111,7 @@ export const RealtimeVoiceChat = () => {
             break;
             
           case 'audio_response':
-            console.log(`🤖 AI Response: ${data.response} (${data.latency}ms, source: ${data.source})`);
+            console.log(`🤖 Réponse IA: ${data.response} (${data.latency}ms)`);
             
             const aiMessage: VoiceMessage = {
               id: Date.now().toString() + '_ai',
@@ -121,7 +119,6 @@ export const RealtimeVoiceChat = () => {
               text: data.response,
               audioData: data.audioData,
               latency: data.latency,
-              source: data.source,
               timestamp: Date.now()
             };
             
@@ -131,10 +128,7 @@ export const RealtimeVoiceChat = () => {
               setLatencyStats({
                 ai: data.breakdown.ai,
                 tts: data.breakdown.tts,
-                total: data.latency
-              });
-            } else {
-              setLatencyStats({
+                stt: data.breakdown.stt,
                 total: data.latency
               });
             }
@@ -145,7 +139,7 @@ export const RealtimeVoiceChat = () => {
             break;
             
           case 'error':
-            console.error('❌ WebSocket error:', data.message);
+            console.error('❌ Erreur:', data.message);
             toast({
               title: "Erreur",
               description: data.message,
@@ -154,16 +148,16 @@ export const RealtimeVoiceChat = () => {
             break;
             
           case 'pong':
-            console.log('🏓 Pong received');
+            console.log('🏓 Pong reçu depuis', data.engine || 'serveur');
             break;
         }
       } catch (error) {
-        console.error('❌ Error parsing WebSocket message:', error);
+        console.error('❌ Erreur parsing message:', error);
       }
     };
 
     websocket.onclose = (event) => {
-      console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+      console.log('🔌 WebSocket fermé:', event.code, event.reason);
       setIsConnected(false);
       setIsConnecting(false);
       setWs(null);
@@ -171,41 +165,33 @@ export const RealtimeVoiceChat = () => {
       if (event.code !== 1000) {
         toast({
           title: "Connexion fermée",
-          description: "Reconnexion automatique en cours...",
+          description: "Reconnexion automatique...",
           variant: "destructive"
         });
         
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('🔄 Attempting automatic reconnection...');
+          console.log('🔄 Tentative de reconnexion...');
           connectWebSocket();
         }, 3000);
       }
     };
 
     websocket.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
+      console.error('❌ Erreur WebSocket:', error);
       setIsConnecting(false);
       toast({
         title: "Erreur de connexion",
-        description: "Reconnexion automatique...",
+        description: "Vérifiez votre connexion internet",
         variant: "destructive"
       });
     };
 
   }, [isConnecting, isConnected, toast]);
 
-  // Lecture audio streaming ultra-optimisée
+  // Lecture audio optimisée
   const playAudioStreaming = async (base64Audio: string, messageId: string) => {
     try {
       setCurrentlyPlaying(messageId);
-      
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 22050 });
-      }
-      
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
       
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
@@ -225,7 +211,7 @@ export const RealtimeVoiceChat = () => {
       };
       
       audio.onerror = (error) => {
-        console.error('❌ Audio playback error:', error);
+        console.error('❌ Erreur lecture audio:', error);
         setCurrentlyPlaying(null);
         URL.revokeObjectURL(audioUrl);
       };
@@ -233,24 +219,14 @@ export const RealtimeVoiceChat = () => {
       await audio.play();
       
     } catch (error) {
-      console.error('❌ Error in playAudioStreaming:', error);
+      console.error('❌ Erreur playAudioStreaming:', error);
       setCurrentlyPlaying(null);
-      
-      toast({
-        title: "Erreur de lecture",
-        description: "Impossible de lire l'audio",
-        variant: "destructive"
-      });
     }
   };
 
-  // Enregistrement audio ultra-optimisé
+  // Enregistrement audio
   const startRecording = async () => {
     try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 22050 });
-      }
-      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 22050,
@@ -283,7 +259,7 @@ export const RealtimeVoiceChat = () => {
           type: supportedMimeType || 'audio/webm' 
         });
         
-        console.log(`🎤 Audio recorded: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+        console.log(`🎤 Audio enregistré: ${audioBlob.size} bytes`);
         
         const reader = new FileReader();
         
@@ -291,18 +267,11 @@ export const RealtimeVoiceChat = () => {
           const base64Audio = (reader.result as string).split(',')[1];
           
           if (ws && ws.readyState === WebSocket.OPEN) {
-            console.log('📤 Sending audio to server...');
+            console.log('📤 Envoi audio au serveur...');
             ws.send(JSON.stringify({
               type: 'audio_message',
               audio: base64Audio
             }));
-          } else {
-            console.error('❌ WebSocket not connected');
-            toast({
-              title: "Erreur de connexion",
-              description: "WebSocket non connecté",
-              variant: "destructive"
-            });
           }
         };
         
@@ -314,15 +283,15 @@ export const RealtimeVoiceChat = () => {
       setIsRecording(true);
       
       toast({
-        title: "🎤 Enregistrement démarré",
+        title: "🎤 Enregistrement",
         description: "Parlez maintenant...",
       });
       
     } catch (error) {
-      console.error('❌ Recording error:', error);
+      console.error('❌ Erreur enregistrement:', error);
       toast({
-        title: "Erreur d'enregistrement",
-        description: "Impossible d'accéder au microphone",
+        title: "Erreur microphone",
+        description: "Vérifiez les permissions",
         variant: "destructive"
       });
     }
@@ -336,18 +305,11 @@ export const RealtimeVoiceChat = () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      
-      toast({
-        title: "⏹️ Enregistrement terminé",
-        description: "Traitement en cours...",
-      });
     }
   };
 
   const sendTextMessage = () => {
     if (!textInput.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
-    
-    console.log('📤 Sending text message:', textInput);
     
     ws.send(JSON.stringify({
       type: 'text_message',
@@ -407,9 +369,6 @@ export const RealtimeVoiceChat = () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
     };
   }, []);
 
@@ -418,11 +377,16 @@ export const RealtimeVoiceChat = () => {
       <CardHeader>
         <CardTitle className="text-2xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
-            <Zap className="w-6 h-6 mr-2 text-electric-blue" />
-            Chat Vocal Temps Réel Ultra-Optimisé
+            <Brain className="w-6 h-6 mr-2 text-electric-blue" />
+            Chat Vocal Gemini Pro
             {isConnected && <Activity className="w-4 h-4 ml-2 text-green-500 animate-pulse" />}
             {isConnecting && <RefreshCw className="w-4 h-4 ml-2 text-blue-500 animate-spin" />}
             {!isConnected && !isConnecting && <Wifi className="w-4 h-4 ml-2 text-red-500" />}
+            {aiEngine && (
+              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                {aiEngine}
+              </span>
+            )}
           </div>
           <div className="flex gap-2">
             <Button onClick={sendPing} disabled={!isConnected} size="sm" variant="ghost">
@@ -440,13 +404,19 @@ export const RealtimeVoiceChat = () => {
           <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
             <h3 className="font-semibold text-green-800 mb-2 flex items-center">
               <Clock className="w-4 h-4 mr-2" />
-              ⚡ Performances Ultra-Optimisées
+              ⚡ Performances Google Gemini Pro
             </h3>
             <div className="grid grid-cols-4 gap-4 text-sm">
+              {latencyStats.stt && (
+                <div className="text-center">
+                  <div className="font-bold text-orange-600">{latencyStats.stt}ms</div>
+                  <div className="text-gray-600">STT</div>
+                </div>
+              )}
               {latencyStats.ai && (
                 <div className="text-center">
                   <div className="font-bold text-blue-600">{latencyStats.ai}ms</div>
-                  <div className="text-gray-600">IA</div>
+                  <div className="text-gray-600">Gemini</div>
                 </div>
               )}
               {latencyStats.tts && (
@@ -455,14 +425,8 @@ export const RealtimeVoiceChat = () => {
                   <div className="text-gray-600">TTS</div>
                 </div>
               )}
-              {latencyStats.stt && (
-                <div className="text-center">
-                  <div className="font-bold text-orange-600">{latencyStats.stt}ms</div>
-                  <div className="text-gray-600">STT</div>
-                </div>
-              )}
               <div className="text-center">
-                <div className={`font-bold ${latencyStats.total < 100 ? 'text-green-600' : latencyStats.total < 300 ? 'text-orange-600' : 'text-red-600'}`}>
+                <div className={`font-bold ${latencyStats.total < 200 ? 'text-green-600' : latencyStats.total < 500 ? 'text-orange-600' : 'text-red-600'}`}>
                   {latencyStats.total}ms
                 </div>
                 <div className="text-gray-600">Total</div>
@@ -471,16 +435,15 @@ export const RealtimeVoiceChat = () => {
           </div>
         )}
 
-        {/* Tests rapides optimisés */}
+        {/* Tests rapides */}
         <div className="space-y-2">
-          <h4 className="font-semibold text-gray-700">🚀 Tests Ultra-Rapides (Cache instantané):</h4>
+          <h4 className="font-semibold text-gray-700">🚀 Tests Rapides:</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Button 
-              onClick={() => sendQuickTest("Bonjour")}
+              onClick={() => sendQuickTest("Bonjour Clara")}
               disabled={!isConnected}
               size="sm"
               variant="outline"
-              className="text-xs"
             >
               Bonjour
             </Button>
@@ -489,25 +452,22 @@ export const RealtimeVoiceChat = () => {
               disabled={!isConnected}
               size="sm"
               variant="outline"
-              className="text-xs"
             >
               Comment ça va ?
             </Button>
             <Button 
-              onClick={() => sendQuickTest("Merci")}
+              onClick={() => sendQuickTest("Quelle heure est-il ?")}
               disabled={!isConnected}
               size="sm"
               variant="outline"
-              className="text-xs"
             >
-              Merci
+              Quelle heure ?
             </Button>
             <Button 
               onClick={() => sendQuickTest("Au revoir")}
               disabled={!isConnected}
               size="sm"
               variant="outline"
-              className="text-xs"
             >
               Au revoir
             </Button>
@@ -521,7 +481,7 @@ export const RealtimeVoiceChat = () => {
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
-            placeholder="Tapez votre message ici..."
+            placeholder="Tapez votre message..."
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue"
             disabled={!isConnected}
           />
@@ -561,7 +521,6 @@ export const RealtimeVoiceChat = () => {
             onClick={connectWebSocket}
             disabled={isConnected || isConnecting}
             variant="outline"
-            className="flex-shrink-0"
           >
             {isConnecting ? (
               <>
@@ -594,22 +553,17 @@ export const RealtimeVoiceChat = () => {
                 <span className={`font-semibold ${
                   message.type === 'user' ? 'text-blue-800' : 'text-green-800'
                 }`}>
-                  {message.type === 'user' ? 'Vous' : 'Clara (IA)'}
+                  {message.type === 'user' ? 'Vous' : 'Clara (Gemini)'}
                 </span>
                 <div className="flex items-center text-xs text-gray-500 gap-2">
                   {message.latency && (
                     <span className={`flex items-center px-2 py-1 rounded ${
-                      message.latency < 100 ? 'bg-green-100 text-green-800' : 
-                      message.latency < 300 ? 'bg-orange-100 text-orange-800' : 
+                      message.latency < 200 ? 'bg-green-100 text-green-800' : 
+                      message.latency < 500 ? 'bg-orange-100 text-orange-800' : 
                       'bg-red-100 text-red-800'
                     }`}>
                       <Clock className="w-3 h-3 mr-1" />
                       {message.latency}ms
-                    </span>
-                  )}
-                  {message.source === 'cache' && (
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">
-                      ⚡ Cache
                     </span>
                   )}
                   {message.audioData && (
@@ -639,7 +593,7 @@ export const RealtimeVoiceChat = () => {
           {!isConnected && !isConnecting && (
             <p className="text-red-600 flex items-center justify-center">
               <Wifi className="w-4 h-4 mr-2" />
-              ❌ Connexion WebSocket fermée - Cliquez sur "Reconnecter"
+              ❌ Déconnecté - Cliquez "Reconnecter"
             </p>
           )}
           {isConnecting && (
@@ -650,8 +604,8 @@ export const RealtimeVoiceChat = () => {
           )}
           {isConnected && !isRecording && (
             <p className="text-green-600 flex items-center justify-center">
-              <Activity className="w-4 h-4 mr-2" />
-              ✅ Prêt - Latence ultra-faible activée
+              <Brain className="w-4 h-4 mr-2" />
+              ✅ Prêt avec Google Gemini Pro
             </p>
           )}
           {isRecording && (

@@ -17,23 +17,21 @@ serve(async (req) => {
     });
   }
 
-  // Vérifier la clé API OpenAI
-  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-  if (!OPENAI_API_KEY) {
-    console.error("❌ OPENAI_API_KEY manquante");
-    return new Response("OpenAI API Key required", { 
+  // Vérifier la clé API Google Gemini
+  const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+  if (!GEMINI_API_KEY) {
+    console.error("❌ GOOGLE_GEMINI_API_KEY manquante");
+    return new Response("Google Gemini API Key required", { 
       status: 500,
       headers: corsHeaders 
     });
   }
 
-  console.log("✅ Démarrage du proxy WebSocket OpenAI Realtime");
+  console.log("✅ Démarrage du chat vocal avec Google Gemini Pro");
   const { socket, response } = Deno.upgradeWebSocket(req);
   
-  let openAISocket: WebSocket | null = null;
   let isConnected = false;
-  let sessionConfigured = false;
-  let ephemeralToken: string | null = null;
+  let conversationHistory: Array<{role: string, content: string}> = [];
 
   // Fonction pour envoyer des messages de manière sécurisée
   const safeSend = (ws: WebSocket | null, data: any): boolean => {
@@ -50,176 +48,282 @@ serve(async (req) => {
     }
   };
 
-  // Créer une session éphémère OpenAI
-  const createEphemeralSession = async (): Promise<string | null> => {
+  // Fonction pour convertir l'audio en texte (Speech-to-Text avec OpenAI Whisper)
+  const speechToText = async (audioBase64: string): Promise<string> => {
     try {
-      console.log("🔑 Création d'une session éphémère OpenAI...");
-      
-      const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
-        method: "POST",
+      const response = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/speech-to-text', {
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audio: audioBase64 }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`STT error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.text || '';
+    } catch (error) {
+      console.error('❌ Erreur Speech-to-Text:', error);
+      return '';
+    }
+  };
+
+  // Fonction pour générer une réponse avec Google Gemini Pro
+  const generateGeminiResponse = async (userMessage: string): Promise<string> => {
+    try {
+      // Ajouter le message utilisateur à l'historique
+      conversationHistory.push({ role: 'user', content: userMessage });
+
+      // Construire le prompt avec l'historique
+      const systemPrompt = `Tu es Clara, une assistante vocale IA française très amicale et professionnelle de Thalya. 
+Tu parles français naturellement et réponds de manière concise et utile. 
+Tu es optimisée pour les conversations vocales, donc garde tes réponses courtes et naturelles.
+Évite les listes à puces et privilégie un langage conversationnel.`;
+
+      const conversationContext = conversationHistory
+        .slice(-10) // Garder seulement les 10 derniers échanges
+        .map(msg => `${msg.role === 'user' ? 'Utilisateur' : 'Clara'}: ${msg.content}`)
+        .join('\n');
+
+      const fullPrompt = `${systemPrompt}\n\nConversation:\n${conversationContext}\n\nClara:`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "gpt-4o-realtime-preview-2024-10-01",
-          voice: "alloy",
-          instructions: "Tu es Clara, une réceptionniste IA française très amicale et professionnelle. Tu parles français naturellement et réponds de manière concise et utile.",
-          modalities: ["text", "audio"],
-          input_audio_format: "pcm16",
-          output_audio_format: "pcm16",
-          input_audio_transcription: {
-            model: "whisper-1"
+          contents: [{
+            parts: [{
+              text: fullPrompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 150,
+            topP: 0.9,
           },
-          turn_detection: {
-            type: "server_vad",
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 1000
-          },
-          temperature: 0.8,
-          max_response_output_tokens: 150
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ Erreur création session:", response.status, errorText);
+        console.error('❌ Erreur Gemini API:', response.status, errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Désolé, je n'ai pas pu traiter votre demande.";
+
+      // Ajouter la réponse IA à l'historique
+      conversationHistory.push({ role: 'assistant', content: aiResponse });
+
+      return aiResponse;
+    } catch (error) {
+      console.error('❌ Erreur génération Gemini:', error);
+      return "Désolé, je rencontre une difficulté technique. Pouvez-vous répéter votre question ?";
+    }
+  };
+
+  // Fonction pour convertir le texte en audio avec ElevenLabs
+  const textToSpeech = async (text: string): Promise<string | null> => {
+    try {
+      const response = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/elevenlabs-tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          voiceId: 'pFZP5JQG7iQjIQuC4Bku' // Lily - voix française
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('❌ Erreur TTS:', response.status);
         return null;
       }
 
-      const sessionData = await response.json();
-      console.log("✅ Session éphémère créée:", sessionData.id);
-      
-      return sessionData.client_secret?.value || null;
+      const audioBuffer = await response.arrayBuffer();
+      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+      return base64Audio;
     } catch (error) {
-      console.error("❌ Erreur lors de la création de session éphémère:", error);
+      console.error('❌ Erreur Text-to-Speech:', error);
       return null;
     }
   };
 
-  // Connecter à OpenAI Realtime API avec token éphémère
-  const connectToOpenAI = async () => {
+  // Traitement complet des messages audio
+  const processAudioMessage = async (audioBase64: string) => {
+    const startTime = Date.now();
+    
     try {
-      // Créer d'abord une session éphémère
-      ephemeralToken = await createEphemeralSession();
+      // 1. Speech-to-Text
+      console.log('🎤 Début Speech-to-Text...');
+      const sttStartTime = Date.now();
+      const transcription = await speechToText(audioBase64);
+      const sttLatency = Date.now() - sttStartTime;
       
-      if (!ephemeralToken) {
-        console.error("❌ Impossible de créer une session éphémère");
-        safeSend(socket, {
-          type: 'error',
-          message: 'Impossible de créer une session OpenAI'
-        });
+      if (!transcription.trim()) {
+        console.log('❌ Aucun texte détecté dans l\'audio');
         return;
       }
 
-      console.log("🔌 Connexion à OpenAI Realtime avec token éphémère...");
+      console.log(`📝 Transcription: "${transcription}" (${sttLatency}ms)`);
       
-      // Utiliser le token éphémère pour la connexion WebSocket
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`;
+      // Envoyer la transcription au client
+      safeSend(socket, {
+        type: 'transcription',
+        text: transcription,
+        latency: sttLatency
+      });
+
+      // 2. Génération de réponse avec Gemini
+      console.log('🤖 Génération réponse Gemini...');
+      const aiStartTime = Date.now();
+      const aiResponse = await generateGeminiResponse(transcription);
+      const aiLatency = Date.now() - aiStartTime;
       
-      openAISocket = new WebSocket(wsUrl, [], {
-        headers: {
-          "Authorization": `Bearer ${ephemeralToken}`,
-          "OpenAI-Beta": "realtime=v1"
+      console.log(`🧠 Réponse IA: "${aiResponse}" (${aiLatency}ms)`);
+
+      // 3. Text-to-Speech
+      console.log('🔊 Génération audio...');
+      const ttsStartTime = Date.now();
+      const audioData = await textToSpeech(aiResponse);
+      const ttsLatency = Date.now() - ttsStartTime;
+      
+      const totalLatency = Date.now() - startTime;
+
+      // Envoyer la réponse complète au client
+      safeSend(socket, {
+        type: 'audio_response',
+        response: aiResponse,
+        audioData: audioData,
+        latency: totalLatency,
+        breakdown: {
+          stt: sttLatency,
+          ai: aiLatency,
+          tts: ttsLatency
         }
       });
 
-      openAISocket.onopen = () => {
-        console.log("✅ Connexion OpenAI établie avec token éphémère");
-        isConnected = true;
-        sessionConfigured = true; // Session déjà configurée via REST API
-        
-        safeSend(socket, {
-          type: 'connection_status',
-          status: 'connected',
-          message: 'Connexion OpenAI réussie avec session pré-configurée'
-        });
-
-        safeSend(socket, {
-          type: 'session_ready',
-          message: 'Chat vocal prêt'
-        });
-      };
-
-      openAISocket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log(`📨 OpenAI -> Client: ${data.type}`);
-          
-          // Transférer tous les événements au client
-          safeSend(socket, data);
-          
-        } catch (error) {
-          console.error("❌ Erreur parsing message OpenAI:", error);
-        }
-      };
-
-      openAISocket.onclose = (event) => {
-        console.log(`🔌 OpenAI fermé: ${event.code} ${event.reason}`);
-        isConnected = false;
-        sessionConfigured = false;
-        
-        safeSend(socket, {
-          type: 'connection_status',
-          status: 'disconnected',
-          message: 'Connexion OpenAI fermée',
-          code: event.code,
-          reason: event.reason
-        });
-      };
-
-      openAISocket.onerror = (error) => {
-        console.error("❌ Erreur OpenAI WebSocket:", error);
-        safeSend(socket, {
-          type: 'error',
-          message: 'Erreur connexion OpenAI'
-        });
-      };
+      console.log(`✅ Traitement complet: ${totalLatency}ms (STT: ${sttLatency}ms, IA: ${aiLatency}ms, TTS: ${ttsLatency}ms)`);
 
     } catch (error) {
-      console.error("❌ Erreur création WebSocket:", error);
+      console.error('❌ Erreur traitement audio:', error);
       safeSend(socket, {
         type: 'error',
-        message: 'Impossible de se connecter à OpenAI'
+        message: 'Erreur lors du traitement de votre message vocal'
+      });
+    }
+  };
+
+  // Traitement des messages texte
+  const processTextMessage = async (text: string) => {
+    const startTime = Date.now();
+    
+    try {
+      console.log(`📝 Message texte reçu: "${text}"`);
+
+      // Génération de réponse avec Gemini
+      const aiStartTime = Date.now();
+      const aiResponse = await generateGeminiResponse(text);
+      const aiLatency = Date.now() - aiStartTime;
+
+      // Text-to-Speech
+      const ttsStartTime = Date.now();
+      const audioData = await textToSpeech(aiResponse);
+      const ttsLatency = Date.now() - ttsStartTime;
+      
+      const totalLatency = Date.now() - startTime;
+
+      // Envoyer la réponse au client
+      safeSend(socket, {
+        type: 'audio_response',
+        response: aiResponse,
+        audioData: audioData,
+        latency: totalLatency,
+        breakdown: {
+          ai: aiLatency,
+          tts: ttsLatency
+        }
+      });
+
+      console.log(`✅ Réponse texte générée: ${totalLatency}ms (IA: ${aiLatency}ms, TTS: ${ttsLatency}ms)`);
+
+    } catch (error) {
+      console.error('❌ Erreur traitement texte:', error);
+      safeSend(socket, {
+        type: 'error',
+        message: 'Erreur lors du traitement de votre message'
       });
     }
   };
 
   // Gestion des événements du client
   socket.onopen = () => {
-    console.log("🎉 Client connecté");
-    connectToOpenAI();
+    console.log("🎉 Client connecté au chat vocal Gemini");
+    isConnected = true;
+    
+    safeSend(socket, {
+      type: 'connection_status',
+      status: 'connected',
+      message: 'Chat vocal Gemini Pro activé',
+      engine: 'Google Gemini Pro'
+    });
   };
 
-  socket.onmessage = (event) => {
+  socket.onmessage = async (event) => {
     try {
       const data = JSON.parse(event.data);
-      console.log(`📨 Client -> OpenAI: ${data.type}`);
+      console.log(`📨 Message reçu: ${data.type}`);
       
-      // Gérer les pings
-      if (data.type === 'ping') {
-        safeSend(socket, {
-          type: 'pong',
-          timestamp: Date.now(),
-          openaiConnected: isConnected,
-          sessionReady: sessionConfigured
-        });
-        return;
+      switch (data.type) {
+        case 'ping':
+          safeSend(socket, {
+            type: 'pong',
+            timestamp: Date.now(),
+            connected: isConnected,
+            engine: 'Google Gemini Pro'
+          });
+          break;
+          
+        case 'audio_message':
+          if (data.audio) {
+            await processAudioMessage(data.audio);
+          }
+          break;
+          
+        case 'text_message':
+          if (data.message) {
+            await processTextMessage(data.message);
+          }
+          break;
+          
+        default:
+          console.log(`⚠️ Type de message non reconnu: ${data.type}`);
       }
-
-      // Vérifier que OpenAI est connecté
-      if (!openAISocket || openAISocket.readyState !== WebSocket.OPEN) {
-        console.error("❌ OpenAI non connecté");
-        safeSend(socket, {
-          type: 'error',
-          message: 'OpenAI non connecté'
-        });
-        return;
-      }
-
-      // Transférer le message à OpenAI
-      safeSend(openAISocket, data);
       
     } catch (error) {
       console.error("❌ Erreur parsing message client:", error);
@@ -232,16 +336,12 @@ serve(async (req) => {
 
   socket.onclose = () => {
     console.log("🔌 Client déconnecté");
-    if (openAISocket) {
-      openAISocket.close();
-    }
+    isConnected = false;
   };
 
   socket.onerror = (error) => {
-    console.error("❌ Erreur client WebSocket:", error);
-    if (openAISocket) {
-      openAISocket.close();
-    }
+    console.error("❌ Erreur WebSocket:", error);
+    isConnected = false;
   };
 
   return response;
