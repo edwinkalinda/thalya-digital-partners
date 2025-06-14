@@ -8,25 +8,26 @@ import { useToast } from "@/hooks/use-toast";
 import { Play, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Voix ElevenLabs optimisées pour le français
+// Voix ElevenLabs optimisées pour le français avec qualité premium
 const elevenLabsVoices = [
-  { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', description: 'Voix féminine française, professionnelle' },
-  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', description: 'Voix féminine française, chaleureuse' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', description: 'Voix féminine anglaise, claire' },
-  { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura', description: 'Voix féminine anglaise, amicale' },
-  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', description: 'Voix masculine française, professionnelle' },
-  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', description: 'Voix masculine anglaise, énergique' },
+  { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily', description: 'Voix féminine française, professionnelle et naturelle' },
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', description: 'Voix féminine française, chaleureuse et expressive' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel', description: 'Voix masculine française, claire et confiante' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', description: 'Voix féminine premium, très naturelle' },
+  { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Laura', description: 'Voix féminine douce et articulée' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', description: 'Voix masculine énergique et dynamique' },
 ];
 
 export const VoiceTestCard = () => {
   const { toast } = useToast();
   const [selectedVoice, setSelectedVoice] = useState('pFZP5JQG7iQjIQuC4Bku');
   const [isTestingVoice, setIsTestingVoice] = useState(false);
-  const [testText, setTestText] = useState("Bonjour, je suis votre assistante vocale Thalya. Comment puis-je vous aider aujourd'hui ?");
+  const [testText, setTestText] = useState("Bonjour ! Je suis votre assistante Thalya, dotée d'une intelligence artificielle avancée. Je suis là pour vous accompagner avec professionnalisme et bienveillance. Comment puis-je vous aider aujourd'hui ?");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const handleTestVoice = async () => {
     setIsTestingVoice(true);
+    const startTime = Date.now();
     
     try {
       console.log('Testing ElevenLabs voice:', selectedVoice);
@@ -50,7 +51,8 @@ export const VoiceTestCard = () => {
         throw new Error(error.message);
       }
 
-      console.log('Response received from ElevenLabs function');
+      const processingTime = Date.now() - startTime;
+      console.log(`Response received from ElevenLabs function in ${processingTime}ms`);
 
       // Vérifier si on a bien reçu les données audio en base64
       if (!data || !data.audioData) {
@@ -104,7 +106,7 @@ export const VoiceTestCard = () => {
         
         toast({
           title: "Test vocal réussi ✅",
-          description: `La voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} a été testée avec succès.`,
+          description: `Voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} générée en ${processingTime}ms avec qualité optimisée.`,
         });
         
       } catch (playError) {
@@ -154,20 +156,20 @@ export const VoiceTestCard = () => {
       <CardHeader>
         <CardTitle className="text-2xl text-deep-black flex items-center">
           <Play className="w-6 h-6 mr-2 text-electric-blue" />
-          Test des Voix ElevenLabs
+          Test des Voix ElevenLabs (Optimisé)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="font-semibold text-green-800 mb-2">✅ ElevenLabs intégré</h3>
+          <h3 className="font-semibold text-green-800 mb-2">🚀 Version Optimisée</h3>
           <p className="text-green-700 text-sm">
-            Votre système utilise maintenant ElevenLabs pour une latence ultra-faible et une qualité vocale exceptionnelle.
+            Utilise le modèle Turbo v2.5 d'ElevenLabs pour une latence ultra-faible (200-500ms) et une qualité vocale naturelle exceptionnelle.
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="voice_selection">Sélection de la voix</Label>
+            <Label htmlFor="voice_selection">Sélection de la voix premium</Label>
             <Select value={selectedVoice} onValueChange={setSelectedVoice}>
               <SelectTrigger className="border-graphite-300 focus:border-electric-blue">
                 <SelectValue placeholder="Choisir une voix" />
@@ -186,7 +188,7 @@ export const VoiceTestCard = () => {
           </div>
 
           <div>
-            <Label htmlFor="test_text">Texte de test</Label>
+            <Label htmlFor="test_text">Texte de test (optimisé pour la naturalité)</Label>
             <Input
               id="test_text"
               value={testText}
@@ -205,12 +207,12 @@ export const VoiceTestCard = () => {
               {isTestingVoice ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Test en cours...
+                  Génération optimisée...
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Tester la voix sélectionnée
+                  Tester la voix (Turbo v2.5)
                 </>
               )}
             </Button>

@@ -50,13 +50,16 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         text: text,
-        model_id: 'eleven_multilingual_v2',
+        model_id: 'eleven_turbo_v2_5', // Modèle plus rapide avec meilleure qualité
         voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.8,
-          style: 0.0,
+          stability: 0.7, // Augmenté pour plus de consistance
+          similarity_boost: 0.9, // Augmenté pour plus de naturalité
+          style: 0.3, // Ajouté pour plus d'expressivité
           use_speaker_boost: true
-        }
+        },
+        // Optimisations pour la latence
+        optimize_streaming_latency: 3, // Optimisation maximale pour la latence
+        output_format: "mp3_44100_128" // Format optimisé
       }),
     });
 
