@@ -1,8 +1,17 @@
+
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+
 interface TextCyclerProps {
   texts: string[];
   transition?: any;
@@ -24,32 +33,21 @@ interface TextCyclerProps {
   className?: string;
   interval?: number;
 }
+
 interface TextCyclerRef {
   next: () => void;
   previous: () => void;
   jumpTo: (index: number) => void;
   reset: () => void;
 }
+
 const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
   const {
     texts,
-    transition = {
-      type: "spring",
-      damping: 25,
-      stiffness: 300
-    },
-    initial = {
-      y: 20,
-      opacity: 0
-    },
-    animate = {
-      y: 0,
-      opacity: 1
-    },
-    exit = {
-      y: -20,
-      opacity: 0
-    },
+    transition = { type: "spring", damping: 25, stiffness: 300 },
+    initial = { y: 20, opacity: 0 },
+    animate = { y: 0, opacity: 1 },
+    exit = { y: -20, opacity: 0 },
     animatePresenceMode = "wait",
     animatePresenceInitial = false,
     rotationInterval = 2000,
@@ -69,125 +67,194 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
 
   // Use interval prop if provided, otherwise use rotationInterval
   const finalRotationInterval = interval || rotationInterval;
+
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
+
   console.log('TextCycler rendered with texts:', texts);
   console.log('Current text index:', currentTextIndex);
+
   const splitIntoCharacters = (text: string) => {
     return Array.from(text);
   };
+
   const elements = useMemo(() => {
     if (!texts || texts.length === 0) {
       console.log('No texts provided to TextCycler');
       return [];
     }
+    
     const currentText = texts[currentTextIndex];
     console.log('Processing text:', currentText);
+    
     if (splitBy === "characters") {
       const words = currentText.split(" ");
       return words.map((word: string, i: number) => ({
         characters: splitIntoCharacters(word),
-        needsSpace: i !== words.length - 1
+        needsSpace: i !== words.length - 1,
       }));
     }
     if (splitBy === "words") {
       return currentText.split(" ").map((word: string, i: number, arr: string[]) => ({
         characters: [word],
-        needsSpace: i !== arr.length - 1
+        needsSpace: i !== arr.length - 1,
       }));
     }
     if (splitBy === "lines") {
       return currentText.split("\n").map((line: string, i: number, arr: string[]) => ({
         characters: [line],
-        needsSpace: i !== arr.length - 1
+        needsSpace: i !== arr.length - 1,
       }));
     }
+
     return currentText.split(splitBy).map((part: string, i: number, arr: string[]) => ({
       characters: [part],
-      needsSpace: i !== arr.length - 1
+      needsSpace: i !== arr.length - 1,
     }));
   }, [texts, currentTextIndex, splitBy]);
-  const getStaggerDelay = useCallback((index: number, totalChars: number) => {
-    const total = totalChars;
-    if (staggerFrom === "first") return index * staggerDuration;
-    if (staggerFrom === "last") return (total - 1 - index) * staggerDuration;
-    if (staggerFrom === "center") {
-      const center = Math.floor(total / 2);
-      return Math.abs(center - index) * staggerDuration;
-    }
-    if (staggerFrom === "random") {
-      const randomIndex = Math.floor(Math.random() * total);
-      return Math.abs(randomIndex - index) * staggerDuration;
-    }
-    if (typeof staggerFrom === "number") {
-      return Math.abs(staggerFrom - index) * staggerDuration;
-    }
-    return Math.abs(0 - index) * staggerDuration;
-  }, [staggerFrom, staggerDuration]);
-  const handleIndexChange = useCallback((newIndex: number) => {
-    setCurrentTextIndex(newIndex);
-    if (onNext) onNext(newIndex);
-  }, [onNext]);
+
+  const getStaggerDelay = useCallback(
+    (index: number, totalChars: number) => {
+      const total = totalChars;
+      if (staggerFrom === "first") return index * staggerDuration;
+      if (staggerFrom === "last") return (total - 1 - index) * staggerDuration;
+      if (staggerFrom === "center") {
+        const center = Math.floor(total / 2);
+        return Math.abs(center - index) * staggerDuration;
+      }
+      if (staggerFrom === "random") {
+        const randomIndex = Math.floor(Math.random() * total);
+        return Math.abs(randomIndex - index) * staggerDuration;
+      }
+      if (typeof staggerFrom === "number") {
+        return Math.abs(staggerFrom - index) * staggerDuration;
+      }
+      return Math.abs(0 - index) * staggerDuration;
+    },
+    [staggerFrom, staggerDuration]
+  );
+
+  const handleIndexChange = useCallback(
+    (newIndex: number) => {
+      setCurrentTextIndex(newIndex);
+      if (onNext) onNext(newIndex);
+    },
+    [onNext]
+  );
+
   const next = useCallback(() => {
-    const nextIndex = currentTextIndex === texts.length - 1 ? loop ? 0 : currentTextIndex : currentTextIndex + 1;
+    const nextIndex =
+      currentTextIndex === texts.length - 1
+        ? loop
+          ? 0
+          : currentTextIndex
+        : currentTextIndex + 1;
     if (nextIndex !== currentTextIndex) {
       handleIndexChange(nextIndex);
     }
   }, [currentTextIndex, texts.length, loop, handleIndexChange]);
+
   const previous = useCallback(() => {
-    const prevIndex = currentTextIndex === 0 ? loop ? texts.length - 1 : currentTextIndex : currentTextIndex - 1;
+    const prevIndex =
+      currentTextIndex === 0
+        ? loop
+          ? texts.length - 1
+          : currentTextIndex
+        : currentTextIndex - 1;
     if (prevIndex !== currentTextIndex) {
       handleIndexChange(prevIndex);
     }
   }, [currentTextIndex, texts.length, loop, handleIndexChange]);
-  const jumpTo = useCallback((index: number) => {
-    const validIndex = Math.max(0, Math.min(index, texts.length - 1));
-    if (validIndex !== currentTextIndex) {
-      handleIndexChange(validIndex);
-    }
-  }, [texts.length, currentTextIndex, handleIndexChange]);
+
+  const jumpTo = useCallback(
+    (index: number) => {
+      const validIndex = Math.max(0, Math.min(index, texts.length - 1));
+      if (validIndex !== currentTextIndex) {
+        handleIndexChange(validIndex);
+      }
+    },
+    [texts.length, currentTextIndex, handleIndexChange]
+  );
+
   const reset = useCallback(() => {
     if (currentTextIndex !== 0) {
       handleIndexChange(0);
     }
   }, [currentTextIndex, handleIndexChange]);
-  useImperativeHandle(ref, () => ({
-    next,
-    previous,
-    jumpTo,
-    reset
-  }), [next, previous, jumpTo, reset]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      next,
+      previous,
+      jumpTo,
+      reset,
+    }),
+    [next, previous, jumpTo, reset]
+  );
+
   useEffect(() => {
     if (!auto) return;
     const intervalId = setInterval(next, finalRotationInterval);
     return () => clearInterval(intervalId);
   }, [next, finalRotationInterval, auto]);
+
   if (texts.length === 0) {
     console.log('TextCycler: No texts provided, returning null');
     return null;
   }
+
   console.log('TextCycler: Rendering with elements:', elements);
-  return <div className={cn("inline-flex flex-wrap whitespace-pre-wrap", className)} {...rest}>
+
+  return (
+    <div className={cn("inline-flex flex-wrap whitespace-pre-wrap", className)} {...rest}>
       <span className="sr-only">{texts[currentTextIndex]}</span>
       <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
-        <motion.div key={currentTextIndex} className={cn(splitBy === "lines" ? "flex flex-col w-full" : "flex flex-wrap whitespace-pre-wrap")} initial={{
-        opacity: 1
-      }} animate={{
-        opacity: 1
-      }} exit={{
-        opacity: 0
-      }} transition={{
-        duration: 0.3
-      }}>
+        <motion.div
+          key={currentTextIndex}
+          className={cn(
+            splitBy === "lines"
+              ? "flex flex-col w-full"
+              : "flex flex-wrap whitespace-pre-wrap"
+          )}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           {elements.map((wordObj, wordIndex, array) => {
-          const previousCharsCount = array.slice(0, wordIndex).reduce((sum, word) => sum + word.characters.length, 0);
-          return <span key={wordIndex} className={cn("inline-flex", splitLevelClassName)}>
-                {wordObj.characters.map((char, charIndex) => {})}
+            const previousCharsCount = array
+              .slice(0, wordIndex)
+              .reduce((sum, word) => sum + word.characters.length, 0);
+            return (
+              <span key={wordIndex} className={cn("inline-flex", splitLevelClassName)}>
+                {wordObj.characters.map((char, charIndex) => (
+                  <motion.span
+                    key={charIndex}
+                    initial={initial}
+                    animate={animate}
+                    exit={exit}
+                    transition={{
+                      ...transition,
+                      delay: getStaggerDelay(
+                        previousCharsCount + charIndex,
+                        array.reduce((sum, word) => sum + word.characters.length, 0)
+                      ) / 1000, // Convert to seconds
+                    }}
+                    className={cn("inline-block", elementLevelClassName)}
+                  >
+                    {char}
+                  </motion.span>
+                ))}
                 {wordObj.needsSpace && <span> </span>}
-              </span>;
-        })}
+              </span>
+            );
+          })}
         </motion.div>
       </AnimatePresence>
-    </div>;
+    </div>
+  );
 });
+
 TextCycler.displayName = "TextCycler";
+
 export default TextCycler;
