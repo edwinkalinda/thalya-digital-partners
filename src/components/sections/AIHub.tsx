@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
@@ -35,7 +36,7 @@ const AIHub = () => {
             <TextRotate text="Un agent pour " className="inline" />
             <TextCycler
               texts={capabilities}
-              className="text-2xl sm:text-3xl font-bold text-gradient inline-block"
+              className="text-4xl sm:text-5xl md:text-6xl font-bold text-gradient inline-block"
               interval={2500}
               splitBy="characters"
               staggerDuration={30}
