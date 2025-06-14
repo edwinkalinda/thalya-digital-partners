@@ -44,28 +44,64 @@ export const VoiceTestCard = () => {
         throw new Error(error.message);
       }
 
-      // Vérifier si data est déjà un ArrayBuffer ou un Blob
-      let audioBlob;
+      console.log('Received data type:', typeof data);
+      console.log('Data length:', data?.byteLength || data?.length || 'unknown');
+
+      // Nettoyer l'URL précédente si elle existe
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
+
+      // Traiter les données audio reçues
+      let audioBlob: Blob;
+      
       if (data instanceof ArrayBuffer) {
+        console.log('Data is ArrayBuffer, creating blob directly');
         audioBlob = new Blob([data], { type: 'audio/mpeg' });
-      } else if (data instanceof Blob) {
-        audioBlob = data;
+      } else if (data && typeof data === 'object' && data.constructor === Object) {
+        // Si c'est un objet, probablement des données sérialisées
+        console.log('Data is object, converting to Uint8Array');
+        const uint8Array = new Uint8Array(Object.values(data));
+        audioBlob = new Blob([uint8Array], { type: 'audio/mpeg' });
       } else {
-        // Si c'est autre chose, essayer de le convertir
+        console.log('Data format unknown, trying direct conversion');
         audioBlob = new Blob([data], { type: 'audio/mpeg' });
       }
       
-      const audioUrl = URL.createObjectURL(audioBlob);
-      setAudioUrl(audioUrl);
+      console.log('Created blob size:', audioBlob.size, 'bytes');
       
-      // Essayer de jouer l'audio avec gestion d'erreur améliorée
+      if (audioBlob.size === 0) {
+        throw new Error('Audio blob is empty');
+      }
+      
+      const newAudioUrl = URL.createObjectURL(audioBlob);
+      setAudioUrl(newAudioUrl);
+      
+      console.log('Audio URL created:', newAudioUrl);
+      
+      // Essayer de jouer l'audio
       try {
-        const audio = new Audio(audioUrl);
+        const audio = new Audio(newAudioUrl);
         
         // Ajouter des événements pour déboguer
         audio.addEventListener('loadstart', () => console.log('Audio loading started'));
         audio.addEventListener('canplay', () => console.log('Audio can play'));
-        audio.addEventListener('error', (e) => console.error('Audio error:', e));
+        audio.addEventListener('loadedmetadata', () => console.log('Audio metadata loaded, duration:', audio.duration));
+        audio.addEventListener('error', (e) => {
+          console.error('Audio error event:', e);
+          const audioError = audio.error;
+          if (audioError) {
+            console.error('Audio error details:', audioError.code, audioError.message);
+          }
+        });
+        
+        // Attendre que l'audio soit prêt
+        await new Promise((resolve, reject) => {
+          audio.addEventListener('canplay', resolve);
+          audio.addEventListener('error', reject);
+          audio.load(); // Force le chargement
+        });
         
         // Jouer l'audio
         await audio.play();
@@ -77,14 +113,14 @@ export const VoiceTestCard = () => {
 
         // Nettoyer l'URL après lecture
         audio.addEventListener('ended', () => {
-          URL.revokeObjectURL(audioUrl);
+          URL.revokeObjectURL(newAudioUrl);
         });
         
       } catch (playError) {
         console.error('Erreur de lecture audio:', playError);
         toast({
           title: "Audio généré avec succès 🎵",
-          description: `Le fichier audio a été généré. Utilisez le bouton de téléchargement pour l'écouter.`,
+          description: `L'audio a été généré mais ne peut pas être lu automatiquement. Utilisez le bouton de téléchargement.`,
         });
       }
       
@@ -108,6 +144,17 @@ export const VoiceTestCard = () => {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      
+      toast({
+        title: "Téléchargement lancé",
+        description: "Le fichier audio a été téléchargé avec succès.",
+      });
+    } else {
+      toast({
+        title: "Aucun audio disponible",
+        description: "Veuillez d'abord tester une voix pour générer l'audio.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -177,17 +224,24 @@ export const VoiceTestCard = () => {
               )}
             </Button>
             
-            {audioUrl && (
-              <Button 
-                onClick={handleDownloadAudio}
-                variant="outline"
-                className="flex-shrink-0"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Télécharger
-              </Button>
-            )}
+            <Button 
+              onClick={handleDownloadAudio}
+              disabled={!audioUrl}
+              variant="outline"
+              className="flex-shrink-0"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Télécharger
+            </Button>
           </div>
+
+          {audioUrl && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 text-sm">
+                ✅ Audio généré avec succès ! Utilisez le bouton de téléchargement si la lecture automatique ne fonctionne pas.
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
