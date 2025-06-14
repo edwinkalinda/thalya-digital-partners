@@ -31,7 +31,9 @@ const AIHub = () => {
               <Badge className="bg-green-100 text-green-700 border-green-200">Actif</Badge>
             </div>
             
-            <h3 className="text-3xl font-bold mb-4">IA Réceptionniste</h3>
+            <h3 className="text-3xl font-bold mb-4">
+              <TextRotate text="IA Réceptionniste" />
+            </h3>
             <p className="text-graphite-600 text-lg mb-8 leading-relaxed">
               Gère vos appels entrants 24/7 avec une voix naturelle et une personnalité 
               qui reflète parfaitement votre marque. Jamais d'appel manqué, toujours une 
@@ -65,7 +67,9 @@ const AIHub = () => {
                 </Badge>
               </div>
               
-              <h3 className="text-xl font-bold mb-3 text-graphite-700">IA Gestion de Stock</h3>
+              <h3 className="text-xl font-bold mb-3 text-graphite-700">
+                <TextRotate text="IA Gestion de Stock" />
+              </h3>
               <p className="text-graphite-500 text-sm leading-relaxed">
                 Optimise vos niveaux de stock en prédisant la demande et en automatisant 
                 les commandes fournisseurs.
@@ -86,7 +90,9 @@ const AIHub = () => {
                 </Badge>
               </div>
               
-              <h3 className="text-xl font-bold mb-3 text-graphite-700">IA Marketing</h3>
+              <h3 className="text-xl font-bold mb-3 text-graphite-700">
+                <TextRotate text="IA Marketing" />
+              </h3>
               <p className="text-graphite-500 text-sm leading-relaxed">
                 Crée et lance des campagnes marketing ciblées en analysant le comportement 
                 de vos clients en temps réel.
@@ -97,7 +103,9 @@ const AIHub = () => {
           {/* Additional coming soon card for balance */}
           <div className="lg:col-span-2 bg-gradient-to-r from-electric-blue/5 to-blue-600/5 rounded-3xl p-6 border border-electric-blue/20 animate-slide-up">
             <div className="text-center">
-              <h3 className="text-2xl font-bold mb-4 text-gradient">Et bien plus encore...</h3>
+              <h3 className="text-2xl font-bold mb-4 text-gradient">
+                <TextRotate text="Et bien plus encore..." />
+              </h3>
               <p className="text-graphite-600 mb-6">
                 Notre écosystème d'IA s'enrichit constamment de nouvelles spécialisations 
                 pour répondre à tous vos besoins métier.
