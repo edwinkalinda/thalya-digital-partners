@@ -50,16 +50,15 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         text: text,
-        model_id: 'eleven_turbo_v2_5', // Modèle plus rapide avec meilleure qualité
+        model_id: 'eleven_turbo_v2_5',
         voice_settings: {
-          stability: 0.7, // Augmenté pour plus de consistance
-          similarity_boost: 0.9, // Augmenté pour plus de naturalité
-          style: 0.3, // Ajouté pour plus d'expressivité
+          stability: 0.7,
+          similarity_boost: 0.9,
+          style: 0.3,
           use_speaker_boost: true
         },
-        // Optimisations pour la latence
-        optimize_streaming_latency: 3, // Optimisation maximale pour la latence
-        output_format: "mp3_44100_128" // Format optimisé
+        optimize_streaming_latency: 3,
+        output_format: "mp3_44100_128"
       }),
     });
 
@@ -73,9 +72,16 @@ serve(async (req) => {
     
     console.log(`Successfully generated audio from ElevenLabs, size: ${audioBuffer.byteLength} bytes`);
 
-    // Convertir en base64 pour le transport JSON
+    // Convertir en base64 de manière sécurisée pour éviter la stack overflow
+    const chunkSize = 8192; // Traiter par chunks plus petits
     const uint8Array = new Uint8Array(audioBuffer);
-    const base64Audio = btoa(String.fromCharCode(...uint8Array));
+    let base64Audio = '';
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      const chunkString = Array.from(chunk, byte => String.fromCharCode(byte)).join('');
+      base64Audio += btoa(chunkString);
+    }
 
     return new Response(
       JSON.stringify({ audioData: base64Audio }),
