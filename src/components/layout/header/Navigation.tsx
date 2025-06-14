@@ -7,29 +7,35 @@ const Navigation = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
 
+  const scrollToElement = (sectionId: string, maxAttempts = 10) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      return;
+    }
+    
+    // Si l'élément n'existe pas encore, réessayer jusqu'à maxAttempts
+    if (maxAttempts > 0) {
+      setTimeout(() => {
+        scrollToElement(sectionId, maxAttempts - 1);
+      }, 100);
+    }
+  };
+
   const handleNavigation = (sectionId: string) => {
     if (!isHomePage) {
       // Si on n'est pas sur la page d'accueil, naviguer d'abord vers la page d'accueil
       navigate('/', { replace: false });
-      // Attendre que la page se charge avant de défiler
+      // Attendre que la navigation soit terminée, puis essayer de défiler
       setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }
-      }, 200);
+        scrollToElement(sectionId);
+      }, 300);
     } else {
       // Si on est déjà sur la page d'accueil, défiler directement
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
+      scrollToElement(sectionId);
     }
   };
 
