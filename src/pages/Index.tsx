@@ -9,7 +9,7 @@ import FinalCTA from '../components/sections/FinalCTA';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-pure-white text-deep-black relative">
+    <div className="min-h-screen bg-graphite-100 text-deep-black relative">
       <AnimatedBackground />
       <Header />
       <Hero />
