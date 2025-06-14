@@ -137,25 +137,27 @@ const Onboarding = () => {
       <Header />
       
       {/* Main Header - adjusted for fixed header */}
-      <div className="pt-16 p-6 border-b border-graphite-200">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <div className="pt-16 p-4 sm:p-6 border-b border-graphite-200">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
-            <p className="text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
+            <p className="text-sm sm:text-base text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
           </div>
-          <ProgressIndicator 
-            steps={onboardingSteps} 
-            currentStep={currentStep} 
-          />
+          <div className="w-full sm:w-auto">
+            <ProgressIndicator 
+              steps={onboardingSteps} 
+              currentStep={currentStep} 
+            />
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex">
+      {/* Main Content - Responsive Layout */}
+      <div className="flex-1 flex flex-col lg:flex-row">
         {/* Avatar Section */}
-        <div className="w-1/2 flex items-center justify-center p-8">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 min-h-[300px] lg:min-h-0">
           <div className="text-center">
-            <div className="mb-6 w-64 h-64 mx-auto">
+            <div className="mb-6 w-48 h-48 sm:w-64 sm:h-64 mx-auto">
               <Orb 
                 hue={240}
                 hoverIntensity={0.3}
@@ -163,46 +165,46 @@ const Onboarding = () => {
                 forceHoverState={isListening}
               />
             </div>
-            <h2 className="text-xl font-semibold text-deep-black mb-2">
+            <h2 className="text-lg sm:text-xl font-semibold text-deep-black mb-2">
               IA Chef d'Orchestre
             </h2>
-            <p className="text-graphite-600">
+            <p className="text-sm sm:text-base text-graphite-600">
               Je vous guide dans la création de votre IA
             </p>
           </div>
         </div>
 
         {/* Chat Section */}
-        <div className="w-1/2 border-l border-graphite-200 flex flex-col">
+        <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col min-h-[400px] lg:min-h-0">
           <ChatInterface 
             conversation={conversation}
             className="flex-1"
           />
           
           {/* Input Section */}
-          <div className="p-6 border-t border-graphite-200 bg-pure-white">
-            <div className="flex gap-4 items-end">
+          <div className="p-4 sm:p-6 border-t border-graphite-200 bg-pure-white">
+            <div className="flex gap-2 sm:gap-4 items-end">
               <div className="flex-1">
                 <Input
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   placeholder="Tapez votre réponse..."
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="resize-none"
+                  className="resize-none text-sm sm:text-base"
                 />
               </div>
               <Button
                 onClick={toggleListening}
                 variant={isListening ? "destructive" : "outline"}
                 size="icon"
-                className="h-10 w-10"
+                className="h-10 w-10 flex-shrink-0"
               >
                 {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
               <Button
                 onClick={handleSendMessage}
                 disabled={!userInput.trim()}
-                className="h-10"
+                className="h-10 flex-shrink-0"
               >
                 <Send className="h-4 w-4" />
               </Button>
