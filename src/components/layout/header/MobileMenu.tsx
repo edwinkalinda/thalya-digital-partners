@@ -19,24 +19,29 @@ const MobileMenu = () => {
   const isHomePage = location.pathname === '/';
   const [isOpen, setIsOpen] = useState(false);
 
-  const scrollToSection = (sectionId: string) => {
+  const handleNavigation = (sectionId: string) => {
     setIsOpen(false);
     
     if (!isHomePage) {
-      navigate('/');
+      // Si on n'est pas sur la page d'accueil, naviguer d'abord vers la page d'accueil
+      navigate('/', { replace: false });
+      // Attendre que la page se charge avant de défiler
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
           element.scrollIntoView({
-            behavior: 'smooth'
+            behavior: 'smooth',
+            block: 'start'
           });
         }
-      }, 100);
+      }, 200);
     } else {
+      // Si on est déjà sur la page d'accueil, défiler directement
       const element = document.getElementById(sectionId);
       if (element) {
         element.scrollIntoView({
-          behavior: 'smooth'
+          behavior: 'smooth',
+          block: 'start'
         });
       }
     }
@@ -76,7 +81,7 @@ const MobileMenu = () => {
               {navigationItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => scrollToSection(item.id)}
+                  onClick={() => handleNavigation(item.id)}
                   className="text-left py-3 px-4 rounded-lg text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue transition-all duration-300 border border-transparent hover:border-electric-blue/20"
                 >
                   {item.label}
