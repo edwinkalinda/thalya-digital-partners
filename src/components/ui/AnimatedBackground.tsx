@@ -19,11 +19,9 @@ const AnimatedBackground = () => {
           disableAnimation={false}
           enableMouseInteraction={true}
           mouseRadius={0.3}
-          colorNum={6}
           waveAmplitude={0.2}
           waveFrequency={2}
           waveSpeed={0.03}
-          pixelSize={3}
         />
       </div>
     </div>
