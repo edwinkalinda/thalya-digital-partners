@@ -1,5 +1,4 @@
 
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
@@ -30,82 +29,102 @@ const AIHub = () => {
   };
 
   return (
-    <section id="ai-hub" className="py-24 px-6 lg:px-8 bg-graphite-50">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight">
-            <span className="block">
+    <section id="ai-hub" className="py-32 px-6 lg:px-8 bg-gradient-to-b from-graphite-50 to-pure-white">
+      <div className="max-w-8xl mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-20 animate-fade-in">
+          <div className="inline-flex items-center justify-center px-4 py-2 bg-electric-blue/10 rounded-full mb-8">
+            <span className="text-sm font-semibold text-electric-blue tracking-wide uppercase">
+              Écosystème IA
+            </span>
+          </div>
+          
+          <h2 className="text-5xl sm:text-6xl md:text-7xl font-black mb-8 leading-[0.9] tracking-tight">
+            <span className="block text-graphite-900">
               <TextRotate text="Un agent pour " className="inline" />
             </span>
             <TextCycler
               texts={capabilities}
-              className="text-4xl sm:text-5xl md:text-6xl font-bold text-gradient inline-block min-h-[1.2em]"
+              className="text-5xl sm:text-6xl md:text-7xl font-black text-gradient inline-block min-h-[1.2em]"
               interval={2500}
               splitBy="characters"
               staggerDuration={30}
             />
           </h2>
-          <p className="text-xl text-graphite-600 max-w-3xl mx-auto">
+          
+          <p className="text-xl sm:text-2xl text-graphite-600 max-w-4xl mx-auto leading-relaxed font-light">
             Découvrez notre écosystème d'intelligences artificielles spécialisées, 
-            chacune conçue pour exceller dans son domaine.
+            chacune conçue pour exceller dans son domaine et transformer votre entreprise.
           </p>
         </div>
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Enhanced Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
           
-          {/* IA Réceptionniste - Large card */}
-          <div className="lg:col-span-2 lg:row-span-2 bg-pure-white rounded-3xl p-8 shadow-lg hover-scale border border-graphite-200 animate-slide-up">
-            <div className="flex items-start justify-between mb-6">
-              <div className="p-4 bg-electric-blue/10 rounded-2xl">
-                <Phone className="w-8 h-8 text-electric-blue" />
+          {/* IA Réceptionniste - Hero card */}
+          <div className="lg:col-span-2 lg:row-span-2 bg-pure-white rounded-[2rem] p-10 lg:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_20px_60px_rgb(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-2 border border-graphite-100 animate-slide-up relative overflow-hidden">
+            {/* Subtle background pattern */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-electric-blue/5 to-transparent rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-8">
+                <div className="p-5 bg-gradient-to-br from-electric-blue/10 to-electric-blue/5 rounded-2xl backdrop-blur-sm">
+                  <Phone className="w-10 h-10 text-electric-blue" />
+                </div>
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 px-4 py-2 text-sm font-semibold">
+                  Disponible maintenant
+                </Badge>
               </div>
-              <Badge className="bg-green-100 text-green-700 border-green-200">Actif</Badge>
-            </div>
-            
-            <h3 className="text-3xl font-bold mb-4">
-              <TextRotate text="IA Réceptionniste" />
-            </h3>
-            <p className="text-graphite-600 text-lg mb-8 leading-relaxed">
-              Gère vos appels entrants 24/7 avec une voix naturelle et une personnalité 
-              qui reflète parfaitement votre marque. Jamais d'appel manqué, toujours une 
-              première impression exceptionnelle.
-            </p>
-            
-            {/* Mock avatar */}
-            <div className="mb-8">
-              <div className="w-24 h-24 bg-gradient-to-br from-electric-blue to-blue-600 rounded-full flex items-center justify-center mx-auto">
-                <div className="w-16 h-16 bg-pure-white rounded-full flex items-center justify-center">
-                  <div className="text-electric-blue text-xl font-bold">R</div>
+              
+              <h3 className="text-4xl lg:text-5xl font-black mb-6 text-graphite-900 leading-tight">
+                <TextRotate text="IA Réceptionniste" />
+              </h3>
+              
+              <p className="text-graphite-600 text-xl leading-relaxed mb-10 font-light">
+                Gère vos appels entrants 24/7 avec une voix naturelle et une personnalité 
+                qui reflète parfaitement votre marque. Jamais d'appel manqué, toujours une 
+                première impression exceptionnelle.
+              </p>
+              
+              {/* Enhanced avatar */}
+              <div className="mb-10 flex justify-center">
+                <div className="relative">
+                  <div className="w-32 h-32 bg-gradient-to-br from-electric-blue via-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg">
+                    <div className="w-24 h-24 bg-pure-white/90 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                      <div className="text-electric-blue text-2xl font-black">AI</div>
+                    </div>
+                  </div>
+                  <div className="absolute -inset-4 bg-gradient-to-r from-electric-blue/20 to-purple-600/20 rounded-3xl blur-lg animate-pulse opacity-75"></div>
                 </div>
               </div>
+              
+              <Button 
+                className="bg-gradient-to-r from-electric-blue to-blue-600 hover:from-blue-600 hover:to-blue-700 text-pure-white w-full py-4 text-lg font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                onClick={handleConfigureReceptionist}
+              >
+                Configurer maintenant
+                <div className="ml-2 w-2 h-2 bg-pure-white rounded-full animate-pulse"></div>
+              </Button>
             </div>
-            
-            <Button 
-              className="bg-electric-blue hover:bg-blue-600 text-pure-white w-full py-3 text-lg font-semibold rounded-xl"
-              onClick={handleConfigureReceptionist}
-            >
-              Configurer maintenant
-            </Button>
           </div>
 
           {/* IA Gestion de Stock - Coming soon */}
-          <div className="bg-pure-white rounded-3xl p-6 shadow-lg hover-scale border border-graphite-200 animate-slide-up relative overflow-hidden">
-            <div className="glass-effect absolute inset-0"></div>
+          <div className="bg-pure-white rounded-[1.5rem] p-8 shadow-[0_4px_20px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 border border-graphite-100 animate-slide-up relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-graphite-50/50 to-transparent"></div>
             <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-graphite-200 rounded-xl opacity-50">
-                  <Package className="w-6 h-6 text-graphite-500" />
+              <div className="flex items-start justify-between mb-6">
+                <div className="p-4 bg-graphite-100 rounded-xl group-hover:bg-graphite-200 transition-colors duration-300">
+                  <Package className="w-7 h-7 text-graphite-500" />
                 </div>
-                <Badge variant="secondary" className="bg-graphite-100 text-graphite-600">
+                <Badge variant="secondary" className="bg-graphite-100 text-graphite-600 px-3 py-1 text-xs font-semibold">
                   Bientôt disponible
                 </Badge>
               </div>
               
-              <h3 className="text-xl font-bold mb-3 text-graphite-700">
+              <h3 className="text-2xl font-bold mb-4 text-graphite-700">
                 <TextRotate text="IA Gestion de Stock" />
               </h3>
-              <p className="text-graphite-500 text-sm leading-relaxed">
+              <p className="text-graphite-500 leading-relaxed font-light">
                 Optimise vos niveaux de stock en prédisant la demande et en automatisant 
                 les commandes fournisseurs.
               </p>
@@ -113,41 +132,42 @@ const AIHub = () => {
           </div>
 
           {/* IA Marketing - Coming soon */}
-          <div className="bg-pure-white rounded-3xl p-6 shadow-lg hover-scale border border-graphite-200 animate-slide-up relative overflow-hidden">
-            <div className="glass-effect absolute inset-0"></div>
+          <div className="bg-pure-white rounded-[1.5rem] p-8 shadow-[0_4px_20px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 border border-graphite-100 animate-slide-up relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-graphite-50/50 to-transparent"></div>
             <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-graphite-200 rounded-xl opacity-50">
-                  <TrendingUp className="w-6 h-6 text-graphite-500" />
+              <div className="flex items-start justify-between mb-6">
+                <div className="p-4 bg-graphite-100 rounded-xl group-hover:bg-graphite-200 transition-colors duration-300">
+                  <TrendingUp className="w-7 h-7 text-graphite-500" />
                 </div>
-                <Badge variant="secondary" className="bg-graphite-100 text-graphite-600">
+                <Badge variant="secondary" className="bg-graphite-100 text-graphite-600 px-3 py-1 text-xs font-semibold">
                   Bientôt disponible
                 </Badge>
               </div>
               
-              <h3 className="text-xl font-bold mb-3 text-graphite-700">
+              <h3 className="text-2xl font-bold mb-4 text-graphite-700">
                 <TextRotate text="IA Marketing" />
               </h3>
-              <p className="text-graphite-500 text-sm leading-relaxed">
+              <p className="text-graphite-500 leading-relaxed font-light">
                 Crée et lance des campagnes marketing ciblées en analysant le comportement 
                 de vos clients en temps réel.
               </p>
             </div>
           </div>
 
-          {/* Additional coming soon card for balance */}
-          <div className="lg:col-span-2 bg-gradient-to-r from-electric-blue/5 to-blue-600/5 rounded-3xl p-6 border border-electric-blue/20 animate-slide-up">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold mb-4 text-gradient">
+          {/* Roadmap card */}
+          <div className="lg:col-span-2 bg-gradient-to-r from-electric-blue/8 via-blue-600/5 to-purple-600/8 rounded-[1.5rem] p-10 border border-electric-blue/20 animate-slide-up relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-48 h-48 bg-gradient-to-br from-electric-blue/10 to-transparent rounded-full blur-2xl"></div>
+            <div className="relative z-10 text-center">
+              <h3 className="text-3xl lg:text-4xl font-black mb-6 text-gradient">
                 <TextRotate text="Et bien plus encore..." />
               </h3>
-              <p className="text-graphite-600 mb-6">
+              <p className="text-graphite-600 text-lg mb-8 font-light leading-relaxed max-w-2xl mx-auto">
                 Notre écosystème d'IA s'enrichit constamment de nouvelles spécialisations 
-                pour répondre à tous vos besoins métier.
+                pour répondre à tous vos besoins métier et rester à la pointe de l'innovation.
               </p>
               <Button 
                 variant="outline" 
-                className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-pure-white"
+                className="border-2 border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-pure-white px-8 py-3 text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
                 onClick={handleDiscoverRoadmap}
               >
                 Découvrir la roadmap
@@ -161,4 +181,3 @@ const AIHub = () => {
 };
 
 export default AIHub;
-
