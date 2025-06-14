@@ -1,78 +1,56 @@
 
 export function createThalyaLogoSVG(): string {
   return `
-    <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <!-- Dégradés basés sur l'image de référence -->
-        <linearGradient id="topLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
-        </linearGradient>
-        
-        <linearGradient id="topRightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
-        </linearGradient>
-        
-        <linearGradient id="bottomLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
-        </linearGradient>
-        
-        <linearGradient id="bottomRightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
-        </linearGradient>
-        
-        <!-- Ombre pour l'effet 3D -->
-        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.2"/>
-        </filter>
-      </defs>
-      
+    <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
       <!-- Fond transparent -->
-      <rect width="100" height="100" fill="transparent"/>
+      <rect width="200" height="200" fill="transparent"/>
       
-      <!-- Boucle supérieure gauche (bleu foncé) -->
-      <path d="M 15 35
-               A 20 20 0 1 1 35 15
-               A 10 10 0 0 0 35 35
-               A 10 10 0 0 0 15 35 Z" 
-            fill="url(#topLeftGrad)" 
-            filter="url(#shadow)"/>
+      <!-- Boucle supérieure gauche -->
+      <path d="M 30 70
+               C 30 40, 60 40, 60 70
+               C 60 85, 75 100, 100 100
+               C 125 100, 140 85, 140 70
+               C 140 40, 170 40, 170 70
+               C 170 130, 100 130, 100 70
+               C 100 55, 85 40, 70 40
+               C 45 40, 30 55, 30 70 Z" 
+            fill="black"/>
       
-      <!-- Boucle supérieure droite (cyan) -->
-      <path d="M 65 15
-               A 20 20 0 1 1 85 35
-               A 10 10 0 0 0 65 35
-               A 10 10 0 0 0 65 15 Z" 
-            fill="url(#topRightGrad)" 
-            filter="url(#shadow)"/>
+      <!-- Boucle supérieure droite -->
+      <path d="M 170 70
+               C 170 40, 140 40, 140 70
+               C 140 85, 125 100, 100 100
+               C 75 100, 60 85, 60 70
+               C 60 40, 30 40, 30 70
+               C 30 130, 100 130, 100 70
+               C 100 55, 115 40, 130 40
+               C 155 40, 170 55, 170 70 Z" 
+            fill="black"/>
       
-      <!-- Boucle inférieure gauche (violet) -->
-      <path d="M 15 65
-               A 20 20 0 1 1 35 85
-               A 10 10 0 0 0 35 65
-               A 10 10 0 0 0 15 65 Z" 
-            fill="url(#bottomLeftGrad)" 
-            filter="url(#shadow)"/>
+      <!-- Boucle inférieure gauche -->
+      <path d="M 30 130
+               C 30 160, 60 160, 60 130
+               C 60 115, 75 100, 100 100
+               C 125 100, 140 115, 140 130
+               C 140 160, 170 160, 170 130
+               C 170 70, 100 70, 100 130
+               C 100 145, 85 160, 70 160
+               C 45 160, 30 145, 30 130 Z" 
+            fill="black"/>
       
-      <!-- Boucle inférieure droite (bleu) -->
-      <path d="M 65 85
-               A 20 20 0 1 1 85 65
-               A 10 10 0 0 0 65 65
-               A 10 10 0 0 0 65 85 Z" 
-            fill="url(#bottomRightGrad)" 
-            filter="url(#shadow)"/>
+      <!-- Boucle inférieure droite -->
+      <path d="M 170 130
+               C 170 160, 140 160, 140 130
+               C 140 115, 125 100, 100 100
+               C 75 100, 60 115, 60 130
+               C 60 160, 30 160, 30 130
+               C 30 70, 100 70, 100 130
+               C 100 145, 115 160, 130 160
+               C 155 160, 170 145, 170 130 Z" 
+            fill="black"/>
       
-      <!-- Zone d'intersection centrale pour l'entrelacement -->
-      <ellipse cx="50" cy="50" rx="12" ry="12" fill="url(#topRightGrad)" opacity="0.8"/>
-      
-      <!-- Reflets pour l'effet métallique -->
-      <ellipse cx="25" cy="25" rx="3" ry="2" fill="white" opacity="0.3"/>
-      <ellipse cx="75" cy="25" rx="3" ry="2" fill="white" opacity="0.3"/>
-      <ellipse cx="25" cy="75" rx="3" ry="2" fill="white" opacity="0.3"/>
-      <ellipse cx="75" cy="75" rx="3" ry="2" fill="white" opacity="0.3"/>
+      <!-- Zone centrale d'intersection -->
+      <circle cx="100" cy="100" r="25" fill="black"/>
     </svg>
   `;
 }
@@ -92,11 +70,12 @@ export function svgToImageData(svgString: string): Promise<ImageData> {
         return;
       }
       
-      canvas.width = 100;
-      canvas.height = 100;
-      ctx.drawImage(img, 0, 0, 100, 100);
+      // Taille optimisée pour l'effet métallique
+      canvas.width = 200;
+      canvas.height = 200;
+      ctx.drawImage(img, 0, 0, 200, 200);
       
-      const imageData = ctx.getImageData(0, 0, 100, 100);
+      const imageData = ctx.getImageData(0, 0, 200, 200);
       URL.revokeObjectURL(url);
       resolve(imageData);
     };
