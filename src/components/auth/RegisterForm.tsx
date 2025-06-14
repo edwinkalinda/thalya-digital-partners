@@ -214,7 +214,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isLoading 
 
         <Button 
           type="submit" 
-          className="w-full h-11 sm:h-12 text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100" 
+          className="w-full h-11 sm:h-12 bg-electric-blue hover:bg-electric-blue/90 text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100" 
           disabled={isLoading}
         >
           {isLoading ? (
