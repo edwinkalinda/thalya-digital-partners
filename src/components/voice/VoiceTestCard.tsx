@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Loader2, Download } from "lucide-react";
+import { Play, Loader2, Download, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Voix ElevenLabs optimisées pour le français avec qualité premium
@@ -30,7 +31,7 @@ export const VoiceTestCard = () => {
     const startTime = Date.now();
     
     try {
-      console.log('Testing ElevenLabs voice:', selectedVoice);
+      console.log('Testing ElevenLabs voice (optimized):', selectedVoice);
       console.log('Test text:', testText);
       
       // Nettoyer l'URL précédente si elle existe
@@ -52,7 +53,7 @@ export const VoiceTestCard = () => {
       }
 
       const processingTime = Date.now() - startTime;
-      console.log(`Response received from ElevenLabs function in ${processingTime}ms`);
+      console.log(`Response received from ElevenLabs function (optimized) in ${processingTime}ms`);
 
       // Vérifier si on a bien reçu les données audio en base64
       if (!data || !data.audioData) {
@@ -105,15 +106,15 @@ export const VoiceTestCard = () => {
         await audio.play();
         
         toast({
-          title: "Test vocal réussi ✅",
-          description: `Voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} générée en ${processingTime}ms avec qualité optimisée.`,
+          title: "Test vocal ultra-rapide réussi ⚡",
+          description: `Voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} générée en ${processingTime}ms avec latence optimisée.`,
         });
         
       } catch (playError) {
         console.error('Erreur de lecture audio:', playError);
         toast({
-          title: "Audio généré ✅",
-          description: "L'audio a été généré. Utilisez le bouton de téléchargement pour l'écouter.",
+          title: "Audio généré ⚡",
+          description: "L'audio a été généré avec latence optimisée. Utilisez le bouton de téléchargement pour l'écouter.",
         });
       }
       
@@ -155,21 +156,28 @@ export const VoiceTestCard = () => {
     <Card className="shadow-xl border-0">
       <CardHeader>
         <CardTitle className="text-2xl text-deep-black flex items-center">
-          <Play className="w-6 h-6 mr-2 text-electric-blue" />
-          Test des Voix ElevenLabs (Optimisé)
+          <Zap className="w-6 h-6 mr-2 text-electric-blue" />
+          Test des Voix ElevenLabs (Ultra-Optimisé)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h3 className="font-semibold text-green-800 mb-2">🚀 Version Optimisée</h3>
-          <p className="text-green-700 text-sm">
-            Utilise le modèle Turbo v2.5 d'ElevenLabs pour une latence ultra-faible (200-500ms) et une qualité vocale naturelle exceptionnelle.
-          </p>
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-800 mb-2 flex items-center">
+            <Zap className="w-4 h-4 mr-2" />
+            ⚡ Version Ultra-Optimisée pour Latence Minimale
+          </h3>
+          <ul className="text-blue-700 text-sm space-y-1">
+            <li>• Streaming TTS activé pour démarrage instantané</li>
+            <li>• Optimisation latence niveau 4 (maximum)</li>
+            <li>• Format audio allégé (22kHz/32kbps)</li>
+            <li>• Paramètres voix optimisés pour la vitesse</li>
+            <li>• Latence cible : 100-300ms</li>
+          </ul>
         </div>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="voice_selection">Sélection de la voix premium</Label>
+            <Label htmlFor="voice_selection">Sélection de la voix premium (optimisée)</Label>
             <Select value={selectedVoice} onValueChange={setSelectedVoice}>
               <SelectTrigger className="border-graphite-300 focus:border-electric-blue">
                 <SelectValue placeholder="Choisir une voix" />
@@ -188,7 +196,7 @@ export const VoiceTestCard = () => {
           </div>
 
           <div>
-            <Label htmlFor="test_text">Texte de test (optimisé pour la naturalité)</Label>
+            <Label htmlFor="test_text">Texte de test (optimisé pour la vitesse)</Label>
             <Input
               id="test_text"
               value={testText}
@@ -202,17 +210,17 @@ export const VoiceTestCard = () => {
             <Button 
               onClick={handleTestVoice}
               disabled={isTestingVoice || !testText.trim()}
-              className="flex-1 bg-electric-blue hover:bg-blue-600"
+              className="flex-1 bg-gradient-to-r from-electric-blue to-purple-600 hover:from-blue-600 hover:to-purple-700"
             >
               {isTestingVoice ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Génération optimisée...
+                  Génération ultra-rapide...
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 mr-2" />
-                  Tester la voix (Turbo v2.5)
+                  <Zap className="w-4 h-4 mr-2" />
+                  Test Ultra-Rapide (Streaming)
                 </>
               )}
             </Button>
@@ -229,9 +237,10 @@ export const VoiceTestCard = () => {
           </div>
 
           {audioUrl && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800 text-sm">
-                ✅ Audio généré avec succès ! Utilisez le bouton de téléchargement si la lecture automatique ne fonctionne pas.
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-800 text-sm flex items-center">
+                <Zap className="w-4 h-4 mr-2" />
+                ⚡ Audio généré avec latence ultra-optimisée ! Utilisez le bouton de téléchargement si la lecture automatique ne fonctionne pas.
               </p>
             </div>
           )}

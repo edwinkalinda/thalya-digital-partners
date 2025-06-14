@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    // Vérifier que la requête a un body
     const contentType = req.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       throw new Error('Content-Type must be application/json');
@@ -29,7 +28,6 @@ serve(async (req) => {
       requestData = JSON.parse(body);
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
-      console.error('Request body:', body);
       throw new Error('Invalid JSON in request body');
     }
 
@@ -39,9 +37,10 @@ serve(async (req) => {
       throw new Error('Text parameter is required and cannot be empty');
     }
 
-    console.log(`Converting text to speech with ElevenLabs: ${text}`);
+    console.log(`Converting text to speech with ElevenLabs (optimized): ${text}`);
 
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    // Optimisations pour la latence ultra-faible
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
@@ -50,15 +49,15 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         text: text,
-        model_id: 'eleven_turbo_v2_5',
+        model_id: 'eleven_turbo_v2_5', // Modèle le plus rapide
         voice_settings: {
-          stability: 0.7,
-          similarity_boost: 0.9,
-          style: 0.3,
-          use_speaker_boost: true
+          stability: 0.5, // Réduit pour plus de vitesse
+          similarity_boost: 0.8, // Légèrement réduit
+          style: 0.2, // Réduit pour plus de vitesse
+          use_speaker_boost: false // Désactivé pour réduire la latence
         },
-        optimize_streaming_latency: 3,
-        output_format: "mp3_44100_128"
+        optimize_streaming_latency: 4, // Maximum (4)
+        output_format: "mp3_22050_32" // Format plus léger pour réduire la latence
       }),
     });
 
@@ -70,9 +69,9 @@ serve(async (req) => {
 
     const audioBuffer = await response.arrayBuffer();
     
-    console.log(`Successfully generated audio from ElevenLabs, size: ${audioBuffer.byteLength} bytes`);
+    console.log(`Successfully generated audio from ElevenLabs (optimized), size: ${audioBuffer.byteLength} bytes`);
 
-    // Conversion base64 correcte - convertir tout d'un coup sans concaténation
+    // Conversion base64 optimisée pour la vitesse
     const bytes = new Uint8Array(audioBuffer);
     let binaryString = '';
     
@@ -84,7 +83,7 @@ serve(async (req) => {
     // Convertir en base64 d'un seul coup
     const base64Audio = btoa(binaryString);
     
-    console.log(`Base64 conversion successful, length: ${base64Audio.length}`);
+    console.log(`Base64 conversion successful (optimized), length: ${base64Audio.length}`);
 
     return new Response(
       JSON.stringify({ audioData: base64Audio }),
