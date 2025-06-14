@@ -55,18 +55,28 @@ const instantResponsesWithAudio = new Map([
   }]
 ]);
 
+// État de la pré-génération
+let audioPreGenerationComplete = false;
+
 // Génération TTS ultra-optimisée
 const generateTTSAudio = async (text: string): Promise<string | null> => {
   try {
     console.log(`🎤 Generating TTS for: "${text.substring(0, 50)}..."`);
     const startTime = Date.now();
 
+    // Vérifier d'abord si on a la clé ElevenLabs
+    const elevenlabsKey = Deno.env.get('ELEVENLABS_API_KEY');
+    if (!elevenlabsKey) {
+      console.log('⚠️ ElevenLabs API key not found, using OpenAI TTS fallback');
+      return await generateOpenAITTS(text);
+    }
+
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pFZP5JQG7iQjIQuC4Bku/stream`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY'),
+        'xi-api-key': elevenlabsKey,
       },
       body: JSON.stringify({
         text: text,
@@ -84,7 +94,8 @@ const generateTTSAudio = async (text: string): Promise<string | null> => {
 
     if (!response.ok) {
       console.error('❌ ElevenLabs TTS error:', await response.text());
-      return null;
+      console.log('🔄 Falling back to OpenAI TTS');
+      return await generateOpenAITTS(text);
     }
 
     const audioBuffer = await response.arrayBuffer();
@@ -101,32 +112,96 @@ const generateTTSAudio = async (text: string): Promise<string | null> => {
     
     const base64Audio = btoa(binaryString);
     const latency = Date.now() - startTime;
-    console.log(`✅ TTS generated in ${latency}ms`);
+    console.log(`✅ ElevenLabs TTS generated in ${latency}ms`);
     
     return base64Audio;
   } catch (error) {
-    console.error('❌ Error generating TTS audio:', error);
+    console.error('❌ Error generating ElevenLabs TTS audio:', error);
+    console.log('🔄 Falling back to OpenAI TTS');
+    return await generateOpenAITTS(text);
+  }
+};
+
+// Fallback OpenAI TTS
+const generateOpenAITTS = async (text: string): Promise<string | null> => {
+  try {
+    console.log(`🎤 Generating OpenAI TTS for: "${text.substring(0, 50)}..."`);
+    const startTime = Date.now();
+
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiKey) {
+      console.error('❌ No OpenAI API key found');
+      return null;
+    }
+
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1-hd',
+        input: text,
+        voice: 'alloy',
+        response_format: 'mp3',
+        speed: 1.25
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('❌ OpenAI TTS error:', await response.text());
+      return null;
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(audioBuffer);
+    
+    let binaryString = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binaryString += String.fromCharCode(bytes[i]);
+    }
+    
+    const base64Audio = btoa(binaryString);
+    const latency = Date.now() - startTime;
+    console.log(`✅ OpenAI TTS generated in ${latency}ms`);
+    
+    return base64Audio;
+  } catch (error) {
+    console.error('❌ Error generating OpenAI TTS audio:', error);
     return null;
   }
 };
 
 // Pré-génération de l'audio au démarrage pour les réponses instantanées
 const preGenerateInstantAudio = async () => {
-  console.log('🚀 Pre-generating audio for instant responses...');
+  console.log('🚀 Starting audio pre-generation for instant responses...');
+  
+  const promises = [];
   
   for (const [key, data] of instantResponsesWithAudio.entries()) {
-    try {
-      const audio = await generateTTSAudio(data.text);
-      if (audio) {
-        data.audio = audio;
-        console.log(`✅ Pre-generated audio for: ${key}`);
-      }
-    } catch (error) {
-      console.error(`❌ Failed to pre-generate audio for ${key}:`, error);
-    }
+    promises.push(
+      generateTTSAudio(data.text).then(audio => {
+        if (audio) {
+          data.audio = audio;
+          console.log(`✅ Pre-generated audio for: "${key}"`);
+          return true;
+        } else {
+          console.error(`❌ Failed to pre-generate audio for: "${key}"`);
+          return false;
+        }
+      }).catch(error => {
+        console.error(`❌ Exception during pre-generation for "${key}":`, error);
+        return false;
+      })
+    );
   }
   
-  console.log('🎉 All instant responses audio pre-generated!');
+  const results = await Promise.all(promises);
+  const successCount = results.filter(Boolean).length;
+  
+  audioPreGenerationComplete = true;
+  console.log(`🎉 Audio pre-generation complete! ${successCount}/${promises.length} responses ready for instant delivery`);
 };
 
 serve(async (req) => {
@@ -140,8 +215,8 @@ serve(async (req) => {
   
   console.log("🚀 WebSocket connection established for ultra-optimized voice chat");
 
-  // Pré-générer l'audio au premier démarrage
-  if (instantResponsesWithAudio.get('bonjour')?.audio === null) {
+  // Démarrer la pré-génération au premier démarrage
+  if (!audioPreGenerationComplete) {
     preGenerateInstantAudio();
   }
 
@@ -217,8 +292,8 @@ serve(async (req) => {
         const latency = Date.now() - startTime;
         console.log(`⚡ INSTANT response found for "${key}" in ${latency}ms`);
         
-        if (data.audio) {
-          console.log(`🚀 Using pre-generated audio for ultra-fast response`);
+        if (data.audio && audioPreGenerationComplete) {
+          console.log(`🚀 Using pre-generated audio for ultra-fast response (${data.audio.length} chars)`);
           socket.send(JSON.stringify({
             type: 'audio_response',
             audioData: data.audio,
@@ -228,7 +303,7 @@ serve(async (req) => {
           }));
           return;
         } else {
-          console.log(`⚠️ Audio not pre-generated for ${key}, falling back to generation`);
+          console.log(`⚠️ Audio not pre-generated for ${key} (complete: ${audioPreGenerationComplete}), falling back to generation`);
         }
       }
     }
@@ -304,10 +379,11 @@ serve(async (req) => {
     socket.send(JSON.stringify({
       type: 'connection_established',
       message: 'Connexion WebSocket établie - Système vocal ultra-optimisé activé',
+      preGenerationStatus: audioPreGenerationComplete ? 'completed' : 'in_progress',
       optimizations: [
         'Réponses instantanées pré-générées (0-5ms)',
         'Cache intelligent avec TTL 30min',
-        'TTS streaming ElevenLabs Turbo v2.5',
+        'TTS streaming ElevenLabs Turbo v2.5 + OpenAI fallback',
         'Traitement parallélisé AI/TTS',
         'Audio pré-généré pour phrases communes',
         'Conversion base64 optimisée par chunks',
