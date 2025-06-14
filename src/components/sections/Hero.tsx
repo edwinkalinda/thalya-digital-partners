@@ -31,8 +31,13 @@ const Hero = () => {
             />
           </h1>
           
-          {/* TextCycler - positioned in the title area */}
-          <div className="mb-8">
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl text-graphite-600 max-w-4xl mx-auto mb-8 font-normal leading-relaxed">
+            Thalya automatise les composantes clés de votre entreprise – de la gestion des stocks à la relation client – pour une efficacité et une croissance sans précédent.
+          </p>
+          
+          {/* TextCycler - positioned after subtitle */}
+          <div className="mb-12">
             <div className="text-lg text-graphite-500 mb-2">Spécialisé en :</div>
             <TextCycler
               texts={["Gestion automatisée", "IA intelligente", "Croissance optimisée"]}
@@ -42,11 +47,6 @@ const Hero = () => {
               staggerDuration={50}
             />
           </div>
-          
-          {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-graphite-600 max-w-4xl mx-auto mb-12 font-normal leading-relaxed">
-            Thalya automatise les composantes clés de votre entreprise – de la gestion des stocks à la relation client – pour une efficacité et une croissance sans précédent.
-          </p>
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
