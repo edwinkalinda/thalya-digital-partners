@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voiceId = 'pFZP5JQG7iQjIQuC4Bku' } = await req.json(); // Lily voice (French)
+    const { text, voiceId = 'pFZP5JQG7iQjIQuC4Bku' } = await req.json();
     
     console.log(`Converting text to speech with ElevenLabs: ${text}`);
 
@@ -46,10 +46,12 @@ serve(async (req) => {
     
     console.log(`Successfully generated audio from ElevenLabs, size: ${audioBuffer.byteLength} bytes`);
 
+    // Retourner directement l'ArrayBuffer avec les bons headers
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.byteLength.toString(),
       },
     });
 

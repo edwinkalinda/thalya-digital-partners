@@ -36,6 +36,9 @@ export const VoiceTestCard = () => {
         body: {
           text: testText,
           voiceId: selectedVoice
+        },
+        headers: {
+          'Content-Type': 'application/json',
         }
       });
 
@@ -44,8 +47,8 @@ export const VoiceTestCard = () => {
         throw new Error(error.message);
       }
 
-      console.log('Received data type:', typeof data);
-      console.log('Data length:', data?.byteLength || data?.length || 'unknown');
+      console.log('Response received, data type:', typeof data);
+      console.log('Response data:', data);
 
       // Nettoyer l'URL précédente si elle existe
       if (audioUrl) {
@@ -53,28 +56,19 @@ export const VoiceTestCard = () => {
         setAudioUrl(null);
       }
 
-      // Traiter les données audio reçues
-      let audioBlob: Blob;
+      // Vérifier si on a bien reçu un ArrayBuffer
+      if (!data || !(data instanceof ArrayBuffer)) {
+        throw new Error('Données audio invalides reçues');
+      }
+
+      console.log('Audio buffer size:', data.byteLength, 'bytes');
       
-      if (data instanceof ArrayBuffer) {
-        console.log('Data is ArrayBuffer, creating blob directly');
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
-      } else if (data && typeof data === 'object' && data.constructor === Object) {
-        // Si c'est un objet, probablement des données sérialisées
-        console.log('Data is object, converting to Uint8Array');
-        const uint8Array = new Uint8Array(Object.values(data));
-        audioBlob = new Blob([uint8Array], { type: 'audio/mpeg' });
-      } else {
-        console.log('Data format unknown, trying direct conversion');
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      if (data.byteLength === 0) {
+        throw new Error('Buffer audio vide');
       }
       
-      console.log('Created blob size:', audioBlob.size, 'bytes');
-      
-      if (audioBlob.size === 0) {
-        throw new Error('Audio blob is empty');
-      }
-      
+      // Créer le blob audio
+      const audioBlob = new Blob([data], { type: 'audio/mpeg' });
       const newAudioUrl = URL.createObjectURL(audioBlob);
       setAudioUrl(newAudioUrl);
       
@@ -84,23 +78,19 @@ export const VoiceTestCard = () => {
       try {
         const audio = new Audio(newAudioUrl);
         
-        // Ajouter des événements pour déboguer
-        audio.addEventListener('loadstart', () => console.log('Audio loading started'));
-        audio.addEventListener('canplay', () => console.log('Audio can play'));
-        audio.addEventListener('loadedmetadata', () => console.log('Audio metadata loaded, duration:', audio.duration));
-        audio.addEventListener('error', (e) => {
-          console.error('Audio error event:', e);
-          const audioError = audio.error;
-          if (audioError) {
-            console.error('Audio error details:', audioError.code, audioError.message);
-          }
-        });
-        
-        // Attendre que l'audio soit prêt
-        await new Promise((resolve, reject) => {
-          audio.addEventListener('canplay', resolve);
-          audio.addEventListener('error', reject);
-          audio.load(); // Force le chargement
+        // Promesse pour gérer le chargement
+        await new Promise<void>((resolve, reject) => {
+          audio.addEventListener('canplay', () => {
+            console.log('Audio can play, duration:', audio.duration);
+            resolve();
+          });
+          
+          audio.addEventListener('error', (e) => {
+            console.error('Audio loading error:', e);
+            reject(new Error('Erreur de chargement audio'));
+          });
+          
+          audio.load();
         });
         
         // Jouer l'audio
@@ -110,17 +100,12 @@ export const VoiceTestCard = () => {
           title: "Test vocal réussi ✅",
           description: `La voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} a été testée avec succès.`,
         });
-
-        // Nettoyer l'URL après lecture
-        audio.addEventListener('ended', () => {
-          URL.revokeObjectURL(newAudioUrl);
-        });
         
       } catch (playError) {
         console.error('Erreur de lecture audio:', playError);
         toast({
-          title: "Audio généré avec succès 🎵",
-          description: `L'audio a été généré mais ne peut pas être lu automatiquement. Utilisez le bouton de téléchargement.`,
+          title: "Audio généré ✅",
+          description: "L'audio a été généré. Utilisez le bouton de téléchargement pour l'écouter.",
         });
       }
       
@@ -128,7 +113,7 @@ export const VoiceTestCard = () => {
       console.error('Voice test error:', error);
       toast({
         title: "Erreur de test vocal",
-        description: "Impossible de tester la voix. Vérifiez votre clé API ElevenLabs dans les secrets Supabase.",
+        description: error instanceof Error ? error.message : "Erreur inconnue",
         variant: "destructive"
       });
     } finally {
