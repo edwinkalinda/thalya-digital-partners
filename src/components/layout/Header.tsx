@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogIn } from "lucide-react";
 import StarBorder from "@/components/ui/StarBorder";
+
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,15 +22,23 @@ const Header = () => {
       navigate('/');
     }
   };
-  return <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo Thalya ultra-simple */}
           <div className="flex items-center">
             {/* Bouton de retour - affiché seulement si on n'est pas sur la page d'accueil */}
-            {!isHomePage && <Button variant="ghost" size="icon" onClick={handleBack} className="mr-4 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300">
+            {!isHomePage && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleBack} 
+                className="mr-4 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300"
+              >
                 <ArrowLeft className="h-5 w-5" />
-              </Button>}
+              </Button>
+            )}
             
             <div className="flex items-center group cursor-pointer" onClick={() => navigate('/')}>
               <div className="relative">
@@ -56,7 +65,8 @@ const Header = () => {
           </div>
 
           {/* Navigation - affichée seulement sur la page d'accueil */}
-          {isHomePage && <nav className="hidden md:flex items-center space-x-8">
+          {isHomePage && (
+            <nav className="hidden md:flex items-center space-x-8">
               <button onClick={() => scrollToSection('ai-hub')} className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer">
                 Modules IA
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
@@ -73,19 +83,31 @@ const Header = () => {
                 Tarifs
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
               </button>
-            </nav>}
+            </nav>
+          )}
 
           {/* CTA Buttons */}
           <div className="flex items-center space-x-4">
-            <Button variant="outline" onClick={() => navigate('/login')} className="">
-              Connexion
-            </Button>
+            {/* Nouveau bouton de connexion avec design amélioré */}
+            <button
+              onClick={() => navigate('/login')}
+              className="group relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
+            >
+              <LogIn className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Connexion</span>
+              
+              {/* Effet de brillance au hover */}
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-electric-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+
             <StarBorder color="#0066FF" speed="4s" className="transition-all duration-300 hover:scale-105" onClick={() => navigate('/onboarding')}>
               Demander une démo
             </StarBorder>
           </div>
         </div>
       </div>
-    </header>;
+    </header>
+  );
 };
+
 export default Header;
