@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Avatar3D from '../components/onboarding/Avatar3D';
+import Orb from '../components/ui/Orb';
 import ChatInterface from '../components/onboarding/ChatInterface';
 import ProgressIndicator from '../components/onboarding/ProgressIndicator';
 import { Mic, MicOff, Send } from 'lucide-react';
@@ -111,8 +111,13 @@ const Onboarding = () => {
         {/* Avatar Section */}
         <div className="w-1/2 flex items-center justify-center p-8">
           <div className="text-center">
-            <div className="mb-6">
-              <Avatar3D isActive={isListening} />
+            <div className="mb-6 w-64 h-64 mx-auto">
+              <Orb 
+                hue={240}
+                hoverIntensity={0.3}
+                rotateOnHover={true}
+                forceHoverState={isListening}
+              />
             </div>
             <h2 className="text-xl font-semibold text-deep-black mb-2">
               IA Chef d'Orchestre
