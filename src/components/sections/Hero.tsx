@@ -31,16 +31,16 @@ const Hero = () => {
       <div className="absolute top-20 left-10 w-20 h-20 bg-electric-blue/10 rounded-full blur-xl animate-pulse"></div>
       <div className="absolute bottom-20 right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl animate-pulse animation-delay-1000"></div>
       
-      <div className="max-w-7xl mx-auto text-center relative z-10">
+      <div className="max-w-6xl mx-auto text-center relative z-10">
         <div className="animate-fade-in">
-          {/* Badge/Tagline */}
-          <div className="inline-flex items-center px-4 py-2 mb-8 bg-electric-blue/10 border border-electric-blue/20 rounded-full text-electric-blue font-medium text-sm">
+          {/* Badge/Tagline - Level 4 */}
+          <div className="inline-flex items-center px-4 py-2 mb-6 bg-electric-blue/10 border border-electric-blue/20 rounded-full text-electric-blue font-medium text-sm">
             <span className="w-2 h-2 bg-electric-blue rounded-full mr-2 animate-pulse"></span>
             Votre Partenaire en Automatisation Intelligente
           </div>
           
-          {/* Main Title with improved spacing */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight mb-8 leading-[1.1]">
+          {/* Main Title - Level 1 (Primaire) */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-[0.95]">
             <DecryptedText 
               text="Automatisez votre business,"
               animateOn="view"
@@ -61,33 +61,37 @@ const Hero = () => {
             />
           </h1>
           
-          {/* Enhanced Subtitle */}
-          <p className="text-lg sm:text-xl lg:text-2xl text-graphite-600 max-w-5xl mx-auto mb-10 font-normal leading-relaxed">
-            Thalya révolutionne votre entreprise grâce à l'IA : 
-            <span className="text-electric-blue font-semibold"> automatisation des stocks, relation client optimisée, processus fluidifiés</span> pour une efficacité et une croissance sans précédent.
-          </p>
+          {/* Subtitle - Level 2 (Secondaire) */}
+          <div className="mb-8">
+            <p className="text-xl sm:text-2xl lg:text-3xl text-graphite-700 max-w-4xl mx-auto mb-4 font-semibold leading-tight">
+              Thalya révolutionne votre entreprise grâce à l'IA
+            </p>
+            <p className="text-lg sm:text-xl text-graphite-600 max-w-3xl mx-auto leading-relaxed">
+              Automatisation des stocks, relation client optimisée, processus fluidifiés pour une efficacité et une croissance sans précédent.
+            </p>
+          </div>
           
-          {/* TextCycler - repositioned and enhanced */}
-          <div className="mb-12">
-            <div className="text-base sm:text-lg text-graphite-500 mb-3 font-medium">Spécialisé en :</div>
+          {/* TextCycler - Level 3 (Tertiaire) */}
+          <div className="mb-12 p-6 bg-pure-white/60 border border-graphite-200/50 rounded-2xl backdrop-blur-sm max-w-2xl mx-auto">
+            <div className="text-lg text-graphite-600 mb-4 font-medium">Spécialisé en :</div>
             <TextCycler
               texts={specializations}
-              className="text-xl sm:text-2xl lg:text-3xl text-electric-blue font-bold"
+              className="text-2xl sm:text-3xl text-electric-blue font-bold"
               interval={2500}
               splitBy="characters"
               staggerDuration={30}
             />
           </div>
           
-          {/* Enhanced CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-16">
+          {/* CTA Buttons - Niveau d'action principal */}
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <StarBorder 
               color="#0066FF"
               speed="4s"
-              className="transition-all duration-300 hover:scale-105 group"
+              className="transition-all duration-300 hover:scale-105 group shadow-lg shadow-electric-blue/20"
               onClick={() => navigate('/onboarding')}
             >
-              <span className="flex items-center gap-2 text-base sm:text-lg font-semibold px-2">
+              <span className="flex items-center gap-3 text-lg font-bold px-6 py-1">
                 Découvrir l'automatisation 
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </span>
@@ -96,25 +100,25 @@ const Hero = () => {
             <Button 
               variant="outline"
               size="lg"
-              className="border-2 border-graphite-300 text-graphite-700 hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-electric-blue/10 group"
+              className="border-2 border-graphite-400 text-graphite-700 hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-electric-blue/10 group"
             >
               <Play className="w-5 h-5 mr-2 transition-transform group-hover:scale-110" />
               Voir les cas d'usage
             </Button>
           </div>
           
-          {/* Enhanced Trust indicators */}
-          <div className="max-w-4xl mx-auto">
-            <p className="text-sm text-graphite-500 mb-6 font-medium">Déjà adopté par des entreprises innovantes :</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          {/* Trust indicators - Niveau de preuve */}
+          <div className="mb-16">
+            <p className="text-base text-graphite-600 mb-8 font-semibold">Déjà adopté par des entreprises innovantes</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {trustIndicators.map((indicator, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-center sm:justify-start space-x-3 p-4 rounded-xl bg-pure-white/50 border border-graphite-200/50 hover:border-electric-blue/30 hover:bg-electric-blue/5 transition-all duration-300 group"
+                  className="flex items-center justify-center sm:justify-start space-x-3 p-5 rounded-xl bg-pure-white/70 border border-graphite-200/60 hover:border-electric-blue/30 hover:bg-electric-blue/5 transition-all duration-300 group shadow-sm"
                   style={{ animationDelay: `${index * 200}ms` }}
                 >
-                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm sm:text-base text-graphite-700 font-medium text-center sm:text-left">
+                  <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="text-base text-graphite-700 font-medium text-center sm:text-left">
                     {indicator}
                   </span>
                 </div>
@@ -122,19 +126,19 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Stats section */}
-          <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">
+          {/* Stats section - Données de validation */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto p-8 bg-gradient-to-r from-electric-blue/5 to-emerald-500/5 rounded-2xl border border-electric-blue/10">
             <div className="text-center group">
-              <div className="text-3xl sm:text-4xl font-bold text-electric-blue mb-2 group-hover:scale-110 transition-transform">99%</div>
-              <div className="text-sm text-graphite-600">Taux de satisfaction</div>
+              <div className="text-4xl sm:text-5xl font-black text-electric-blue mb-3 group-hover:scale-110 transition-transform">99%</div>
+              <div className="text-base text-graphite-600 font-medium">Taux de satisfaction</div>
             </div>
             <div className="text-center group">
-              <div className="text-3xl sm:text-4xl font-bold text-electric-blue mb-2 group-hover:scale-110 transition-transform">24/7</div>
-              <div className="text-sm text-graphite-600">Disponibilité garantie</div>
+              <div className="text-4xl sm:text-5xl font-black text-electric-blue mb-3 group-hover:scale-110 transition-transform">24/7</div>
+              <div className="text-base text-graphite-600 font-medium">Disponibilité garantie</div>
             </div>
             <div className="text-center group">
-              <div className="text-3xl sm:text-4xl font-bold text-electric-blue mb-2 group-hover:scale-110 transition-transform">-50%</div>
-              <div className="text-sm text-graphite-600">Temps de traitement</div>
+              <div className="text-4xl sm:text-5xl font-black text-electric-blue mb-3 group-hover:scale-110 transition-transform">-50%</div>
+              <div className="text-base text-graphite-600 font-medium">Temps de traitement</div>
             </div>
           </div>
         </div>
