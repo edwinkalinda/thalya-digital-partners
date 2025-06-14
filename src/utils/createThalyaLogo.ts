@@ -8,11 +8,15 @@ export function createThalyaLogoSVG(): string {
           <stop offset="50%" style="stop-color:#000000;stop-opacity:1" />
           <stop offset="100%" style="stop-color:#2a2a2a;stop-opacity:1" />
         </linearGradient>
-        <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
           <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
           <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
         </linearGradient>
+        <radialGradient id="centerGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.8" />
+          <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.2" />
+        </radialGradient>
         <filter id="glow">
           <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
           <feMerge> 
@@ -25,31 +29,62 @@ export function createThalyaLogoSVG(): string {
       <!-- Fond blanc -->
       <rect width="100" height="100" fill="white"/>
       
-      <!-- Corps principal du T moderne -->
-      <path d="M20 20 L80 20 L80 30 L55 30 L55 80 L45 80 L45 30 L20 30 Z" fill="url(#primaryGrad)" filter="url(#glow)"/>
+      <!-- Forme principale - représente l'IA conversationnelle -->
+      <!-- Cercle central (cerveau/intelligence) -->
+      <circle cx="50" cy="50" r="18" fill="url(#primaryGrad)" filter="url(#glow)"/>
+      <circle cx="50" cy="50" r="12" fill="url(#centerGrad)"/>
       
-      <!-- Éléments géométriques décoratifs -->
+      <!-- Ondes de communication - 3 arcs concentriques -->
+      <path d="M 30 50 A 20 20 0 0 1 70 50" 
+            stroke="url(#accentGrad)" 
+            stroke-width="3" 
+            fill="none" 
+            opacity="0.8"/>
+      <path d="M 25 50 A 25 25 0 0 1 75 50" 
+            stroke="url(#accentGrad)" 
+            stroke-width="2" 
+            fill="none" 
+            opacity="0.6"/>
+      <path d="M 20 50 A 30 30 0 0 1 80 50" 
+            stroke="url(#accentGrad)" 
+            stroke-width="1" 
+            fill="none" 
+            opacity="0.4"/>
+      
+      <!-- Formes géométriques représentant les données/connexions -->
       <!-- Triangle supérieur gauche -->
-      <path d="M15 15 L25 15 L20 25 Z" fill="url(#accentGrad)"/>
+      <path d="M25 25 L35 15 L40 30 Z" fill="url(#accentGrad)" opacity="0.7"/>
       
       <!-- Triangle supérieur droit -->
-      <path d="M75 15 L85 15 L80 25 Z" fill="url(#accentGrad)"/>
+      <path d="M75 25 L65 15 L60 30 Z" fill="url(#accentGrad)" opacity="0.7"/>
       
-      <!-- Ligne verticale accent -->
-      <rect x="48" y="32" width="4" height="46" fill="url(#accentGrad)"/>
+      <!-- Hexagone inférieur gauche -->
+      <path d="M30 75 L25 82 L20 75 L25 68 L35 68 L35 75 Z" fill="url(#accentGrad)" opacity="0.6"/>
       
-      <!-- Points lumineux -->
-      <circle cx="22" cy="22" r="2" fill="url(#accentGrad)" opacity="0.8"/>
-      <circle cx="78" cy="22" r="2" fill="url(#accentGrad)" opacity="0.8"/>
-      <circle cx="50" cy="78" r="2" fill="url(#accentGrad)" opacity="0.8"/>
+      <!-- Hexagone inférieur droit -->
+      <path d="M70 75 L75 82 L80 75 L75 68 L65 68 L65 75 Z" fill="url(#accentGrad)" opacity="0.6"/>
       
-      <!-- Lignes d'accent horizontales -->
-      <rect x="20" y="26" width="60" height="1" fill="url(#accentGrad)" opacity="0.6"/>
-      <rect x="45" y="75" width="10" height="1" fill="url(#accentGrad)" opacity="0.6"/>
+      <!-- Points de connexion lumineux -->
+      <circle cx="35" cy="35" r="3" fill="url(#accentGrad)" opacity="0.9"/>
+      <circle cx="65" cy="35" r="3" fill="url(#accentGrad)" opacity="0.9"/>
+      <circle cx="35" cy="65" r="3" fill="url(#accentGrad)" opacity="0.9"/>
+      <circle cx="65" cy="65" r="3" fill="url(#accentGrad)" opacity="0.9"/>
       
-      <!-- Éléments de profondeur -->
-      <rect x="22" y="32" width="2" height="3" fill="url(#accentGrad)" opacity="0.4"/>
-      <rect x="76" y="32" width="2" height="3" fill="url(#accentGrad)" opacity="0.4"/>
+      <!-- Lignes de connexion subtiles -->
+      <line x1="35" y1="35" x2="50" y2="32" stroke="url(#accentGrad)" stroke-width="1" opacity="0.3"/>
+      <line x1="65" y1="35" x2="50" y2="32" stroke="url(#accentGrad)" stroke-width="1" opacity="0.3"/>
+      <line x1="35" y1="65" x2="50" y2="68" stroke="url(#accentGrad)" stroke-width="1" opacity="0.3"/>
+      <line x1="65" y1="65" x2="50" y2="68" stroke="url(#accentGrad)" stroke-width="1" opacity="0.3"/>
+      
+      <!-- Particules brillantes pour l'effet dynamique -->
+      <circle cx="42" cy="25" r="1.5" fill="url(#accentGrad)" opacity="0.8"/>
+      <circle cx="58" cy="25" r="1" fill="url(#accentGrad)" opacity="0.6"/>
+      <circle cx="25" cy="58" r="1" fill="url(#accentGrad)" opacity="0.7"/>
+      <circle cx="75" cy="42" r="1.5" fill="url(#accentGrad)" opacity="0.5"/>
+      
+      <!-- Détails de profondeur -->
+      <circle cx="50" cy="50" r="6" fill="none" stroke="url(#accentGrad)" stroke-width="0.5" opacity="0.4"/>
+      <circle cx="50" cy="50" r="3" fill="url(#accentGrad)" opacity="0.3"/>
     </svg>
   `;
 }

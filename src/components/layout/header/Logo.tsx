@@ -42,17 +42,19 @@ const Logo = () => {
             <MetallicPaint 
               imageData={logoImageData}
               params={{
-                patternScale: 0.8,
-                refraction: 0.05,
-                edge: 0.6,
-                patternBlur: 0.003,
-                liquid: 0.2,
-                speed: 0.8,
+                patternScale: 1.2,
+                refraction: 0.08,
+                edge: 0.4,
+                patternBlur: 0.002,
+                liquid: 0.3,
+                speed: 1.0,
               }}
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-electric-blue via-purple-600 to-emerald-500 rounded-lg transition-all duration-300 group-hover:shadow-xl group-hover:shadow-electric-blue/40 animate-pulse flex items-center justify-center">
-              <span className="text-xl font-black text-white">T</span>
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-white/40"></div>
+              </div>
             </div>
           )}
         </div>
@@ -62,12 +64,13 @@ const Logo = () => {
           <span className="text-xl font-black text-graphite-800 tracking-wider">THALYA</span>
         </div>
         
-        {/* Halo lumineux */}
-        <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-electric-blue/20 rounded-lg blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+        {/* Halo lumineux amélioré */}
+        <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-electric-blue/30 via-purple-500/30 to-emerald-500/30 rounded-lg blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
         
-        {/* Particules brillantes */}
+        {/* Particules brillantes animées */}
         <div className="absolute -top-1 -right-1 w-2 h-2 bg-electric-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300"></div>
         <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-emerald-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300 delay-100"></div>
+        <div className="absolute top-1 left-1 w-1 h-1 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300 delay-200"></div>
       </div>
     </div>
   );
