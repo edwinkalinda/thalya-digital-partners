@@ -5,6 +5,13 @@ import StarBorder from "@/components/ui/StarBorder";
 const Header = () => {
   const navigate = useNavigate();
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -35,22 +42,34 @@ const Header = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#modules" className="text-graphite-600 hover:text-electric-blue transition-colors relative group">
+            <button 
+              onClick={() => scrollToSection('ai-hub')}
+              className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
+            >
               Modules IA
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a href="#avantages" className="text-graphite-600 hover:text-electric-blue transition-colors relative group">
+            </button>
+            <button 
+              onClick={() => scrollToSection('thalya-difference')}
+              className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
+            >
               Avantages
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a href="#temoignages" className="text-graphite-600 hover:text-electric-blue transition-colors relative group">
+            </button>
+            <button 
+              onClick={() => scrollToSection('philosophy')}
+              className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
+            >
               Témoignages
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a href="#tarifs" className="text-graphite-600 hover:text-electric-blue transition-colors relative group">
+            </button>
+            <button 
+              onClick={() => scrollToSection('final-cta')}
+              className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
+            >
               Tarifs
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            </button>
           </nav>
 
           {/* CTA Buttons */}

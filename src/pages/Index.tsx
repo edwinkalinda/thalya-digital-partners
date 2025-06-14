@@ -14,9 +14,15 @@ const Index = () => {
       <Header />
       <Hero />
       <AIHub />
-      <ThalyaDifference />
-      <Philosophy />
-      <FinalCTA />
+      <div id="thalya-difference">
+        <ThalyaDifference />
+      </div>
+      <div id="philosophy">
+        <Philosophy />
+      </div>
+      <div id="final-cta">
+        <FinalCTA />
+      </div>
     </div>
   );
 };

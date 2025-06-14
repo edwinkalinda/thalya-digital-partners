@@ -1,8 +1,15 @@
 
 import { ArrowRight, Sparkles } from "lucide-react";
 import StarBorder from "@/components/ui/StarBorder";
+import { useNavigate } from "react-router-dom";
 
 const FinalCTA = () => {
+  const navigate = useNavigate();
+
+  const handleStartOnboarding = () => {
+    navigate('/onboarding');
+  };
+
   return (
     <section className="py-24 px-6 lg:px-8 bg-deep-black text-pure-white relative overflow-hidden">
       {/* Background effects */}
@@ -34,6 +41,7 @@ const FinalCTA = () => {
               color="#0066FF"
               speed="5s"
               className="transition-all duration-300 hover:scale-105"
+              onClick={handleStartOnboarding}
             >
               <div className="flex items-center">
                 Donner Vie à votre IA

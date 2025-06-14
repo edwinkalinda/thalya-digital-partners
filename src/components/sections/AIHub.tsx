@@ -4,14 +4,29 @@ import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
 import TextCycler from "@/components/ui/TextCycler";
 import { Phone, Package, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const AIHub = () => {
+  const navigate = useNavigate();
+  
   const capabilities = [
     "la réception",
     "la gestion de stock", 
     "le marketing",
     "et bien plus encore"
   ];
+
+  const handleConfigureReceptionist = () => {
+    navigate('/onboarding');
+  };
+
+  const handleDiscoverRoadmap = () => {
+    // Pour l'instant, on scroll vers la section final-cta
+    const element = document.getElementById('final-cta');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <section id="ai-hub" className="py-24 px-6 lg:px-8 bg-graphite-50">
@@ -59,7 +74,10 @@ const AIHub = () => {
               </div>
             </div>
             
-            <Button className="bg-electric-blue hover:bg-blue-600 text-pure-white w-full py-3 text-lg font-semibold rounded-xl">
+            <Button 
+              className="bg-electric-blue hover:bg-blue-600 text-pure-white w-full py-3 text-lg font-semibold rounded-xl"
+              onClick={handleConfigureReceptionist}
+            >
               Configurer maintenant
             </Button>
           </div>
@@ -120,7 +138,11 @@ const AIHub = () => {
                 Notre écosystème d'IA s'enrichit constamment de nouvelles spécialisations 
                 pour répondre à tous vos besoins métier.
               </p>
-              <Button variant="outline" className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-pure-white">
+              <Button 
+                variant="outline" 
+                className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-pure-white"
+                onClick={handleDiscoverRoadmap}
+              >
                 Découvrir la roadmap
               </Button>
             </div>
