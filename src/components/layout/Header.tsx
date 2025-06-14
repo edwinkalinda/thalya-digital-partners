@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -42,14 +41,9 @@ const Header = () => {
               </div>
             </div>
             
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-deep-black group-hover:text-electric-blue transition-colors duration-300 tracking-tight">
-                Thalya
-              </span>
-              <span className="text-xs text-graphite-500 font-medium tracking-wider uppercase group-hover:text-emerald-600 transition-colors duration-300">
-                IA Conversationnelle
-              </span>
-            </div>
+            <span className="text-2xl font-bold text-deep-black group-hover:text-electric-blue transition-colors duration-300 tracking-tight">
+              Thalya
+            </span>
           </div>
 
           {/* Navigation */}
