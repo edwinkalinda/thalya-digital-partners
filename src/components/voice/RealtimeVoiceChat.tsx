@@ -40,6 +40,73 @@ export const RealtimeVoiceChat = () => {
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Tests spécifiques pour l'API Google Gemini
+  const geminiTests = [
+    { 
+      name: "Salutation", 
+      message: "Bonjour Clara, dis-moi juste 'Test réussi' pour confirmer que tu fonctionnes bien.",
+      icon: "👋"
+    },
+    { 
+      name: "Calcul Simple", 
+      message: "Calcule 15 + 27 et réponds juste avec le résultat.",
+      icon: "🔢"
+    },
+    { 
+      name: "Date/Heure", 
+      message: "Quelle est la date d'aujourd'hui ?",
+      icon: "📅"
+    },
+    { 
+      name: "Conversation FR", 
+      message: "Réponds en français : Comment te sens-tu aujourd'hui ?",
+      icon: "🇫🇷"
+    },
+    { 
+      name: "Créativité", 
+      message: "Invente une phrase avec les mots : intelligence, robot, futur.",
+      icon: "💡"
+    },
+    { 
+      name: "Logique", 
+      message: "Si tous les chats sont des animaux et que Félix est un chat, que peux-tu dire de Félix ?",
+      icon: "🧠"
+    }
+  ];
+
+  const runGeminiApiTest = (testType: string, message: string) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "❌ Test échoué",
+        description: "Connexion WebSocket fermée",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log(`🧪 Test Gemini: ${testType}`);
+    
+    ws.send(JSON.stringify({
+      type: 'text_message',
+      message: message,
+      test_mode: true
+    }));
+    
+    const testMessage: VoiceMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      text: `[TEST ${testType}] ${message}`,
+      timestamp: Date.now()
+    };
+    
+    setMessages(prev => [...prev, testMessage]);
+    
+    toast({
+      title: `🧪 Test ${testType}`,
+      description: "Test envoyé à Google Gemini Pro",
+    });
+  };
+
   // Formats audio supportés avec détection automatique
   const getSupportedMimeType = useCallback(() => {
     const types = [
@@ -101,7 +168,7 @@ export const RealtimeVoiceChat = () => {
       // Timeout de connexion plus court et plus agressif
       connectionTimeoutRef.current = setTimeout(() => {
         if (websocket.readyState === WebSocket.CONNECTING) {
-          console.error('⏰ Timeout de connexion WebSocket (8s)');
+          console.error('⏰ Timeout de connexion WebSocket (5s)');
           websocket.close();
           setIsConnecting(false);
           setConnectionError('Timeout de connexion - Le serveur ne répond pas');
@@ -114,7 +181,7 @@ export const RealtimeVoiceChat = () => {
             }, 2000);
           }
         }
-      }, 8000);
+      }, 5000); // Timeout réduit à 5 secondes
 
       websocket.onopen = () => {
         if (connectionTimeoutRef.current) {
@@ -495,73 +562,6 @@ export const RealtimeVoiceChat = () => {
     setConnectionError(null);
   };
 
-  // Tests spécifiques pour l'API Google Gemini
-  const runGeminiApiTest = (testType: string, message: string) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      toast({
-        title: "❌ Test échoué",
-        description: "Connexion WebSocket fermée",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    console.log(`🧪 Test Gemini: ${testType}`);
-    
-    ws.send(JSON.stringify({
-      type: 'text_message',
-      message: message,
-      test_mode: true
-    }));
-    
-    const testMessage: VoiceMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      text: `[TEST ${testType}] ${message}`,
-      timestamp: Date.now()
-    };
-    
-    setMessages(prev => [...prev, testMessage]);
-    
-    toast({
-      title: `🧪 Test ${testType}`,
-      description: "Test envoyé à Google Gemini Pro",
-    });
-  };
-
-  const geminiTests = [
-    { 
-      name: "Salutation", 
-      message: "Bonjour Clara, dis-moi juste 'Test réussi' pour confirmer que tu fonctionnes bien.",
-      icon: "👋"
-    },
-    { 
-      name: "Calcul Simple", 
-      message: "Calcule 15 + 27 et réponds juste avec le résultat.",
-      icon: "🔢"
-    },
-    { 
-      name: "Date/Heure", 
-      message: "Quelle est la date d'aujourd'hui ?",
-      icon: "📅"
-    },
-    { 
-      name: "Conversation FR", 
-      message: "Réponds en français : Comment te sens-tu aujourd'hui ?",
-      icon: "🇫🇷"
-    },
-    { 
-      name: "Créativité", 
-      message: "Invente une phrase avec les mots : intelligence, robot, futur.",
-      icon: "💡"
-    },
-    { 
-      name: "Logique", 
-      message: "Si tous les chats sont des animaux et que Félix est un chat, que peux-tu dire de Félix ?",
-      icon: "🧠"
-    }
-  ];
-
   useEffect(() => {
     connectWebSocket();
     
@@ -641,7 +641,7 @@ export const RealtimeVoiceChat = () => {
           </div>
         )}
 
-        {/* Tests API Google Gemini */}
+        {/* Tests API Google Gemini - EN PREMIER */}
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
           <h3 className="font-semibold text-purple-800 mb-3 flex items-center">
             <TestTube className="w-4 h-4 mr-2" />
