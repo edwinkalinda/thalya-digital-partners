@@ -1,13 +1,12 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { useAuth } from "@/hooks/useAuth";
 import Logo from "@/components/layout/header/Logo";
 
 // Types pour les formulaires
@@ -66,80 +65,37 @@ const tabVariants = {
 };
 
 const Login = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [loginError, setLoginError] = useState<string | undefined>();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn, signUp, user, isLoading } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (data: LoginFormData) => {
-    setIsLoading(true);
     setLoginError(undefined);
-
-    try {
-      // Simulation d'appel API avec gestion d'erreurs
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulation d'une erreur pour des emails spécifiques (pour demo)
-          if (data.email === 'error@test.com') {
-            reject(new Error('Email ou mot de passe incorrect'));
-            return;
-          }
-          
-          // Simulation d'une connexion réussie
-          resolve(data);
-        }, 1200);
-      });
-
-      // Gestion du "Remember me"
-      if (data.rememberMe) {
-        localStorage.setItem('thalya_remember_user', data.email);
-      } else {
-        localStorage.removeItem('thalya_remember_user');
-      }
-
-      toast({
-        title: "Connexion réussie",
-        description: `Bienvenue dans votre écosystème Thalya, ${data.email} !`
-      });
-      
+    const { error } = await signIn(data.email, data.password);
+    
+    if (error) {
+      setLoginError(error.message);
+    } else {
       navigate('/dashboard');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue lors de la connexion';
-      setLoginError(errorMessage);
-      
-      toast({
-        title: "Erreur de connexion",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleRegister = async (data: RegisterFormData) => {
-    setIsLoading(true);
+    const [firstName, ...lastNameParts] = data.name.split(' ');
+    const lastName = lastNameParts.join(' ');
     
-    try {
-      // Simulation d'appel API
-      await new Promise((resolve) => {
-        setTimeout(() => resolve(data), 1200);
-      });
-
-      toast({
-        title: "Compte créé avec succès",
-        description: "Votre compte a été créé. Vous pouvez maintenant vous connecter."
-      });
+    const { error } = await signUp(data.email, data.password, firstName, lastName);
+    
+    if (!error) {
       setActiveTab("login");
-    } catch (error) {
-      toast({
-        title: "Erreur lors de la création",
-        description: "Une erreur est survenue lors de la création du compte.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
