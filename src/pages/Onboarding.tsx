@@ -132,20 +132,24 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100 overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100">
       {/* Header */}
       <Header />
       
-      {/* Main Header - improved layout to prevent cropping */}
-      <div className="flex-shrink-0 pt-16 p-4 sm:p-6 border-b border-graphite-200 bg-pure-white/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col gap-4">
-            <div className="flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
-              <p className="text-sm sm:text-base text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
+      {/* Main Header */}
+      <div className="flex-shrink-0 pt-16 px-4 py-6 sm:px-6 border-b border-graphite-200 bg-pure-white/90 backdrop-blur-lg shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col gap-6">
+            <div className="text-center lg:text-left">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-deep-black mb-2">
+                Configuration de votre IA
+              </h1>
+              <p className="text-base sm:text-lg text-graphite-600 max-w-2xl mx-auto lg:mx-0">
+                Créons ensemble votre agent IA personnalisé grâce à notre processus guidé
+              </p>
             </div>
-            <div className="flex-shrink-0 w-full overflow-x-auto">
-              <div className="min-w-max">
+            <div className="flex justify-center lg:justify-start">
+              <div className="bg-pure-white rounded-xl p-4 shadow-lg border border-graphite-200">
                 <ProgressIndicator 
                   steps={onboardingSteps} 
                   currentStep={currentStep} 
@@ -156,12 +160,12 @@ const Onboarding = () => {
         </div>
       </div>
 
-      {/* Main Content - Responsive Layout */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Avatar Section */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 flex-shrink-0">
-          <div className="text-center">
-            <div className="mb-4 sm:mb-6 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 mx-auto">
+        <div className="w-full lg:w-2/5 flex items-center justify-center p-6 lg:p-8 bg-gradient-to-br from-pure-white to-graphite-50">
+          <div className="text-center max-w-md">
+            <div className="mb-6 w-40 h-40 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mx-auto">
               <Orb 
                 hue={240}
                 hoverIntensity={0.3}
@@ -169,53 +173,61 @@ const Onboarding = () => {
                 forceHoverState={isListening}
               />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-deep-black mb-2">
-              IA Chef d'Orchestre
-            </h2>
-            <p className="text-sm sm:text-base text-graphite-600">
-              Je vous guide dans la création de votre IA
-            </p>
+            <div className="space-y-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-deep-black">
+                IA Chef d'Orchestre
+              </h2>
+              <p className="text-sm sm:text-base text-graphite-600 leading-relaxed">
+                Je vous guide dans la création de votre IA personnalisée
+              </p>
+              <div className="inline-flex items-center px-4 py-2 bg-electric-blue/10 text-electric-blue text-sm font-medium rounded-full">
+                Étape {currentStep + 1} sur {onboardingSteps.length}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Chat Section */}
-        <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col min-h-0 flex-1">
+        <div className="w-full lg:w-3/5 border-t lg:border-t-0 lg:border-l border-graphite-200 flex flex-col bg-pure-white">
           <ChatInterface 
             conversation={conversation}
             className="flex-1 min-h-0"
           />
           
-          {/* Input Section */}
-          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-graphite-200 bg-pure-white">
-            <div className="flex gap-2 sm:gap-4 items-end">
-              <div className="flex-1">
-                <Input
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  placeholder="Tapez votre réponse..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="resize-none text-sm sm:text-base"
-                />
+          {/* Input Section - Fixed height to prevent cropping */}
+          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-graphite-200 bg-pure-white shadow-lg">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Input
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Tapez votre réponse..."
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    className="h-12 text-base border-2 border-graphite-200 focus:border-electric-blue transition-colors resize-none rounded-xl"
+                  />
+                </div>
+                <Button
+                  onClick={toggleListening}
+                  variant={isListening ? "destructive" : "outline"}
+                  size="icon"
+                  className="h-12 w-12 rounded-xl border-2 transition-all duration-300"
+                >
+                  {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                </Button>
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!userInput.trim()}
+                  className="h-12 px-6 bg-electric-blue hover:bg-electric-blue/90 rounded-xl transition-all duration-300 shadow-lg"
+                >
+                  <Send className="h-5 w-5 mr-2" />
+                  Envoyer
+                </Button>
               </div>
-              <Button
-                onClick={toggleListening}
-                variant={isListening ? "destructive" : "outline"}
-                size="icon"
-                className="h-10 w-10 flex-shrink-0"
-              >
-                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              <Button
-                onClick={handleSendMessage}
-                disabled={!userInput.trim()}
-                className="h-10 flex-shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              <p className="text-xs text-graphite-500 mt-3 text-center">
+                💡 Conseil : Cliquez sur le micro pour parler ou tapez votre réponse
+              </p>
             </div>
-            <p className="text-xs text-graphite-500 mt-2">
-              Cliquez sur le micro pour parler ou tapez votre réponse
-            </p>
           </div>
         </div>
       </div>
