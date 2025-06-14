@@ -7,24 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Réponses ultra-rapides sans API
-const quickResponses = new Map([
-  ['bonjour', 'Bonjour ! Comment allez-vous ?'],
-  ['hello', 'Hello ! How are you?'],
-  ['salut', 'Salut ! Ça va ?'],
-  ['merci', 'Je vous en prie !'],
-  ['merci beaucoup', 'Avec plaisir !'],
-  ['ok', 'Parfait !'],
-  ['oui', 'Très bien !'],
-  ['non', 'D\'accord, je comprends.'],
-  ['au revoir', 'Au revoir ! À bientôt !'],
-  ['comment ça va', 'Ça va très bien, merci !'],
-  ['ça va', 'Oui, très bien !'],
-  ['test', 'Test réussi ! Tout fonctionne.'],
-  ['aide', 'Je suis là pour vous aider !'],
-  ['help', 'I\'m here to help you!']
-]);
-
 serve(async (req) => {
   const upgrade = req.headers.get("upgrade") || "";
   
@@ -34,83 +16,145 @@ serve(async (req) => {
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
-  console.log("🚀 WebSocket ultra-simple connecté");
+  console.log("🚀 WebSocket connecté pour chat vocal temps réel");
 
-  // Traitement instantané sans STT
-  const processMessage = async (message: string) => {
-    const startTime = Date.now();
-    console.log(`📝 Message reçu: "${message}"`);
+  let openAISocket: WebSocket | null = null;
+  let isConnected = false;
 
-    const normalizedMessage = message.toLowerCase().trim();
-    
-    // Recherche de réponse rapide
-    for (const [key, response] of quickResponses.entries()) {
-      if (normalizedMessage.includes(key)) {
-        const latency = Date.now() - startTime;
-        console.log(`⚡ Réponse instantanée (${latency}ms): ${response}`);
+  // Connexion à l'API OpenAI Realtime
+  const connectToOpenAI = async () => {
+    try {
+      const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+      if (!OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY not configured');
+      }
+
+      console.log("🔌 Connexion à OpenAI Realtime API...");
+      
+      openAISocket = new WebSocket(
+        "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+        [],
+        {
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "OpenAI-Beta": "realtime=v1"
+          }
+        }
+      );
+
+      openAISocket.onopen = () => {
+        console.log("✅ Connecté à OpenAI Realtime API");
+        isConnected = true;
+        
+        // Envoyer la configuration de session
+        const sessionConfig = {
+          type: "session.update",
+          session: {
+            modalities: ["text", "audio"],
+            instructions: "Tu es Clara, une réceptionniste IA française amicale et professionnelle. Réponds de manière naturelle et concise. Tu aides les clients avec leurs questions et tu peux les diriger vers les bonnes personnes.",
+            voice: "alloy",
+            input_audio_format: "pcm16",
+            output_audio_format: "pcm16",
+            input_audio_transcription: {
+              model: "whisper-1"
+            },
+            turn_detection: {
+              type: "server_vad",
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 800
+            },
+            temperature: 0.7,
+            max_response_output_tokens: 300
+          }
+        };
+        
+        openAISocket?.send(JSON.stringify(sessionConfig));
+        console.log("📤 Configuration de session envoyée");
+        
+        // Notifier le client que tout est prêt
+        socket.send(JSON.stringify({
+          type: 'connection_established',
+          message: 'Chat vocal temps réel activé',
+          status: 'ready'
+        }));
+      };
+
+      openAISocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          console.log(`📨 OpenAI Event: ${data.type}`);
+          
+          // Transférer tous les événements au client
+          socket.send(event.data);
+          
+        } catch (error) {
+          console.error('❌ Erreur parsing OpenAI message:', error);
+        }
+      };
+
+      openAISocket.onclose = (event) => {
+        console.log(`🔌 OpenAI WebSocket fermé: ${event.code} ${event.reason}`);
+        isConnected = false;
         
         socket.send(JSON.stringify({
-          type: 'instant_response',
-          response: response,
-          latency: latency,
-          source: 'instant'
+          type: 'error',
+          message: 'Connexion OpenAI fermée'
         }));
-        return;
-      }
-    }
+      };
 
-    // Réponse par défaut si aucune correspondance
-    const defaultResponse = "Je vous écoute attentivement.";
-    const latency = Date.now() - startTime;
-    
-    console.log(`💬 Réponse par défaut (${latency}ms): ${defaultResponse}`);
-    
-    socket.send(JSON.stringify({
-      type: 'instant_response',
-      response: defaultResponse,
-      latency: latency,
-      source: 'default'
-    }));
+      openAISocket.onerror = (error) => {
+        console.error('❌ Erreur OpenAI WebSocket:', error);
+        isConnected = false;
+        
+        socket.send(JSON.stringify({
+          type: 'error',
+          message: 'Erreur connexion OpenAI'
+        }));
+      };
+
+    } catch (error) {
+      console.error('❌ Erreur connexion OpenAI:', error);
+      socket.send(JSON.stringify({
+        type: 'error',
+        message: `Erreur OpenAI: ${error.message}`
+      }));
+    }
   };
 
   socket.onopen = () => {
-    console.log("🎉 WebSocket ultra-simple prêt");
-    
-    socket.send(JSON.stringify({
-      type: 'connection_established',
-      message: 'Système ultra-simple activé',
-      status: 'ready',
-      features: ['Réponses instantanées', 'Zero latence', 'Messages texte uniquement']
-    }));
+    console.log("🎉 Client WebSocket connecté");
+    connectToOpenAI();
   };
 
   socket.onmessage = async (event) => {
     try {
       const data = JSON.parse(event.data);
-      console.log(`📨 Reçu:`, data.type);
+      console.log(`📨 Client Event: ${data.type}`);
       
-      switch (data.type) {
-        case 'text_message':
-          await processMessage(data.message);
-          break;
-          
-        case 'ping':
-          socket.send(JSON.stringify({ 
-            type: 'pong', 
-            timestamp: Date.now(),
-            status: 'healthy'
-          }));
-          break;
-          
-        default:
-          console.log(`⚠️ Type de message non supporté: ${data.type}`);
-          socket.send(JSON.stringify({
-            type: 'error',
-            message: `Type ${data.type} non supporté. Utilisez 'text_message'.`
-          }));
+      if (data.type === 'ping') {
+        socket.send(JSON.stringify({ 
+          type: 'pong', 
+          timestamp: Date.now() 
+        }));
+        return;
       }
+
+      // Transférer tous les messages au serveur OpenAI
+      if (openAISocket && openAISocket.readyState === WebSocket.OPEN) {
+        openAISocket.send(JSON.stringify(data));
+        console.log(`📤 Message transféré à OpenAI: ${data.type}`);
+      } else {
+        console.error('❌ OpenAI WebSocket non connecté');
+        socket.send(JSON.stringify({
+          type: 'error',
+          message: 'OpenAI non connecté'
+        }));
+      }
+      
     } catch (error) {
-      console.error('❌ Erreur parsing message:', error);
+      console.error('❌ Erreur parsing client message:', error);
       socket.send(JSON.stringify({
         type: 'error',
         message: 'Format de message invalide'
@@ -119,11 +163,17 @@ serve(async (req) => {
   };
 
   socket.onclose = () => {
-    console.log("🔌 WebSocket fermé proprement");
+    console.log("🔌 Client WebSocket fermé");
+    if (openAISocket) {
+      openAISocket.close();
+    }
   };
   
   socket.onerror = (error) => {
-    console.error("❌ Erreur WebSocket:", error);
+    console.error("❌ Erreur Client WebSocket:", error);
+    if (openAISocket) {
+      openAISocket.close();
+    }
   };
 
   return response;

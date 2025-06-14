@@ -3,16 +3,171 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, MicOff, MessageSquare, Users, Send } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Mic, MicOff, MessageSquare, Play, Volume2, Loader2 } from "lucide-react";
 
 interface ConversationMessage {
   id: string;
   type: 'user' | 'ai';
   text: string;
   timestamp: number;
-  source?: string;
-  latency?: number;
+  hasAudio?: boolean;
+}
+
+// Classe pour gérer l'enregistrement audio optimisé
+class AudioRecorder {
+  private stream: MediaStream | null = null;
+  private audioContext: AudioContext | null = null;
+  private processor: ScriptProcessorNode | null = null;
+  private source: MediaStreamAudioSourceNode | null = null;
+
+  constructor(private onAudioData: (audioData: Float32Array) => void) {}
+
+  async start() {
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      
+      this.audioContext = new AudioContext({
+        sampleRate: 24000,
+      });
+      
+      this.source = this.audioContext.createMediaStreamSource(this.stream);
+      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+      
+      this.processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        this.onAudioData(new Float32Array(inputData));
+      };
+      
+      this.source.connect(this.processor);
+      this.processor.connect(this.audioContext.destination);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      throw error;
+    }
+  }
+
+  stop() {
+    if (this.source) {
+      this.source.disconnect();
+      this.source = null;
+    }
+    if (this.processor) {
+      this.processor.disconnect();
+      this.processor = null;
+    }
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
+    }
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+  }
+}
+
+// Fonction pour encoder l'audio au format requis par OpenAI
+const encodeAudioForAPI = (float32Array: Float32Array): string => {
+  const int16Array = new Int16Array(float32Array.length);
+  for (let i = 0; i < float32Array.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32Array[i]));
+    int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  
+  const uint8Array = new Uint8Array(int16Array.buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  
+  for (let i = 0; i < uint8Array.length; i += chunkSize) {
+    const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  
+  return btoa(binary);
+};
+
+// Classe pour gérer la lecture audio en continu
+class AudioPlayer {
+  private audioContext: AudioContext | null = null;
+  private audioQueue: AudioBuffer[] = [];
+  private isPlaying = false;
+
+  constructor() {
+    this.audioContext = new AudioContext();
+  }
+
+  async addAudioChunk(base64Audio: string) {
+    if (!this.audioContext) return;
+
+    try {
+      // Décoder l'audio base64
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Créer un buffer audio PCM
+      const audioBuffer = await this.createPCMBuffer(bytes);
+      this.audioQueue.push(audioBuffer);
+
+      if (!this.isPlaying) {
+        this.playNext();
+      }
+    } catch (error) {
+      console.error('Erreur décodage audio:', error);
+    }
+  }
+
+  private async createPCMBuffer(pcmData: Uint8Array): Promise<AudioBuffer> {
+    if (!this.audioContext) throw new Error('AudioContext not initialized');
+
+    const samples = pcmData.length / 2;
+    const audioBuffer = this.audioContext.createBuffer(1, samples, 24000);
+    const channelData = audioBuffer.getChannelData(0);
+
+    for (let i = 0; i < samples; i++) {
+      const sample = (pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
+      channelData[i] = sample < 0x8000 ? sample / 0x8000 : (sample - 0x10000) / 0x8000;
+    }
+
+    return audioBuffer;
+  }
+
+  private playNext() {
+    if (this.audioQueue.length === 0) {
+      this.isPlaying = false;
+      return;
+    }
+
+    this.isPlaying = true;
+    const audioBuffer = this.audioQueue.shift()!;
+    
+    if (!this.audioContext) return;
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.audioContext.destination);
+    
+    source.onended = () => {
+      this.playNext();
+    };
+    
+    source.start(0);
+  }
+
+  stop() {
+    this.audioQueue = [];
+    this.isPlaying = false;
+  }
 }
 
 export const ConversationInterface = () => {
@@ -20,70 +175,137 @@ export const ConversationInterface = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>('');
-  const [averageLatency, setAverageLatency] = useState<number>(0);
-  const [currentMessage, setCurrentMessage] = useState<string>('');
+  const [isAIResponsePlaying, setIsAIResponsePlaying] = useState(false);
   
-  const latencyHistoryRef = useRef<number[]>([]);
+  const audioRecorderRef = useRef<AudioRecorder | null>(null);
+  const audioPlayerRef = useRef<AudioPlayer | null>(null);
 
-  // Calcul latence moyenne
-  const updateLatencyStats = useCallback((latency: number) => {
-    latencyHistoryRef.current.push(latency);
-    if (latencyHistoryRef.current.length > 5) {
-      latencyHistoryRef.current.shift();
-    }
-    const avg = latencyHistoryRef.current.reduce((a, b) => a + b, 0) / latencyHistoryRef.current.length;
-    setAverageLatency(Math.round(avg));
+  useEffect(() => {
+    audioPlayerRef.current = new AudioPlayer();
+    return () => {
+      audioPlayerRef.current?.stop();
+    };
   }, []);
 
   const connectWebSocket = useCallback(() => {
     if (isConnected || isConnecting) return;
     
     setIsConnecting(true);
-    setConnectionStatus('Connexion ultra-simple...');
+    setConnectionStatus('Connexion au chat vocal temps réel...');
     
     try {
       const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
       
       websocket.onopen = () => {
-        console.log('✅ WebSocket connecté - Mode ultra-simple');
+        console.log('✅ WebSocket connecté - Chat vocal temps réel');
         setIsConnected(true);
         setIsConnecting(false);
         setWs(websocket);
-        setConnectionStatus('Système ultra-simple prêt');
+        setConnectionStatus('Chat vocal temps réel prêt');
         
         toast({
-          title: "🚀 Mode ultra-simple activé",
-          description: "Messages texte uniquement, latence minimale",
+          title: "🎙️ Chat vocal activé",
+          description: "Vous pouvez maintenant parler avec Clara",
         });
       };
 
       websocket.onmessage = async (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log(`📨 Event reçu: ${data.type}`);
           
           switch (data.type) {
             case 'connection_established':
-              console.log(`🎊 ${data.message}`);
               setConnectionStatus(data.message);
               break;
               
-            case 'instant_response':
-              console.log(`🤖 Réponse (${data.latency}ms): ${data.response}`);
+            case 'session.created':
+              console.log('🎉 Session OpenAI créée');
+              break;
               
-              if (data.latency) updateLatencyStats(data.latency);
+            case 'session.updated':
+              console.log('⚙️ Session OpenAI configurée');
+              break;
               
-              const aiMessage: ConversationMessage = {
-                id: Date.now().toString() + '_ai',
-                type: 'ai',
-                text: data.response,
-                timestamp: Date.now(),
-                source: data.source,
-                latency: data.latency
+            case 'input_audio_buffer.speech_started':
+              console.log('🎤 Détection de parole');
+              break;
+              
+            case 'input_audio_buffer.speech_stopped':
+              console.log('🛑 Fin de parole détectée');
+              break;
+              
+            case 'conversation.item.input_audio_transcription.completed':
+              console.log(`📝 Transcription: ${data.transcript}`);
+              
+              const userMessage: ConversationMessage = {
+                id: Date.now().toString(),
+                type: 'user',
+                text: data.transcript,
+                timestamp: Date.now()
               };
               
-              setConversation(prev => [...prev, aiMessage]);
+              setConversation(prev => [...prev, userMessage]);
+              break;
+              
+            case 'response.audio_transcript.delta':
+              // Accumuler le texte de la réponse IA
+              setConversation(prev => {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage && lastMessage.type === 'ai' && lastMessage.id.endsWith('_current')) {
+                  return [
+                    ...prev.slice(0, -1),
+                    {
+                      ...lastMessage,
+                      text: lastMessage.text + data.delta
+                    }
+                  ];
+                } else {
+                  return [
+                    ...prev,
+                    {
+                      id: Date.now().toString() + '_current',
+                      type: 'ai' as const,
+                      text: data.delta,
+                      timestamp: Date.now(),
+                      hasAudio: true
+                    }
+                  ];
+                }
+              });
+              break;
+              
+            case 'response.audio_transcript.done':
+              // Finaliser le message AI
+              setConversation(prev => {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage && lastMessage.id.endsWith('_current')) {
+                  return [
+                    ...prev.slice(0, -1),
+                    {
+                      ...lastMessage,
+                      id: Date.now().toString()
+                    }
+                  ];
+                }
+                return prev;
+              });
+              break;
+              
+            case 'response.audio.delta':
+              // Jouer l'audio reçu
+              if (data.delta && audioPlayerRef.current) {
+                setIsAIResponsePlaying(true);
+                await audioPlayerRef.current.addAudioChunk(data.delta);
+              }
+              break;
+              
+            case 'response.audio.done':
+              setIsAIResponsePlaying(false);
+              console.log('🔊 Audio de réponse terminé');
               break;
               
             case 'error':
@@ -96,7 +318,7 @@ export const ConversationInterface = () => {
               break;
               
             case 'pong':
-              console.log('🏓 Pong reçu, connexion active');
+              console.log('🏓 Pong reçu');
               break;
           }
         } catch (error) {
@@ -110,6 +332,12 @@ export const ConversationInterface = () => {
         setIsConnecting(false);
         setWs(null);
         setConnectionStatus('Déconnecté');
+        
+        if (audioRecorderRef.current) {
+          audioRecorderRef.current.stop();
+          audioRecorderRef.current = null;
+          setIsRecording(false);
+        }
       };
 
       websocket.onerror = (error) => {
@@ -123,44 +351,60 @@ export const ConversationInterface = () => {
       setIsConnecting(false);
       setConnectionStatus('Erreur');
     }
-  }, [isConnected, isConnecting, toast, updateLatencyStats]);
+  }, [isConnected, isConnecting, toast]);
 
-  const sendMessage = useCallback((message: string) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || !message.trim()) {
+  const startRecording = async () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "Erreur",
+        description: "WebSocket non connecté",
+        variant: "destructive"
+      });
       return;
     }
 
-    // Ajouter le message utilisateur
-    const userMessage: ConversationMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      text: message.trim(),
-      timestamp: Date.now()
-    };
-    
-    setConversation(prev => [...prev, userMessage]);
+    try {
+      audioRecorderRef.current = new AudioRecorder((audioData) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          const encodedAudio = encodeAudioForAPI(audioData);
+          ws.send(JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: encodedAudio
+          }));
+        }
+      });
 
-    // Envoyer via WebSocket
-    ws.send(JSON.stringify({
-      type: 'text_message',
-      message: message.trim()
-    }));
-
-    setCurrentMessage('');
-  }, [ws]);
-
-  const handleSendClick = () => {
-    sendMessage(currentMessage);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(currentMessage);
+      await audioRecorderRef.current.start();
+      setIsRecording(true);
+      
+      toast({
+        title: "🎤 Enregistrement",
+        description: "Parlez maintenant, l'IA vous écoute",
+      });
+    } catch (error) {
+      console.error('❌ Erreur enregistrement:', error);
+      toast({
+        title: "Erreur microphone",
+        description: "Impossible d'accéder au microphone",
+        variant: "destructive"
+      });
     }
   };
 
-  // Ping périodique pour maintenir la connexion
+  const stopRecording = () => {
+    if (audioRecorderRef.current) {
+      audioRecorderRef.current.stop();
+      audioRecorderRef.current = null;
+      setIsRecording(false);
+      
+      toast({
+        title: "⏹️ Arrêt",
+        description: "Traitement de votre message...",
+      });
+    }
+  };
+
+  // Ping périodique
   useEffect(() => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
@@ -178,6 +422,9 @@ export const ConversationInterface = () => {
       if (ws) {
         ws.close();
       }
+      if (audioRecorderRef.current) {
+        audioRecorderRef.current.stop();
+      }
     };
   }, [ws]);
 
@@ -187,7 +434,7 @@ export const ConversationInterface = () => {
         <CardTitle className="text-3xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
             <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
-            Clara Ultra-Simple
+            Clara - IA Réceptionniste Vocale
           </div>
           <Button onClick={() => setConversation([])} size="sm" variant="ghost">
             Effacer
@@ -204,21 +451,28 @@ export const ConversationInterface = () => {
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <Users className="w-5 h-5 mr-2" />
+              <Volume2 className="w-5 h-5 mr-2" />
               <div>
                 <span className="font-semibold">
                   {connectionStatus}
                 </span>
-                {averageLatency > 0 && (
-                  <p className="text-xs text-gray-600">
-                    Latence moyenne: {averageLatency}ms
+                {isAIResponsePlaying && (
+                  <p className="text-xs text-blue-600 animate-pulse">
+                    🔊 Clara répond...
                   </p>
                 )}
               </div>
             </div>
             {!isConnected && (
               <Button onClick={connectWebSocket} size="sm" disabled={isConnecting}>
-                {isConnecting ? 'Connexion...' : 'Se connecter'}
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Connexion...
+                  </>
+                ) : (
+                  'Se connecter'
+                )}
               </Button>
             )}
           </div>
@@ -229,8 +483,8 @@ export const ConversationInterface = () => {
           {conversation.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">Mode Chat Ultra-Simple</p>
-              <p className="text-sm">Messages texte uniquement - Latence minimale</p>
+              <p className="text-lg">Conversation Vocale avec Clara</p>
+              <p className="text-sm">Appuyez sur le microphone et parlez</p>
             </div>
           ) : (
             conversation.map((message) => (
@@ -249,83 +503,42 @@ export const ConversationInterface = () => {
                     <span className="text-xs font-semibold">
                       {message.type === 'user' ? 'Vous' : 'Clara'}
                     </span>
-                    <div className="text-xs opacity-75">
+                    <div className="text-xs opacity-75 flex items-center">
                       {new Date(message.timestamp).toLocaleTimeString()}
-                      {message.latency && (
-                        <span className={`ml-1 text-xs ${message.latency < 100 ? 'text-green-600' : message.latency < 300 ? 'text-orange-600' : 'text-red-600'}`}>
-                          ({message.latency}ms)
-                        </span>
+                      {message.hasAudio && (
+                        <Play className="w-3 h-3 ml-1" />
                       )}
                     </div>
                   </div>
                   <p className="text-sm">{message.text}</p>
-                  {message.source && (
-                    <p className="text-xs opacity-60 mt-1">
-                      {message.source === 'instant' ? '⚡ Instantané' : 
-                       message.source === 'default' ? '💬 Standard' : 
-                       '🤖 IA'}
-                    </p>
-                  )}
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Zone de saisie */}
+        {/* Contrôles vocaux */}
         {isConnected && (
-          <div className="flex gap-2">
-            <Input
-              value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Tapez votre message..."
-              className="flex-1"
-            />
+          <div className="flex justify-center">
             <Button 
-              onClick={handleSendClick}
-              disabled={!currentMessage.trim()}
-              size="sm"
+              onClick={isRecording ? stopRecording : startRecording}
+              size="lg"
+              className={`px-8 py-4 rounded-full ${isRecording 
+                ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                : 'bg-gradient-to-r from-electric-blue to-purple-600 hover:from-blue-600 hover:to-purple-700'
+              }`}
             >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-
-        {/* Messages rapides */}
-        {isConnected && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={() => sendMessage('Bonjour Clara')}
-              variant="outline"
-              size="sm"
-              className="hover:bg-blue-50"
-            >
-              👋 Bonjour
-            </Button>
-            <Button
-              onClick={() => sendMessage('Comment ça va ?')}
-              variant="outline"
-              size="sm"
-              className="hover:bg-blue-50"
-            >
-              💬 Comment ça va ?
-            </Button>
-            <Button
-              onClick={() => sendMessage('Test')}
-              variant="outline"
-              size="sm"
-              className="hover:bg-blue-50"
-            >
-              🧪 Test
-            </Button>
-            <Button
-              onClick={() => sendMessage('Merci')}
-              variant="outline"
-              size="sm"
-              className="hover:bg-blue-50"
-            >
-              🙏 Merci
+              {isRecording ? (
+                <>
+                  <MicOff className="w-6 h-6 mr-2" />
+                  Arrêter
+                </>
+              ) : (
+                <>
+                  <Mic className="w-6 h-6 mr-2" />
+                  Parler avec Clara
+                </>
+              )}
             </Button>
           </div>
         )}
@@ -334,15 +547,15 @@ export const ConversationInterface = () => {
         <div className="text-center">
           {isConnected ? (
             <p className="text-green-600 font-medium">
-              💬 Système ultra-simple actif - Messages texte uniquement
+              🎙️ Conversation vocale temps réel active
             </p>
           ) : isConnecting ? (
             <p className="text-blue-600 font-medium animate-pulse">
-              🔄 Connexion...
+              🔄 Connexion au système vocal...
             </p>
           ) : (
             <p className="text-gray-500">
-              🔌 Cliquez pour activer le mode ultra-simple
+              🔌 Cliquez pour activer la conversation vocale
             </p>
           )}
         </div>
