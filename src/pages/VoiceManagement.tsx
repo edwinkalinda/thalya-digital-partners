@@ -2,6 +2,7 @@
 import { Phone } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { VoiceTestCard } from "@/components/voice/VoiceTestCard";
+import { RealtimeVoiceChat } from "@/components/voice/RealtimeVoiceChat";
 import { TwilioConfigCard } from "@/components/voice/TwilioConfigCard";
 import { VoiceCallTestCard } from "@/components/voice/VoiceCallTestCard";
 import { SystemStatusCard } from "@/components/voice/SystemStatusCard";
@@ -22,9 +23,12 @@ const VoiceManagement = () => {
               </h1>
             </div>
             <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-              Testez et configurez votre agent IA réceptionniste vocal avec ElevenLabs
+              Testez et configurez votre agent IA réceptionniste vocal avec optimisations ultra-avancées
             </p>
           </div>
+
+          {/* Chat Vocal Temps Réel Ultra-Optimisé */}
+          <RealtimeVoiceChat />
 
           {/* Voice Testing */}
           <VoiceTestCard />

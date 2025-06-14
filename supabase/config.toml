@@ -15,3 +15,6 @@ verify_jwt = true
 
 [functions.ai-response-generator]
 verify_jwt = true
+
+[functions.realtime-voice-chat]
+verify_jwt = false
