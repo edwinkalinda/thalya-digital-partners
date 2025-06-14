@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,10 +31,12 @@ export const RealtimeVoiceChat = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [aiEngine, setAiEngine] = useState<string>('');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const connectionAttempts = useRef(0);
 
   // Formats audio supportés avec détection automatique
   const getSupportedMimeType = useCallback(() => {
@@ -58,135 +59,180 @@ export const RealtimeVoiceChat = () => {
     return '';
   }, []);
 
-  // Connexion WebSocket optimisée pour Gemini
+  // Connexion WebSocket optimisée avec gestion d'erreurs améliorée
   const connectWebSocket = useCallback(() => {
-    if (isConnecting || isConnected) return;
+    if (isConnecting || (isConnected && ws?.readyState === WebSocket.OPEN)) {
+      console.log('⚠️ Connexion déjà en cours ou établie');
+      return;
+    }
     
     setIsConnecting(true);
-    console.log('🔌 Connexion au chat vocal Gemini...');
+    setConnectionError(null);
+    connectionAttempts.current += 1;
     
-    const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
+    console.log(`🔌 Tentative de connexion ${connectionAttempts.current} au chat vocal Gemini...`);
     
-    websocket.onopen = () => {
-      console.log('✅ WebSocket connecté avec succès');
-      setIsConnected(true);
-      setIsConnecting(false);
-      setWs(websocket);
+    try {
+      const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
       
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-      
-      toast({
-        title: "🧠 Chat Vocal Gemini Pro",
-        description: "Connexion établie avec Google Gemini",
-      });
-    };
-
-    websocket.onmessage = async (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        switch (data.type) {
-          case 'connection_status':
-            console.log('🎉 Statut:', data.message);
-            if (data.engine) {
-              setAiEngine(data.engine);
-            }
-            break;
-            
-          case 'transcription':
-            console.log(`📝 Transcription: ${data.text} (${data.latency}ms)`);
-            
-            const userMessage: VoiceMessage = {
-              id: Date.now().toString(),
-              type: 'user',
-              text: data.text,
-              latency: data.latency,
-              timestamp: Date.now()
-            };
-            
-            setMessages(prev => [...prev, userMessage]);
-            break;
-            
-          case 'audio_response':
-            console.log(`🤖 Réponse IA: ${data.response} (${data.latency}ms)`);
-            
-            const aiMessage: VoiceMessage = {
-              id: Date.now().toString() + '_ai',
-              type: 'ai',
-              text: data.response,
-              audioData: data.audioData,
-              latency: data.latency,
-              timestamp: Date.now()
-            };
-            
-            setMessages(prev => [...prev, aiMessage]);
-            
-            if (data.breakdown) {
-              setLatencyStats({
-                ai: data.breakdown.ai,
-                tts: data.breakdown.tts,
-                stt: data.breakdown.stt,
-                total: data.latency
-              });
-            }
-            
-            if (data.audioData) {
-              await playAudioStreaming(data.audioData, aiMessage.id);
-            }
-            break;
-            
-          case 'error':
-            console.error('❌ Erreur:', data.message);
-            toast({
-              title: "Erreur",
-              description: data.message,
-              variant: "destructive"
-            });
-            break;
-            
-          case 'pong':
-            console.log('🏓 Pong reçu depuis', data.engine || 'serveur');
-            break;
+      // Timeout de connexion
+      const connectionTimeout = setTimeout(() => {
+        if (websocket.readyState === WebSocket.CONNECTING) {
+          console.error('⏰ Timeout de connexion WebSocket');
+          websocket.close();
+          setIsConnecting(false);
+          setConnectionError('Timeout de connexion - Vérifiez votre connexion');
         }
-      } catch (error) {
-        console.error('❌ Erreur parsing message:', error);
-      }
-    };
+      }, 10000);
 
-    websocket.onclose = (event) => {
-      console.log('🔌 WebSocket fermé:', event.code, event.reason);
-      setIsConnected(false);
-      setIsConnecting(false);
-      setWs(null);
-      
-      if (event.code !== 1000) {
+      websocket.onopen = () => {
+        clearTimeout(connectionTimeout);
+        console.log('✅ WebSocket connecté avec succès');
+        setIsConnected(true);
+        setIsConnecting(false);
+        setConnectionError(null);
+        setWs(websocket);
+        connectionAttempts.current = 0;
+        
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+        
+        // Test de ping immédiat pour vérifier la connexion
+        websocket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+        
         toast({
-          title: "Connexion fermée",
-          description: "Reconnexion automatique...",
+          title: "🧠 Chat Vocal Gemini Pro",
+          description: "Connexion établie avec Google Gemini",
+        });
+      };
+
+      websocket.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log(`📨 Event reçu: ${data.type}`);
+          
+          switch (data.type) {
+            case 'connection_status':
+              console.log('🎉 Statut:', data.message);
+              if (data.engine) {
+                setAiEngine(data.engine);
+              }
+              break;
+              
+            case 'transcription':
+              console.log(`📝 Transcription: ${data.text} (${data.latency}ms)`);
+              
+              const userMessage: VoiceMessage = {
+                id: Date.now().toString(),
+                type: 'user',
+                text: data.text,
+                latency: data.latency,
+                timestamp: Date.now()
+              };
+              
+              setMessages(prev => [...prev, userMessage]);
+              break;
+              
+            case 'audio_response':
+              console.log(`🤖 Réponse IA: ${data.response} (${data.latency}ms)`);
+              
+              const aiMessage: VoiceMessage = {
+                id: Date.now().toString() + '_ai',
+                type: 'ai',
+                text: data.response,
+                audioData: data.audioData,
+                latency: data.latency,
+                timestamp: Date.now()
+              };
+              
+              setMessages(prev => [...prev, aiMessage]);
+              
+              if (data.breakdown) {
+                setLatencyStats({
+                  ai: data.breakdown.ai,
+                  tts: data.breakdown.tts,
+                  stt: data.breakdown.stt,
+                  total: data.latency
+                });
+              }
+              
+              if (data.audioData) {
+                await playAudioStreaming(data.audioData, aiMessage.id);
+              }
+              break;
+              
+            case 'error':
+              console.error('❌ Erreur serveur:', data.message);
+              setConnectionError(data.message);
+              toast({
+                title: "Erreur",
+                description: data.message,
+                variant: "destructive"
+              });
+              break;
+              
+            case 'pong':
+              console.log('🏓 Pong reçu:', {
+                engine: data.engine || 'serveur',
+                timestamp: data.timestamp,
+                connected: data.connected
+              });
+              break;
+
+            default:
+              console.log(`⚠️ Type de message non reconnu: ${data.type}`);
+          }
+        } catch (error) {
+          console.error('❌ Erreur parsing message:', error);
+          setConnectionError('Erreur de communication avec le serveur');
+        }
+      };
+
+      websocket.onclose = (event) => {
+        clearTimeout(connectionTimeout);
+        console.log('🔌 WebSocket fermé:', event.code, event.reason);
+        setIsConnected(false);
+        setIsConnecting(false);
+        setWs(null);
+        
+        if (event.code !== 1000 && connectionAttempts.current < 5) {
+          const retryDelay = Math.min(3000 * connectionAttempts.current, 15000);
+          setConnectionError(`Connexion fermée - Reconnexion dans ${retryDelay/1000}s...`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log(`🔄 Tentative de reconnexion ${connectionAttempts.current + 1}...`);
+            connectWebSocket();
+          }, retryDelay);
+        } else if (connectionAttempts.current >= 5) {
+          setConnectionError('Impossible de se connecter après 5 tentatives');
+          toast({
+            title: "Connexion échouée",
+            description: "Impossible de se connecter au serveur",
+            variant: "destructive"
+          });
+        }
+      };
+
+      websocket.onerror = (error) => {
+        clearTimeout(connectionTimeout);
+        console.error('❌ Erreur WebSocket:', error);
+        setIsConnecting(false);
+        setConnectionError('Erreur de connexion WebSocket');
+        toast({
+          title: "Erreur de connexion",
+          description: "Vérifiez votre connexion internet",
           variant: "destructive"
         });
-        
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('🔄 Tentative de reconnexion...');
-          connectWebSocket();
-        }, 3000);
-      }
-    };
+      };
 
-    websocket.onerror = (error) => {
-      console.error('❌ Erreur WebSocket:', error);
+    } catch (error) {
       setIsConnecting(false);
-      toast({
-        title: "Erreur de connexion",
-        description: "Vérifiez votre connexion internet",
-        variant: "destructive"
-      });
-    };
-
-  }, [isConnecting, isConnected, toast]);
+      setConnectionError('Erreur lors de la création de la connexion');
+      console.error('❌ Erreur création WebSocket:', error);
+    }
+  }, [isConnecting, isConnected, ws, toast]);
 
   // Lecture audio optimisée
   const playAudioStreaming = async (base64Audio: string, messageId: string) => {
@@ -226,6 +272,15 @@ export const RealtimeVoiceChat = () => {
 
   // Enregistrement audio
   const startRecording = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Non connecté",
+        description: "Connectez-vous d'abord au serveur",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -272,6 +327,12 @@ export const RealtimeVoiceChat = () => {
               type: 'audio_message',
               audio: base64Audio
             }));
+          } else {
+            toast({
+              title: "Connexion fermée",
+              description: "Reconnexion nécessaire",
+              variant: "destructive"
+            });
           }
         };
         
@@ -291,7 +352,7 @@ export const RealtimeVoiceChat = () => {
       console.error('❌ Erreur enregistrement:', error);
       toast({
         title: "Erreur microphone",
-        description: "Vérifiez les permissions",
+        description: "Vérifiez les permissions microphone",
         variant: "destructive"
       });
     }
@@ -309,7 +370,16 @@ export const RealtimeVoiceChat = () => {
   };
 
   const sendTextMessage = () => {
-    if (!textInput.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!textInput.trim()) return;
+    
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "Non connecté",
+        description: "Connectez-vous d'abord au serveur",
+        variant: "destructive"
+      });
+      return;
+    }
     
     ws.send(JSON.stringify({
       type: 'text_message',
@@ -328,7 +398,14 @@ export const RealtimeVoiceChat = () => {
   };
 
   const sendQuickTest = (message: string) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "Non connecté",
+        description: "Connectez-vous d'abord au serveur",
+        variant: "destructive"
+      });
+      return;
+    }
     
     ws.send(JSON.stringify({
       type: 'text_message',
@@ -389,16 +466,36 @@ export const RealtimeVoiceChat = () => {
             )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={sendPing} disabled={!isConnected} size="sm" variant="ghost">
+            <Button onClick={() => ws?.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))} disabled={!isConnected} size="sm" variant="ghost">
               Ping
             </Button>
-            <Button onClick={clearMessages} size="sm" variant="ghost">
+            <Button onClick={() => { setMessages([]); setLatencyStats(null); }} size="sm" variant="ghost">
               Clear
             </Button>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Affichage des erreurs */}
+        {connectionError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <Wifi className="w-4 h-4 mr-2 text-red-500" />
+              <span className="text-red-800 font-medium">Erreur de connexion:</span>
+            </div>
+            <p className="text-red-700 mt-1">{connectionError}</p>
+            <Button 
+              onClick={connectWebSocket}
+              disabled={isConnecting}
+              size="sm"
+              className="mt-2"
+              variant="outline"
+            >
+              {isConnecting ? 'Reconnexion...' : 'Réessayer'}
+            </Button>
+          </div>
+        )}
+
         {/* Statistiques de latence */}
         {latencyStats && (
           <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
@@ -588,18 +685,23 @@ export const RealtimeVoiceChat = () => {
           ))}
         </div>
 
-        {/* Statut */}
+        {/* Statut amélioré */}
         <div className="text-center text-sm">
           {!isConnected && !isConnecting && (
-            <p className="text-red-600 flex items-center justify-center">
-              <Wifi className="w-4 h-4 mr-2" />
-              ❌ Déconnecté - Cliquez "Reconnecter"
-            </p>
+            <div className="space-y-2">
+              <p className="text-red-600 flex items-center justify-center">
+                <Wifi className="w-4 h-4 mr-2" />
+                ❌ Déconnecté
+              </p>
+              <Button onClick={connectWebSocket} size="sm" variant="outline">
+                Se connecter
+              </Button>
+            </div>
           )}
           {isConnecting && (
             <p className="text-blue-600 flex items-center justify-center animate-pulse">
               <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              🔌 Connexion en cours...
+              🔌 Configuration de la session...
             </p>
           )}
           {isConnected && !isRecording && (
