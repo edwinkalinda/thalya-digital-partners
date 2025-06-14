@@ -127,24 +127,48 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
           </Link>
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full h-11 sm:h-12 bg-gradient-to-r from-electric-blue to-blue-600 hover:from-blue-600 hover:to-electric-blue text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100" 
-          disabled={isLoading}
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          {isLoading ? (
-            <div className="flex items-center">
-              <motion.div 
-                className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full mr-2"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-              Connexion en cours...
+          <Button 
+            type="submit" 
+            className="w-full h-12 sm:h-14 relative overflow-hidden bg-gradient-to-r from-electric-blue via-blue-600 to-electric-blue text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
+            disabled={isLoading}
+          >
+            {/* Animated background overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-electric-blue to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            
+            {/* Button content */}
+            <div className="relative z-10 flex items-center justify-center">
+              {isLoading ? (
+                <div className="flex items-center">
+                  <motion.div 
+                    className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-3"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                  <span className="text-white/90">Connexion en cours...</span>
+                </div>
+              ) : (
+                <span className="flex items-center">
+                  Se connecter
+                  <motion.div
+                    className="ml-2"
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    →
+                  </motion.div>
+                </span>
+              )}
             </div>
-          ) : (
-            "Se connecter"
-          )}
-        </Button>
+          </Button>
+        </motion.div>
       </form>
     </Form>
   );
