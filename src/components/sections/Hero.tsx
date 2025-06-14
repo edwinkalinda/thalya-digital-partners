@@ -1,8 +1,11 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import AvatarAnimation from "../ui/AvatarAnimation";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="min-h-screen flex items-center justify-center px-6 lg:px-8 relative overflow-hidden">
       {/* Background gradient */}
@@ -33,10 +36,7 @@ const Hero = () => {
             <Button 
               size="lg" 
               className="bg-electric-blue hover:bg-blue-600 text-pure-white px-12 py-6 text-xl font-semibold rounded-2xl transition-all duration-300 hover:scale-105 animate-glow"
-              onClick={() => {
-                // Scroll to AI Hub section or trigger onboarding
-                document.getElementById('ai-hub')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => navigate('/onboarding')}
             >
               Donner Vie à votre IA
             </Button>
