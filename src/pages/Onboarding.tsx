@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +86,7 @@ const Onboarding = () => {
       <Header />
       
       {/* Main Header */}
-      <div className="pt-16 p-4 lg:p-6 border-b border-graphite-200 flex-shrink-0">
+      <div className="pt-20 p-4 lg:p-6 border-b border-graphite-200 flex-shrink-0">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="min-w-0 flex-1">
