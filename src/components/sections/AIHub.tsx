@@ -1,4 +1,5 @@
 
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
@@ -32,11 +33,12 @@ const AIHub = () => {
     <section id="ai-hub" className="py-24 px-6 lg:px-8 bg-graphite-50">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-5xl md:text-6xl font-bold mb-6">
+          <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
             <TextRotate text="Un agent pour " className="inline" />
+            <br className="block md:hidden" />
             <TextCycler
               texts={capabilities}
-              className="text-4xl sm:text-5xl md:text-6xl font-bold text-gradient inline-block"
+              className="text-4xl sm:text-5xl md:text-6xl font-bold text-gradient inline-block min-h-[1.2em]"
               interval={2500}
               splitBy="characters"
               staggerDuration={30}
@@ -158,3 +160,4 @@ const AIHub = () => {
 };
 
 export default AIHub;
+
