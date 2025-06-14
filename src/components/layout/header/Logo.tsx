@@ -24,7 +24,8 @@ const Logo = () => {
     loadLogo();
   }, []);
 
-  const handleLogoClick = () => {
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     navigate('/');
     if (isHomePage) {
       window.scrollTo({

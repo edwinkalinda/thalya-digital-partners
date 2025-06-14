@@ -31,6 +31,7 @@ const Header = () => {
                 size="icon" 
                 onClick={handleBack} 
                 className="mr-2 sm:mr-4 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300"
+                aria-label="Retour"
               >
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>

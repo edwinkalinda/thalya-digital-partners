@@ -20,6 +20,8 @@ const MobileMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
+    setIsOpen(false);
+    
     if (!isHomePage) {
       navigate('/');
       setTimeout(() => {
@@ -38,7 +40,16 @@ const MobileMenu = () => {
         });
       }
     }
+  };
+
+  const handleLoginClick = () => {
     setIsOpen(false);
+    navigate('/login');
+  };
+
+  const handleDemoClick = () => {
+    setIsOpen(false);
+    navigate('/onboarding');
   };
 
   return (
@@ -76,22 +87,17 @@ const MobileMenu = () => {
             <div className="flex flex-col space-y-4 pt-4 border-t border-graphite-200">
               <h3 className="text-sm font-semibold text-graphite-500 uppercase tracking-wide">Actions</h3>
               
-              <button
-                onClick={() => {
-                  navigate('/login');
-                  setIsOpen(false);
-                }}
-                className="flex items-center gap-3 py-3 px-4 rounded-lg text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue transition-all duration-300 border border-graphite-300 hover:border-electric-blue/50"
+              <Button
+                onClick={handleLoginClick}
+                variant="outline"
+                className="flex items-center gap-3 py-3 px-4 rounded-lg text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue transition-all duration-300 border border-graphite-300 hover:border-electric-blue/50 justify-start"
               >
                 <LogIn className="h-4 w-4" />
                 <span>Connexion</span>
-              </button>
+              </Button>
               
               <div
-                onClick={() => {
-                  navigate('/onboarding');
-                  setIsOpen(false);
-                }}
+                onClick={handleDemoClick}
                 className="cursor-pointer"
               >
                 <StarBorder color="#0066FF" speed="4s" className="w-full">

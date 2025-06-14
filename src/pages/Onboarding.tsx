@@ -131,6 +131,13 @@ const Onboarding = () => {
     // Here we would integrate with speech recognition API
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100">
       {/* Header */}
@@ -203,7 +210,7 @@ const Onboarding = () => {
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     placeholder="Tapez votre réponse..."
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onKeyDown={handleKeyPress}
                     className="h-12 text-base border-2 border-graphite-200 focus:border-electric-blue transition-colors resize-none rounded-xl"
                   />
                 </div>
