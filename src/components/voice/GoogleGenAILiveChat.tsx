@@ -18,14 +18,18 @@ export const GoogleGenAILiveChat = () => {
     stopRecording,
     connect,
     disconnect,
-    clearMessages
+    clearMessages,
+    sendTextMessage
   } = useGoogleGenAILive();
 
-  const handleSendText = () => {
+  const handleSendText = async () => {
     if (textInput.trim() && isConnected) {
-      // Cette fonctionnalité nécessiterait l'implémentation complète de l'API Gemini Live
-      console.log('Sending text to Gemini:', textInput);
-      setTextInput('');
+      try {
+        await sendTextMessage(textInput);
+        setTextInput('');
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
     }
   };
 
@@ -83,36 +87,36 @@ export const GoogleGenAILiveChat = () => {
             </p>
             {error && (
               <div className="mt-2 text-xs text-red-600">
-                <p>• Vérifiez que VITE_GOOGLE_GENAI_API_KEY est configurée</p>
-                <p>• Assurez-vous d'avoir accès à l'API Gemini 2.0 Flash</p>
+                <p>• Vérifiez que la clé API Google GenAI est configurée dans Supabase</p>
+                <p>• Assurez-vous d'avoir accès à l'API Gemini</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Informations sur Gemini 2.0 Flash Live */}
+        {/* Informations sur Gemini via Supabase */}
         <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6">
           <div className="text-center mb-4">
             <h3 className="text-lg font-bold text-purple-800">
-              🚀 Google Gemini 2.0 Flash Live
+              🚀 Google Gemini via Supabase
             </h3>
             <p className="text-sm text-purple-600">
-              Audio natif temps réel avec Google GenAI
+              Chat sécurisé avec Google GenAI via edge function
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="text-center p-3 bg-white/50 rounded-lg">
-              <p className="font-semibold text-purple-800">🎤 Audio Direct</p>
-              <p className="text-purple-600">Pas de transcription intermédiaire</p>
+              <p className="font-semibold text-purple-800">🔒 Sécurisé</p>
+              <p className="text-purple-600">Clé API côté serveur</p>
             </div>
             <div className="text-center p-3 bg-white/50 rounded-lg">
-              <p className="font-semibold text-blue-800">⚡ Ultra Rapide</p>
-              <p className="text-blue-600">Latence minimale native</p>
+              <p className="font-semibold text-blue-800">💬 Chat Intelligent</p>
+              <p className="text-blue-600">Gemini 1.5 Flash</p>
             </div>
             <div className="text-center p-3 bg-white/50 rounded-lg">
-              <p className="font-semibold text-green-800">🧠 Multimodal</p>
-              <p className="text-green-600">Audio + Texte simultané</p>
+              <p className="font-semibold text-green-800">⚡ Edge Function</p>
+              <p className="text-green-600">Traitement rapide</p>
             </div>
           </div>
         </div>
@@ -155,7 +159,7 @@ export const GoogleGenAILiveChat = () => {
             ) : (
               <>
                 <Mic className="w-4 h-4 mr-2" />
-                Parler à Clara (Live)
+                Parler à Clara (Audio)
               </>
             )}
           </Button>
@@ -194,9 +198,9 @@ export const GoogleGenAILiveChat = () => {
 
         {/* Note de développement */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-sm text-amber-800 font-medium">🚧 En développement :</p>
+          <p className="text-sm text-amber-800 font-medium">🔧 Implémentation actuelle :</p>
           <p className="text-xs text-amber-700 mt-1">
-            Cette interface utilise l'API Google GenAI native. L'implémentation complète du streaming audio bidirectionnel nécessite l'accès à l'API Gemini 2.0 Flash Live qui est actuellement en version expérimentale.
+            Cette interface utilise une edge function Supabase pour communiquer de manière sécurisée avec l'API Google GenAI. Le chat texte fonctionne, l'audio sera ajouté dans une prochaine version.
           </p>
         </div>
       </CardContent>

@@ -1,8 +1,8 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { useToast } from "@/hooks/use-toast";
 import { createBlob, decode, decodeAudioData, floatTo16BitPCM } from '@/utils/audioUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LiveAudioMessage {
   id: string;
@@ -22,6 +22,7 @@ interface UseGoogleGenAILiveReturn {
   connect: () => Promise<void>;
   disconnect: () => void;
   clearMessages: () => void;
+  sendTextMessage: (text: string) => Promise<void>;
 }
 
 export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
@@ -37,10 +38,6 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const inputNodeRef = useRef<GainNode | null>(null);
   const outputNodeRef = useRef<GainNode | null>(null);
-  
-  // GenAI
-  const clientRef = useRef<GoogleGenerativeAI | null>(null);
-  const modelRef = useRef<any | null>(null);
   
   // Audio processing
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -65,32 +62,67 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
     }
   }, []);
 
+  const sendTextMessage = useCallback(async (text: string) => {
+    if (!isConnected) {
+      throw new Error('Not connected to GenAI');
+    }
+
+    try {
+      // Ajouter le message utilisateur
+      const userMessage: LiveAudioMessage = {
+        id: Date.now().toString(),
+        type: 'user',
+        text,
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, userMessage]);
+
+      // Appeler l'edge function
+      const { data, error } = await supabase.functions.invoke('google-genai-chat', {
+        body: { message: text }
+      });
+
+      if (error) throw error;
+
+      // Ajouter la réponse de l'IA
+      const aiMessage: LiveAudioMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        text: data.response,
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+
+    } catch (err: any) {
+      console.error('Error sending message:', err);
+      setError(err.message);
+      toast({
+        title: "Erreur de message",
+        description: err.message,
+        variant: "destructive"
+      });
+    }
+  }, [isConnected, toast]);
+
   const connect = useCallback(async () => {
     try {
       setStatus('Connecting...');
       setError('');
       
-      // Récupérer la clé API depuis les variables d'environnement ou demander à l'utilisateur
-      const apiKey = import.meta.env.VITE_GOOGLE_GENAI_API_KEY;
-      if (!apiKey) {
-        throw new Error('VITE_GOOGLE_GENAI_API_KEY is required');
-      }
-
-      clientRef.current = new GoogleGenerativeAI(apiKey);
-      
-      // Utiliser l'API standard de Google GenerativeAI
-      modelRef.current = clientRef.current.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        systemInstruction: "Tu es Clara, une assistante vocale française amicale et professionnelle. Réponds de manière naturelle et conversationnelle en français."
+      // Test de connexion avec l'edge function
+      const { data, error } = await supabase.functions.invoke('google-genai-chat', {
+        body: { message: 'Test de connexion' }
       });
+
+      if (error) throw error;
 
       initializeAudioContexts();
       setIsConnected(true);
-      setStatus('Connected to Gemini 1.5 Flash');
+      setStatus('Connected to Gemini via Supabase');
       
       toast({
         title: "🤖 Gemini Live",
-        description: "Clara est connectée avec Gemini 1.5 Flash!",
+        description: "Clara est connectée via Supabase!",
       });
 
     } catch (err: any) {
@@ -136,7 +168,7 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
       scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
       
       scriptProcessorRef.current.onaudioprocess = (event) => {
-        if (modelRef.current && isRecording) {
+        if (isRecording) {
           const inputBuffer = event.inputBuffer;
           const inputData = inputBuffer.getChannelData(0);
           
@@ -190,10 +222,6 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
   const disconnect = useCallback(() => {
     stopRecording();
     
-    if (modelRef.current) {
-      modelRef.current = null;
-    }
-    
     if (inputAudioContextRef.current) {
       inputAudioContextRef.current.close();
       inputAudioContextRef.current = null;
@@ -235,6 +263,7 @@ export const useGoogleGenAILive = (): UseGoogleGenAILiveReturn => {
     stopRecording,
     connect,
     disconnect,
-    clearMessages
+    clearMessages,
+    sendTextMessage
   };
 };
