@@ -55,6 +55,61 @@ const instantResponsesWithAudio = new Map([
   }]
 ]);
 
+// Génération TTS ultra-optimisée
+const generateTTSAudio = async (text: string): Promise<string | null> => {
+  try {
+    console.log(`🎤 Generating TTS for: "${text.substring(0, 50)}..."`);
+    const startTime = Date.now();
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pFZP5JQG7iQjIQuC4Bku/stream`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY'),
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: {
+          stability: 0.35,
+          similarity_boost: 0.75,
+          style: 0.0,
+          use_speaker_boost: false
+        },
+        optimize_streaming_latency: 4,
+        output_format: "mp3_22050_32"
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('❌ ElevenLabs TTS error:', await response.text());
+      return null;
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(audioBuffer);
+    
+    // Conversion base64 optimisée par chunks
+    const CHUNK_SIZE = 0x8000;
+    let binaryString = '';
+    
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+      const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    const base64Audio = btoa(binaryString);
+    const latency = Date.now() - startTime;
+    console.log(`✅ TTS generated in ${latency}ms`);
+    
+    return base64Audio;
+  } catch (error) {
+    console.error('❌ Error generating TTS audio:', error);
+    return null;
+  }
+};
+
 // Pré-génération de l'audio au démarrage pour les réponses instantanées
 const preGenerateInstantAudio = async () => {
   console.log('🚀 Pre-generating audio for instant responses...');
@@ -97,61 +152,6 @@ serve(async (req) => {
       if (now - value.timestamp > CACHE_TTL) {
         preGeneratedCache.delete(key);
       }
-    }
-  };
-
-  // Génération TTS ultra-optimisée
-  const generateTTSAudio = async (text: string): Promise<string | null> => {
-    try {
-      console.log(`🎤 Generating TTS for: "${text.substring(0, 50)}..."`);
-      const startTime = Date.now();
-
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pFZP5JQG7iQjIQuC4Bku/stream`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': Deno.env.get('ELEVENLABS_API_KEY'),
-        },
-        body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_turbo_v2_5',
-          voice_settings: {
-            stability: 0.35,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: false
-          },
-          optimize_streaming_latency: 4,
-          output_format: "mp3_22050_32"
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('❌ ElevenLabs TTS error:', await response.text());
-        return null;
-      }
-
-      const audioBuffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(audioBuffer);
-      
-      // Conversion base64 optimisée par chunks
-      const CHUNK_SIZE = 0x8000;
-      let binaryString = '';
-      
-      for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-        const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
-        binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-      }
-      
-      const base64Audio = btoa(binaryString);
-      const latency = Date.now() - startTime;
-      console.log(`✅ TTS generated in ${latency}ms`);
-      
-      return base64Audio;
-    } catch (error) {
-      console.error('❌ Error generating TTS audio:', error);
-      return null;
     }
   };
 
