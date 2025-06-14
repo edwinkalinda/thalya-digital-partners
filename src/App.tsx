@@ -11,6 +11,7 @@ import OnboardingSuccess from "./pages/OnboardingSuccess";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import AIConfig from "./pages/AIConfig";
+import VoiceManagement from "./pages/VoiceManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
