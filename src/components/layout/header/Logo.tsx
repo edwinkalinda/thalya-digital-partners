@@ -37,17 +37,17 @@ const Logo = () => {
   return (
     <div className="flex items-center group cursor-pointer" onClick={handleLogoClick}>
       <div className="relative">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 relative transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 relative transition-all duration-300 group-hover:scale-110 group-hover:rotate-12">
           {logoImageData ? (
             <MetallicPaint 
               imageData={logoImageData}
               params={{
-                patternScale: 1.2,
-                refraction: 0.08,
-                edge: 0.4,
-                patternBlur: 0.002,
-                liquid: 0.3,
-                speed: 1.0,
+                patternScale: 1.8,
+                refraction: 0.12,
+                edge: 0.6,
+                patternBlur: 0.003,
+                liquid: 0.4,
+                speed: 1.2,
               }}
             />
           ) : (
@@ -64,12 +64,12 @@ const Logo = () => {
           <span className="text-xl font-black text-graphite-800 tracking-wider">THALYA</span>
         </div>
         
-        {/* Halo lumineux amélioré */}
-        <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-electric-blue/30 via-purple-500/30 to-emerald-500/30 rounded-lg blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+        {/* Halo lumineux amélioré avec les couleurs du logo */}
+        <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500/40 via-purple-500/40 to-violet-500/40 rounded-lg blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
         
-        {/* Particules brillantes animées */}
-        <div className="absolute -top-1 -right-1 w-2 h-2 bg-electric-blue rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300"></div>
-        <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-emerald-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300 delay-100"></div>
+        {/* Particules brillantes animées avec les couleurs du logo */}
+        <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300"></div>
+        <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-violet-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300 delay-100"></div>
         <div className="absolute top-1 left-1 w-1 h-1 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-300 delay-200"></div>
       </div>
     </div>
