@@ -7,13 +7,19 @@ import ChatInterface from '../components/onboarding/ChatInterface';
 import ProgressIndicator from '../components/onboarding/ProgressIndicator';
 import { Mic, MicOff, Send } from 'lucide-react';
 
+interface Message {
+  role: 'user' | 'ai';
+  message: string;
+  timestamp: number;
+}
+
 const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [userInput, setUserInput] = useState('');
-  const [conversation, setConversation] = useState([
+  const [conversation, setConversation] = useState<Message[]>([
     {
-      role: 'ai',
+      role: 'ai' as const,
       message: "Bonjour ! Je suis l'IA Chef d'Orchestre de Thalya. Je vais vous aider à créer votre agent IA personnalisé. Commençons par une question simple : quel nom souhaitez-vous donner à votre IA réceptionniste ?",
       timestamp: Date.now()
     }
@@ -31,8 +37,8 @@ const Onboarding = () => {
     if (!userInput.trim()) return;
 
     // Add user message
-    const newUserMessage = {
-      role: 'user',
+    const newUserMessage: Message = {
+      role: 'user' as const,
       message: userInput,
       timestamp: Date.now()
     };
@@ -63,8 +69,8 @@ const Onboarding = () => {
           aiResponse = "Merci pour ces informations !";
       }
 
-      const aiMessage = {
-        role: 'ai',
+      const aiMessage: Message = {
+        role: 'ai' as const,
         message: aiResponse,
         timestamp: Date.now()
       };

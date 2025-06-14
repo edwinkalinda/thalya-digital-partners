@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -25,22 +25,19 @@ function AnimatedSphere({ isActive }: { isActive: boolean }) {
   });
 
   return (
-    <Sphere
+    <mesh
       ref={meshRef}
-      args={[2, 32, 32]}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
       scale={hovered ? 1.1 : 1}
     >
-      <MeshDistortMaterial
+      <sphereGeometry args={[2, 32, 32]} />
+      <meshStandardMaterial
         color={isActive ? "#0066FF" : "#404040"}
-        attach="material"
-        distort={isActive ? 0.6 : 0.3}
-        speed={isActive ? 5 : 2}
         roughness={0.1}
         metalness={0.8}
       />
-    </Sphere>
+    </mesh>
   );
 }
 
@@ -57,12 +54,10 @@ function Particles() {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
+          args={[positions, 3]}
         />
       </bufferGeometry>
-      <pointsMaterial size={0.05} color="#0066FF" />
+      <pointsMaterial args={[{ size: 0.05, color: "#0066FF" }]} />
     </points>
   );
 }
