@@ -115,20 +115,6 @@ serve(async (req) => {
         errorMessage = error.error.message;
       }
       
-      // Gestion spéciale pour les erreurs d'authentification
-      if (errorMessage.includes('Missing bearer or basic authentication')) {
-        errorMessage = 'Problème d\'authentification avec l\'API Realtime OpenAI';
-        shouldReconnect = true; // On peut retry pour l'API Realtime
-        
-        safeSend(socket, {
-          type: 'error',
-          message: 'Authentification OpenAI en cours de résolution...',
-          details: 'Nouvelle tentative de connexion avec méthode alternative',
-          fatal: false
-        });
-        return { errorMessage, shouldReconnect };
-      }
-      
       // Déterminer si on doit reconnecter basé sur le type d'erreur
       const errorStr = errorMessage.toLowerCase();
       shouldReconnect = errorStr.includes('connection') || 
@@ -172,13 +158,19 @@ serve(async (req) => {
         openAISocket = null;
       }
       
-      // URL avec authentification via query parameter pour l'API Realtime
+      // URL avec le bon endpoint et paramètres pour l'API Realtime
       const url = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`;
       
       console.log("📡 Création WebSocket OpenAI avec URL:", url);
+      console.log("🔐 Utilisation de l'authentification Bearer:", OPENAI_API_KEY.substring(0, 10) + "...");
       
-      // Créer le WebSocket - l'authentification se fera après connexion
-      openAISocket = new WebSocket(url);
+      // Créer le WebSocket avec les headers d'authentification appropriés
+      openAISocket = new WebSocket(url, {
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "OpenAI-Beta": "realtime=v1"
+        }
+      });
 
       // Timeout pour la connexion
       const connectionTimeout = setTimeout(() => {
@@ -191,7 +183,7 @@ serve(async (req) => {
 
       openAISocket.onopen = () => {
         clearTimeout(connectionTimeout);
-        console.log("✅ WebSocket OpenAI ouvert, configuration de la session...");
+        console.log("✅ WebSocket OpenAI ouvert avec succès !");
         
         connectionState.isConnected = true;
         connectionState.reconnectAttempts = 0;
@@ -211,7 +203,7 @@ serve(async (req) => {
           
           // Configuration automatique de la session à la première connexion
           if (data.type === 'session.created' && !connectionState.sessionConfigured) {
-            console.log("🎉 Session créée, envoi de la configuration avec authentification...");
+            console.log("🎉 Session créée, envoi de la configuration...");
             
             const sessionConfig = {
               type: "session.update",
@@ -254,31 +246,7 @@ serve(async (req) => {
           // Gestion des erreurs OpenAI
           if (data.type === 'error') {
             console.error("❌ Erreur OpenAI:", data);
-            
-            // Pour les erreurs d'authentification, on essaie une approche alternative
-            if (data.error && data.error.message && data.error.message.includes('authentication')) {
-              console.log("🔧 Tentative d'authentification alternative...");
-              
-              // Envoyer un événement d'authentification personnalisé
-              const authEvent = {
-                type: 'session.update',
-                session: {
-                  modalities: ["text", "audio"],
-                  instructions: "Tu es Clara, une assistant IA.",
-                  voice: "alloy",
-                  input_audio_format: "pcm16",
-                  output_audio_format: "pcm16"
-                }
-              };
-              
-              setTimeout(() => {
-                if (openAISocket && openAISocket.readyState === WebSocket.OPEN) {
-                  safeSend(openAISocket, authEvent);
-                }
-              }, 1000);
-            } else {
-              handleOpenAIError(data.error || data, "réponse");
-            }
+            handleOpenAIError(data.error || data, "réponse");
             return;
           }
           
