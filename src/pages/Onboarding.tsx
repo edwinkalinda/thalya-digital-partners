@@ -7,38 +7,26 @@ import ChatInterface from '../components/onboarding/ChatInterface';
 import ProgressIndicator from '../components/onboarding/ProgressIndicator';
 import Header from '../components/layout/Header';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Send } from 'lucide-react';
+import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
 import { useAgents, useNotifications } from '../contexts/AppContext';
-
-interface Message {
-  role: 'user' | 'ai';
-  message: string;
-  timestamp: number;
-}
+import { useOnboardingConversation } from '../hooks/useOnboardingConversation';
 
 const Onboarding = () => {
-  const [currentStep, setCurrentStep] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [userInput, setUserInput] = useState('');
-  const [agentData, setAgentData] = useState({
-    name: '',
-    personality: '',
-    mission: '',
-    voice: '',
-    info: ''
-  });
   
   const navigate = useNavigate();
   const { addAgent } = useAgents();
   const { addNotification } = useNotifications();
   
-  const [conversation, setConversation] = useState<Message[]>([
-    {
-      role: 'ai' as const,
-      message: "Bonjour ! Je suis Thalya. Je vais vous aider à créer votre agent IA personnalisé. Commençons par une question simple : quel nom souhaitez-vous donner à votre IA réceptionniste ?",
-      timestamp: Date.now()
-    }
-  ]);
+  const {
+    conversation,
+    currentStep,
+    agentData,
+    isProcessing,
+    sendMessage,
+    isComplete
+  } = useOnboardingConversation();
 
   const onboardingSteps = [
     "Nom de l'IA",
@@ -48,87 +36,49 @@ const Onboarding = () => {
     "Informations clés"
   ];
 
-  const handleSendMessage = () => {
-    if (!userInput.trim()) return;
-
-    // Add user message
-    const newUserMessage: Message = {
-      role: 'user' as const,
-      message: userInput,
-      timestamp: Date.now()
-    };
-
-    setConversation(prev => [...prev, newUserMessage]);
-
-    // Store user data
-    const stepKeys = ['name', 'personality', 'mission', 'voice', 'info'];
-    if (currentStep < stepKeys.length) {
-      setAgentData(prev => ({
-        ...prev,
-        [stepKeys[currentStep]]: userInput
-      }));
+  // Handle completion
+  useEffect(() => {
+    if (isComplete && agentData.name) {
+      setTimeout(() => {
+        const newAgent = {
+          name: agentData.name,
+          type: 'Réceptionniste',
+          status: 'active' as const,
+          personality: agentData.personality || '',
+          voice: agentData.voice || '',
+          calls: 0,
+          satisfaction: 0
+        };
+        
+        addAgent(newAgent);
+        addNotification('success', `L'IA ${agentData.name} a été créée avec succès !`);
+        navigate('/onboarding-success');
+      }, 2000);
     }
+  }, [isComplete, agentData, addAgent, addNotification, navigate]);
 
-    // Simulate AI response based on current step
-    setTimeout(() => {
-      let aiResponse = '';
-      
-      switch (currentStep) {
-        case 0:
-          aiResponse = `Parfait ! ${userInput} est un excellent nom. Maintenant, décrivez-moi la personnalité que vous souhaitez pour ${userInput}. Doit-elle être formelle, amicale, professionnelle, décontractée ?`;
-          break;
-        case 1:
-          aiResponse = "Excellent choix ! Maintenant, quelle sera la mission principale de votre IA ? Par exemple : accueillir les clients, prendre des rendez-vous, fournir des informations sur vos services...";
-          break;
-        case 2:
-          aiResponse = "Parfait ! Quel ton de voix préférez-vous ? Plutôt chaleureux et empathique, ou professionnel et efficace ?";
-          break;
-        case 3:
-          aiResponse = "Merci ! Pour finir, quelles sont les informations clés que votre IA doit connaître sur votre entreprise ? (horaires, services, tarifs...)";
-          break;
-        case 4:
-          aiResponse = "Fantastique ! Votre IA est maintenant configurée. Je vais générer sa personnalité et vous pourrez la tester dans quelques instants.";
-          break;
-        default:
-          aiResponse = "Merci pour ces informations !";
-      }
-
-      const aiMessage: Message = {
-        role: 'ai' as const,
-        message: aiResponse,
-        timestamp: Date.now()
-      };
-
-      setConversation(prev => [...prev, aiMessage]);
-      
-      if (currentStep < onboardingSteps.length - 1) {
-        setCurrentStep(prev => prev + 1);
-      } else {
-        // Onboarding completed, create the agent and redirect
-        setTimeout(() => {
-          const newAgent = {
-            name: agentData.name,
-            type: 'Réceptionniste',
-            status: 'active' as const,
-            personality: agentData.personality,
-            voice: agentData.voice,
-            calls: 0,
-            satisfaction: 0
-          };
-          
-          addAgent(newAgent);
-          addNotification('success', `L'IA ${agentData.name} a été créée avec succès !`);
-          navigate('/onboarding-success');
-        }, 2000);
-      }
-    }, 1500);
-
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isProcessing) return;
+    
+    await sendMessage(userInput);
     setUserInput('');
   };
 
   const toggleListening = () => {
     setIsListening(!isListening);
-    // Here we would integrate with speech recognition API
+    // Future: Integrate with speech recognition when backend supports it
+    // if (!isListening) {
+    //   startSpeechRecognition();
+    // } else {
+    //   stopSpeechRecognition();
+    // }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -136,12 +86,20 @@ const Onboarding = () => {
       {/* Header */}
       <Header />
       
-      {/* Main Header - adjusted for fixed header */}
+      {/* Main Header */}
       <div className="pt-16 p-4 sm:p-6 border-b border-graphite-200">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
-            <p className="text-sm sm:text-base text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
+            <p className="text-sm sm:text-base text-graphite-600">
+              Créons ensemble votre agent IA personnalisé
+              {isProcessing && (
+                <span className="ml-2 inline-flex items-center text-electric-blue">
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  Thalya réfléchit...
+                </span>
+              )}
+            </p>
           </div>
           <div className="w-full sm:w-auto">
             <ProgressIndicator 
@@ -152,7 +110,7 @@ const Onboarding = () => {
         </div>
       </div>
 
-      {/* Main Content - Responsive Layout */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Avatar Section */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 min-h-[300px] lg:min-h-0">
@@ -162,7 +120,7 @@ const Onboarding = () => {
                 hue={240}
                 hoverIntensity={0.3}
                 rotateOnHover={true}
-                forceHoverState={isListening}
+                forceHoverState={isListening || isProcessing}
               />
             </div>
             <h2 className="text-lg sm:text-xl font-semibold text-deep-black mb-2">
@@ -171,6 +129,11 @@ const Onboarding = () => {
             <p className="text-sm sm:text-base text-graphite-600">
               Je vous guide dans la création de votre IA
             </p>
+            {isProcessing && (
+              <p className="text-xs text-electric-blue mt-2 animate-pulse">
+                En cours de traitement...
+              </p>
+            )}
           </div>
         </div>
 
@@ -188,8 +151,9 @@ const Onboarding = () => {
                 <Input
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  placeholder="Tapez votre réponse..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder={isProcessing ? "Thalya traite votre réponse..." : "Tapez votre réponse..."}
+                  onKeyPress={handleKeyPress}
+                  disabled={isProcessing}
                   className="resize-none text-sm sm:text-base"
                 />
               </div>
@@ -198,19 +162,28 @@ const Onboarding = () => {
                 variant={isListening ? "destructive" : "outline"}
                 size="icon"
                 className="h-10 w-10 flex-shrink-0"
+                disabled={isProcessing}
+                title="Reconnaissance vocale (à venir)"
               >
                 {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
               <Button
                 onClick={handleSendMessage}
-                disabled={!userInput.trim()}
+                disabled={!userInput.trim() || isProcessing}
                 className="h-10 flex-shrink-0"
               >
-                <Send className="h-4 w-4" />
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </div>
             <p className="text-xs text-graphite-500 mt-2">
-              Cliquez sur le micro pour parler ou tapez votre réponse
+              {isProcessing 
+                ? "Conversation en temps réel avec Thalya..." 
+                : "Cliquez sur le micro pour parler ou tapez votre réponse"
+              }
             </p>
           </div>
         </div>
