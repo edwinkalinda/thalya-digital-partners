@@ -50,7 +50,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 transition-colors group-focus-within:text-blue-500" />
                   <Input
                     placeholder="votre@email.com"
-                    className="pl-12 h-12 sm:h-14 border-0 bg-gray-50/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-transparent placeholder:text-gray-400"
+                    className="pl-12 h-12 sm:h-14 border border-gray-200/80 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-gray-300 focus:shadow-lg transition-all duration-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 placeholder:text-gray-400"
                     {...field}
                   />
                   {fieldState.error && (
@@ -89,7 +89,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="pl-12 pr-14 h-12 sm:h-14 border-0 bg-gray-50/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-transparent placeholder:text-gray-400"
+                    className="pl-12 pr-14 h-12 sm:h-14 border border-gray-200/80 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-gray-300 focus:shadow-lg transition-all duration-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 placeholder:text-gray-400"
                     {...field}
                   />
                   <Button
