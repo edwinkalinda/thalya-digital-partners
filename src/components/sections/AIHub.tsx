@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
@@ -11,7 +10,9 @@ const AIHub = () => {
         <div className="text-center mb-16 animate-fade-in">
           <h2 className="text-5xl md:text-6xl font-bold mb-6">
             <TextRotate text="Un agent pour " className="inline" />
-            <span className="text-gradient">chaque mission</span>
+            <span className="text-gradient">
+              <TextRotate text="chaque mission" />
+            </span>
           </h2>
           <p className="text-xl text-graphite-600 max-w-3xl mx-auto">
             Découvrez notre écosystème d'intelligences artificielles spécialisées, 
