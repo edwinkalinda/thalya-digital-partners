@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,12 +29,12 @@ const Onboarding = () => {
   
   const navigate = useNavigate();
   const { addAgent } = useAgents();
-  const { addNotification } = useNotifications();
+  const { addNotifications } = useNotifications();
   
   const [conversation, setConversation] = useState<Message[]>([
     {
       role: 'ai' as const,
-      message: "Bonjour ! Je suis l'IA Chef d'Orchestre de Thalya. Je vais vous aider à créer votre agent IA personnalisé. Commençons par une question simple : quel nom souhaitez-vous donner à votre IA réceptionniste ?",
+      message: "Bonjour ! Je suis Thalya. Je vais vous aider à créer votre agent IA personnalisé. Commençons par une question simple : quel nom souhaitez-vous donner à votre IA réceptionniste ?",
       timestamp: Date.now()
     }
   ]);
@@ -117,7 +116,7 @@ const Onboarding = () => {
           };
           
           addAgent(newAgent);
-          addNotification('success', `L'IA ${agentData.name} a été créée avec succès !`);
+          addNotifications('success', `L'IA ${agentData.name} a été créée avec succès !`);
           navigate('/onboarding-success');
         }, 2000);
       }
@@ -182,7 +181,7 @@ const Onboarding = () => {
             </div>
             <div className="space-y-3">
               <h2 className="text-xl sm:text-2xl font-bold text-deep-black">
-                IA Chef d'Orchestre
+                Thalya
               </h2>
               <p className="text-sm sm:text-base text-graphite-600 leading-relaxed">
                 Je vous guide dans la création de votre IA personnalisée
