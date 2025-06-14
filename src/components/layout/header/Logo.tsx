@@ -37,26 +37,29 @@ const Logo = () => {
   return (
     <div className="flex items-center group cursor-pointer" onClick={handleLogoClick}>
       <div className="relative">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 relative mr-2 sm:mr-3 transition-all duration-300 group-hover:scale-110">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 relative mr-3 sm:mr-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
           {logoImageData ? (
             <MetallicPaint 
               imageData={logoImageData}
               params={{
-                patternScale: 2,
-                refraction: 0.015,
-                edge: 1,
-                patternBlur: 0.005,
-                liquid: 0.07,
-                speed: 0.3,
+                patternScale: 1.5,
+                refraction: 0.025,
+                edge: 0.8,
+                patternBlur: 0.003,
+                liquid: 0.12,
+                speed: 0.4,
               }}
             />
           ) : (
-            <div className="absolute inset-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-electric-blue to-emerald-500 rounded-full transition-all duration-300 group-hover:shadow-lg group-hover:shadow-electric-blue/20"></div>
+            <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-electric-blue via-purple-600 to-emerald-500 rounded-lg transition-all duration-300 group-hover:shadow-xl group-hover:shadow-electric-blue/30 animate-pulse"></div>
           )}
         </div>
+        
+        {/* Halo lumineux */}
+        <div className="absolute inset-0 w-12 h-12 sm:w-14 sm:h-14 bg-electric-blue/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
       </div>
       
-      <span className="text-xl sm:text-2xl font-bold text-deep-black group-hover:text-electric-blue transition-colors duration-300 tracking-tight">
+      <span className="text-2xl sm:text-3xl font-black text-deep-black group-hover:text-electric-blue transition-all duration-300 tracking-tight font-mono">
         Thalya
       </span>
     </div>
