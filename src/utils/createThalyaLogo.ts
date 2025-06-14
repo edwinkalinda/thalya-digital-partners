@@ -1,28 +1,38 @@
 
 export function createThalyaLogoSVG(): string {
   return `
-    <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
-          <stop offset="50%" style="stop-color:#000000;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#2a2a2a;stop-opacity:1" />
+          <stop offset="30%" style="stop-color:#000000;stop-opacity:1" />
+          <stop offset="70%" style="stop-color:#1a1a1a;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
         </linearGradient>
       </defs>
-      <rect width="100" height="100" fill="white"/>
+      <rect width="200" height="60" fill="white"/>
       
-      <!-- T principal avec empattements -->
-      <rect x="15" y="15" width="70" height="12" fill="url(#logoGradient)"/>
-      <rect x="44" y="15" width="12" height="70" fill="url(#logoGradient)"/>
+      <!-- Fond avec empattements pour THALYA -->
+      <text x="100" y="45" font-family="serif" font-size="36" font-weight="900" text-anchor="middle" fill="url(#logoGradient)" letter-spacing="2px">THALYA</text>
       
-      <!-- Détails géométriques pour l'unicité -->
-      <rect x="20" y="20" width="60" height="3" fill="url(#logoGradient)"/>
-      <rect x="47" y="27" width="6" height="58" fill="url(#logoGradient)"/>
+      <!-- Accent décoratif sous le texte -->
+      <rect x="30" y="50" width="140" height="3" fill="url(#accentGradient)" rx="1.5"/>
       
-      <!-- Elements décoratifs pour effet 3D -->
-      <polygon points="15,15 27,15 27,27 15,27" fill="#333"/>
-      <polygon points="73,15 85,15 85,27 73,27" fill="#333"/>
-      <polygon points="44,73 56,73 56,85 44,85" fill="#333"/>
+      <!-- Points décoratifs -->
+      <circle cx="25" cy="51.5" r="2" fill="url(#accentGradient)"/>
+      <circle cx="175" cy="51.5" r="2" fill="url(#accentGradient)"/>
+      
+      <!-- Détails géométriques sur les lettres -->
+      <rect x="35" y="12" width="2" height="25" fill="url(#accentGradient)"/>
+      <rect x="65" y="20" width="2" height="17" fill="url(#accentGradient)"/>
+      <rect x="95" y="15" width="2" height="22" fill="url(#accentGradient)"/>
+      <rect x="125" y="18" width="2" height="19" fill="url(#accentGradient)"/>
+      <rect x="155" y="16" width="2" height="21" fill="url(#accentGradient)"/>
     </svg>
   `;
 }
