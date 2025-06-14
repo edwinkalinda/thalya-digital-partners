@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -243,12 +242,6 @@ class AudioPlayer {
       this.currentSource.connect(this.audioContext.destination);
       
       this.currentSource.onended = () => {
-        this.currentSource = null;
-        this.playNext();
-      };
-      
-      this.currentSource.onerror = (error) => {
-        console.error('Erreur lecture audio:', error);
         this.currentSource = null;
         this.playNext();
       };
