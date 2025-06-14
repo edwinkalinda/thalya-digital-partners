@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -248,21 +249,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
         >
           <Button 
             type="submit" 
-            className="w-full h-11 sm:h-12 bg-electric-blue hover:bg-electric-blue/90 text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100"
+            className="w-full h-12 sm:h-14 relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border-0 group disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading || !isFormValid}
           >
-            {isLoading ? (
-              <div className="flex items-center">
-                <motion.div 
-                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full mr-2"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                />
-                Connexion en cours...
-              </div>
-            ) : (
-              "Se connecter"
-            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            <div className="absolute inset-0 rounded-xl bg-blue-400/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+            
+            <div className="relative z-10 flex items-center justify-center">
+              {isLoading ? (
+                <div className="flex items-center">
+                  <Loader2 className="w-5 h-5 animate-spin mr-3" />
+                  <span className="text-white">Connexion en cours...</span>
+                </div>
+              ) : (
+                <span className="flex items-center">
+                  Se connecter
+                  <motion.div
+                    className="ml-2"
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    →
+                  </motion.div>
+                </span>
+              )}
+            </div>
           </Button>
         </motion.div>
 
