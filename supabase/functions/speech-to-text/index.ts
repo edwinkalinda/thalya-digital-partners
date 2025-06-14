@@ -83,18 +83,20 @@ serve(async (req) => {
     const aiResult = await aiResponse.json();
     const responseText = aiResult.response;
 
-    // Générer la réponse TwiML avec la réponse de l'IA
-    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-    <Response>
-      <Say voice="alice" language="fr-FR">${responseText}</Say>
-      <Record 
-        action="https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/speech-to-text"
-        method="POST"
-        maxLength="30"
-        finishOnKey="#"
-        transcribe="false"
-      />
-    </Response>`;
+    // Appeler la nouvelle fonction TTS optimisée avec ElevenLabs
+    const ttsResponse = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/text-to-speech-twilio', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': req.headers.get('Authorization') || '',
+      },
+      body: new URLSearchParams({
+        responseText: responseText,
+        CallSid: callSid as string,
+      }),
+    });
+
+    const twimlResponse = await ttsResponse.text();
 
     return new Response(twimlResponse, {
       headers: {

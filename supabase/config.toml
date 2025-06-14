@@ -5,9 +5,12 @@ project_id = "lrgvwkcdatfwxcjvbymt"
 verify_jwt = false
 
 [functions.speech-to-text]
-verify_jwt = true
+verify_jwt = false
 
-[functions.text-to-speech]
+[functions.text-to-speech-twilio]
+verify_jwt = false
+
+[functions.elevenlabs-tts]
 verify_jwt = true
 
 [functions.ai-response-generator]
