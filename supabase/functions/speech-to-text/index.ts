@@ -8,126 +8,64 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('Processing speech-to-text request');
+    console.log("Processing speech-to-text request");
     
-    const formData = await req.formData();
-    const recordingUrl = formData.get('RecordingUrl');
-    const callSid = formData.get('CallSid');
+    const { audio } = await req.json();
     
-    if (!recordingUrl) {
-      throw new Error('No recording URL provided');
+    if (!audio) {
+      throw new Error('No audio data provided');
     }
 
-    console.log(`Processing recording: ${recordingUrl}`);
-
-    // Télécharger l'enregistrement audio depuis Twilio
-    const audioResponse = await fetch(recordingUrl as string, {
-      headers: {
-        'Authorization': `Basic ${btoa(`${Deno.env.get('TWILIO_ACCOUNT_SID')}:${Deno.env.get('TWILIO_AUTH_TOKEN')}`)}`,
-      },
-    });
-
-    if (!audioResponse.ok) {
-      throw new Error('Failed to fetch audio recording');
+    // Convert base64 to binary
+    const binaryString = atob(audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const audioBuffer = await audioResponse.arrayBuffer();
-    
-    // Convertir l'audio en format compatible avec OpenAI Whisper
-    const audioBlob = new Blob([audioBuffer], { type: 'audio/wav' });
-    
-    // Préparer la requête pour OpenAI Whisper
-    const whisperFormData = new FormData();
-    whisperFormData.append('file', audioBlob, 'audio.wav');
-    whisperFormData.append('model', 'whisper-1');
-    whisperFormData.append('language', 'fr');
+    // Create form data for OpenAI Whisper
+    const formData = new FormData();
+    const audioBlob = new Blob([bytes], { type: 'audio/webm' });
+    formData.append('file', audioBlob, 'audio.webm');
+    formData.append('model', 'whisper-1');
 
-    // Appeler OpenAI Whisper API
-    const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Send to OpenAI
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
       },
-      body: whisperFormData,
+      body: formData,
     });
 
-    if (!whisperResponse.ok) {
-      const errorText = await whisperResponse.text();
-      console.error('OpenAI Whisper error:', errorText);
-      throw new Error(`Whisper API error: ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const transcriptionResult = await whisperResponse.json();
-    const transcribedText = transcriptionResult.text;
-    
-    console.log(`Transcribed text: ${transcribedText}`);
+    const result = await response.json();
+    console.log('Transcription successful:', result.text);
 
-    // Appeler l'IA pour générer une réponse
-    const aiResponse = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/ai-response-generator', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': req.headers.get('Authorization') || '',
-      },
-      body: JSON.stringify({
-        message: transcribedText,
-        callSid: callSid,
-      }),
-    });
-
-    const aiResult = await aiResponse.json();
-    const responseText = aiResult.response;
-
-    // Appeler la nouvelle fonction TTS optimisée avec ElevenLabs
-    const ttsResponse = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/text-to-speech-twilio', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': req.headers.get('Authorization') || '',
-      },
-      body: new URLSearchParams({
-        responseText: responseText,
-        CallSid: callSid as string,
-      }),
-    });
-
-    const twimlResponse = await ttsResponse.text();
-
-    return new Response(twimlResponse, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/xml',
-      },
-    });
+    return new Response(
+      JSON.stringify({ text: result.text }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
     console.error('Error in speech-to-text function:', error);
-    
-    const errorResponse = `<?xml version="1.0" encoding="UTF-8"?>
-    <Response>
-      <Say voice="alice" language="fr-FR">
-        Je n'ai pas bien compris. Pouvez-vous répéter votre question ?
-      </Say>
-      <Record 
-        action="https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/speech-to-text"
-        method="POST"
-        maxLength="30"
-        finishOnKey="#"
-        transcribe="false"
-      />
-    </Response>`;
-
-    return new Response(errorResponse, {
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/xml',
-      },
-    });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });

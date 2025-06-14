@@ -27,7 +27,7 @@ serve(async (req) => {
     });
   }
 
-  console.log("✅ Démarrage du chat vocal avec Google Gemini Pro");
+  console.log("✅ Démarrage du chat vocal avec Google Gemini Flash");
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   let isConnected = false;
@@ -51,12 +51,25 @@ serve(async (req) => {
   // Fonction pour convertir l'audio en texte (Speech-to-Text avec OpenAI Whisper)
   const speechToText = async (audioBase64: string): Promise<string> => {
     try {
-      const response = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/speech-to-text', {
+      // Conversion base64 vers blob audio
+      const binaryString = atob(audioBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Créer FormData avec le fichier audio
+      const formData = new FormData();
+      const audioBlob = new Blob([bytes], { type: 'audio/webm' });
+      formData.append('file', audioBlob, 'audio.webm');
+      formData.append('model', 'whisper-1');
+
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         },
-        body: JSON.stringify({ audio: audioBase64 }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -71,7 +84,7 @@ serve(async (req) => {
     }
   };
 
-  // Fonction pour générer une réponse avec Google Gemini Pro
+  // Fonction pour générer une réponse avec Google Gemini Flash (modèle mis à jour)
   const generateGeminiResponse = async (userMessage: string): Promise<string> => {
     try {
       // Ajouter le message utilisateur à l'historique
@@ -90,7 +103,8 @@ Tu es optimisée pour les conversations vocales, donc garde tes réponses courte
 
       const fullPrompt = `${systemPrompt}\n\nConversation:\n${conversationContext}\n\nClara:`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      // Utiliser le nouveau modèle Gemini 1.5 Flash
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,14 +163,26 @@ Tu es optimisée pour les conversations vocales, donc garde tes réponses courte
   // Fonction pour convertir le texte en audio avec ElevenLabs
   const textToSpeech = async (text: string): Promise<string | null> => {
     try {
-      const response = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/elevenlabs-tts', {
+      const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+      if (!ELEVENLABS_API_KEY) {
+        console.error('❌ Clé ElevenLabs manquante');
+        return null;
+      }
+
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pFZP5JQG7iQjIQuC4Bku`, {
         method: 'POST',
         headers: {
+          'Accept': 'audio/mpeg',
+          'xi-api-key': ELEVENLABS_API_KEY,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text: text,
-          voiceId: 'pFZP5JQG7iQjIQuC4Bku' // Lily - voix française
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75
+          }
         }),
       });
 
@@ -289,8 +315,8 @@ Tu es optimisée pour les conversations vocales, donc garde tes réponses courte
     safeSend(socket, {
       type: 'connection_status',
       status: 'connected',
-      message: 'Chat vocal Gemini Pro activé',
-      engine: 'Google Gemini Pro'
+      message: 'Chat vocal Gemini 1.5 Flash activé',
+      engine: 'Google Gemini 1.5 Flash'
     });
   };
 
@@ -305,7 +331,7 @@ Tu es optimisée pour les conversations vocales, donc garde tes réponses courte
             type: 'pong',
             timestamp: Date.now(),
             connected: isConnected,
-            engine: 'Google Gemini Pro'
+            engine: 'Google Gemini 1.5 Flash'
           });
           break;
           

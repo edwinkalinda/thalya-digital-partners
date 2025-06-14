@@ -20,7 +20,7 @@ const VoiceManagement = () => {
               </h1>
             </div>
             <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-              Conversez naturellement avec Clara, votre assistante IA vocale propulsée par Google Gemini Pro
+              Conversez naturellement avec Clara, votre assistante IA vocale propulsée par Google Gemini 1.5 Flash
             </p>
           </div>
 
@@ -38,7 +38,7 @@ const VoiceManagement = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-blue-700">
-                  Clara utilise Google Gemini Pro pour des conversations naturelles et intelligentes en français.
+                  Clara utilise Google Gemini 1.5 Flash pour des conversations naturelles et intelligentes en français.
                 </p>
               </CardContent>
             </Card>
@@ -52,7 +52,7 @@ const VoiceManagement = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-green-700">
-                  Latence optimisée avec Speech-to-Text, IA et Text-to-Speech ultra-rapides.
+                  Latence optimisée avec OpenAI Whisper, Gemini 1.5 Flash et ElevenLabs ultra-rapides.
                 </p>
               </CardContent>
             </Card>
@@ -66,7 +66,7 @@ const VoiceManagement = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-purple-700">
-                  Synthèse vocale ElevenLabs avec voix française naturelle et expressive.
+                  Synthèse vocale ElevenLabs avec voix française Lily naturelle et expressive.
                 </p>
               </CardContent>
             </Card>
@@ -85,7 +85,7 @@ const VoiceManagement = () => {
                   <span className="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">1</span>
                   <div>
                     <p className="font-medium text-indigo-800">Connectez-vous</p>
-                    <p className="text-indigo-600">Cliquez sur "Se connecter" pour établir la connexion avec Gemini Pro</p>
+                    <p className="text-indigo-600">Cliquez sur "Se connecter" pour établir la connexion avec Gemini 1.5 Flash</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
@@ -109,6 +109,13 @@ const VoiceManagement = () => {
                     <p className="text-indigo-600">Clara vous répond avec sa voix naturelle et ses analyses intelligentes</p>
                   </div>
                 </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 font-medium">⚠️ Configuration requise :</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Assurez-vous que les clés API sont configurées dans les secrets Supabase : GOOGLE_GEMINI_API_KEY, ELEVENLABS_API_KEY, OPENAI_API_KEY
+                </p>
               </div>
             </CardContent>
           </Card>

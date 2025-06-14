@@ -53,7 +53,7 @@ export const GeminiTestSection = ({ isConnected, onRunTest }: GeminiTestSectionP
       <div className="text-center mb-4">
         <h2 className="text-xl font-bold text-purple-800 flex items-center justify-center mb-2">
           <TestTube className="w-5 h-5 mr-2" />
-          🧪 Tests API Google Gemini Pro
+          🧪 Tests API Google Gemini 1.5 Flash
         </h2>
         <p className="text-sm text-purple-600">
           Testez différents aspects de l'intelligence artificielle Clara
@@ -79,7 +79,7 @@ export const GeminiTestSection = ({ isConnected, onRunTest }: GeminiTestSectionP
       <div className="mt-4 text-center">
         <div className="inline-flex items-center px-3 py-1 bg-white/70 rounded-full text-xs text-purple-700">
           <Zap className="w-3 h-3 mr-1" />
-          Tests optimisés pour Google Gemini Pro
+          Tests optimisés pour Google Gemini 1.5 Flash
         </div>
       </div>
     </div>
