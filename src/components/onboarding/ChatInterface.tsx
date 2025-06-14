@@ -48,23 +48,22 @@ const ChatInterface = ({ conversation, className }: ChatInterfaceProps) => {
   };
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6"
-        style={{ maxHeight: 'calc(100vh - 280px)' }}
+        className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 lg:space-y-6"
       >
         {conversation.map((msg, index) => (
           <div
             key={index}
             className={cn(
-              "flex gap-2 sm:gap-3 lg:gap-4 animate-fade-in",
+              "flex gap-3 lg:gap-4 animate-fade-in",
               msg.role === 'user' ? "flex-row-reverse" : "flex-row"
             )}
           >
             {/* Avatar */}
             <div className={cn(
-              "w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
+              "w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
               msg.role === 'ai' 
                 ? "bg-gradient-to-br from-electric-blue to-blue-600" 
                 : "bg-graphite-200 text-graphite-700"
@@ -85,25 +84,25 @@ const ChatInterface = ({ conversation, className }: ChatInterfaceProps) => {
                     />
                   </div>
                 ) : (
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 bg-pure-white rounded-full"></div>
+                  <div className="w-4 h-4 lg:w-5 lg:h-5 bg-pure-white rounded-full"></div>
                 )
               ) : (
-                <User className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                <User className="w-4 h-4 lg:w-5 lg:h-5" />
               )}
             </div>
 
             {/* Message */}
             <div className={cn(
-              "max-w-[80%] sm:max-w-[75%] lg:max-w-xs xl:max-w-md",
+              "max-w-[75%] lg:max-w-md",
               msg.role === 'user' ? "text-right" : "text-left"
             )}>
               <div className={cn(
-                "inline-block p-2 sm:p-3 lg:p-4 rounded-2xl shadow-sm break-words",
+                "inline-block p-3 lg:p-4 rounded-2xl shadow-sm break-words",
                 msg.role === 'ai'
                   ? "bg-pure-white border border-graphite-200 text-deep-black"
                   : "bg-electric-blue text-pure-white"
               )}>
-                <p className="text-xs sm:text-sm lg:text-base leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm lg:text-base leading-relaxed whitespace-pre-wrap">
                   {msg.message}
                 </p>
               </div>
