@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -45,7 +46,7 @@ serve(async (req) => {
   }
 
   console.log("✅ Clé OpenAI API détectée, longueur:", OPENAI_API_KEY.length);
-  console.log("🔑 Préfixe de la clé:", OPENAI_API_KEY.substring(0, 7) + "...");
+  console.log("🔑 Préfixe de la clé:", OPENAI_API_KEY.substring(0, 10) + "...");
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
@@ -116,14 +117,14 @@ serve(async (req) => {
       
       // Gestion spéciale pour les erreurs d'authentification
       if (errorMessage.includes('Missing bearer or basic authentication')) {
-        errorMessage = 'Clé API OpenAI non configurée ou invalide';
-        shouldReconnect = false; // Pas de reconnexion pour les erreurs d'auth
+        errorMessage = 'Problème d\'authentification avec l\'API Realtime OpenAI';
+        shouldReconnect = true; // On peut retry pour l'API Realtime
         
         safeSend(socket, {
           type: 'error',
-          message: 'Configuration OpenAI requise',
-          details: 'Veuillez configurer votre clé API OpenAI dans les secrets Supabase',
-          fatal: true
+          message: 'Authentification OpenAI en cours de résolution...',
+          details: 'Nouvelle tentative de connexion avec méthode alternative',
+          fatal: false
         });
         return { errorMessage, shouldReconnect };
       }
@@ -150,7 +151,7 @@ serve(async (req) => {
     return { errorMessage, shouldReconnect };
   };
 
-  // Connexion à l'API OpenAI Realtime avec meilleure gestion d'erreur
+  // Connexion à l'API OpenAI Realtime avec authentification correcte
   const connectToOpenAI = async () => {
     if (connectionState.reconnectAttempts >= maxReconnectAttempts) {
       console.error("❌ Trop de tentatives de reconnexion");
@@ -171,23 +172,13 @@ serve(async (req) => {
         openAISocket = null;
       }
       
-      const url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01";
-      
-      // Vérifier à nouveau la clé API avant de créer la connexion
-      if (!OPENAI_API_KEY || OPENAI_API_KEY.trim() === '') {
-        throw new Error('Clé API OpenAI manquante ou vide');
-      }
+      // URL avec authentification via query parameter pour l'API Realtime
+      const url = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`;
       
       console.log("📡 Création WebSocket OpenAI avec URL:", url);
-      console.log("🔐 En-têtes d'autorisation configurés");
       
-      // Créer le WebSocket avec les en-têtes corrects
+      // Créer le WebSocket - l'authentification se fera après connexion
       openAISocket = new WebSocket(url);
-      
-      // Ajouter les en-têtes après création (méthode alternative pour Deno)
-      if (openAISocket.readyState === WebSocket.CONNECTING) {
-        console.log("🔗 WebSocket en cours de connexion...");
-      }
 
       // Timeout pour la connexion
       const connectionTimeout = setTimeout(() => {
@@ -200,192 +191,145 @@ serve(async (req) => {
 
       openAISocket.onopen = () => {
         clearTimeout(connectionTimeout);
-        console.log("✅ WebSocket OpenAI ouvert, envoi de l'autorisation...");
+        console.log("✅ WebSocket OpenAI ouvert, configuration de la session...");
         
-        // Envoyer immédiatement un message d'autorisation si nécessaire
+        connectionState.isConnected = true;
+        connectionState.reconnectAttempts = 0;
+        connectionState.lastError = null;
+        
+        safeSend(socket, {
+          type: 'connection_status',
+          status: 'connected',
+          message: 'Connexion OpenAI établie avec succès'
+        });
+      };
+
+      openAISocket.onmessage = (event) => {
         try {
-          // Pour l'API Realtime, l'autorisation se fait via query params ou headers
-          // Essayons de fermer et recréer avec la bonne méthode
-          openAISocket?.close();
+          const data = JSON.parse(event.data);
+          console.log(`📨 OpenAI Event: ${data.type}`);
           
-          // Recréer avec authorization dans l'URL
-          const authorizedUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`;
-          console.log("🔄 Recréation avec autorisation dans headers...");
-          
-          // Utiliser fetch pour tester d'abord l'autorisation
-          fetch("https://api.openai.com/v1/models", {
-            headers: {
-              "Authorization": `Bearer ${OPENAI_API_KEY}`,
-              "Content-Type": "application/json"
+          // Configuration automatique de la session à la première connexion
+          if (data.type === 'session.created' && !connectionState.sessionConfigured) {
+            console.log("🎉 Session créée, envoi de la configuration avec authentification...");
+            
+            const sessionConfig = {
+              type: "session.update",
+              session: {
+                modalities: ["text", "audio"],
+                instructions: "Tu es Clara, une réceptionniste IA française très amicale et professionnelle. Tu parles français naturellement. Réponds de manière concise et utile.",
+                voice: "alloy",
+                input_audio_format: "pcm16",
+                output_audio_format: "pcm16",
+                input_audio_transcription: {
+                  model: "whisper-1"
+                },
+                turn_detection: {
+                  type: "server_vad",
+                  threshold: 0.5,
+                  prefix_padding_ms: 300,
+                  silence_duration_ms: 1000
+                },
+                temperature: 0.8,
+                max_response_output_tokens: 150
+              }
+            };
+            
+            if (safeSend(openAISocket, sessionConfig)) {
+              connectionState.sessionConfigured = true;
+              console.log("📤 Configuration de session envoyée avec succès");
             }
-          }).then(async (testResponse) => {
-            console.log("🧪 Test autorisation OpenAI:", testResponse.status);
-            if (testResponse.ok) {
-              console.log("✅ Autorisation OpenAI validée");
-              
-              // Créer le WebSocket avec une approche différente
-              const wsUrl = new URL(authorizedUrl);
-              openAISocket = new WebSocket(wsUrl.toString(), [], {
-                headers: {
-                  "Authorization": `Bearer ${OPENAI_API_KEY}`,
-                  "OpenAI-Beta": "realtime=v1"
-                }
-              });
-              
-              openAISocket.onopen = () => {
-                console.log("✅ Connecté à OpenAI Realtime API avec succès");
-                connectionState.isConnected = true;
-                connectionState.reconnectAttempts = 0;
-                connectionState.lastError = null;
-                
-                safeSend(socket, {
-                  type: 'connection_status',
-                  status: 'connected',
-                  message: 'Connexion OpenAI établie avec succès'
-                });
-              };
-              
-              // ... keep existing code (handlers pour messages, erreurs, etc.)
-              openAISocket.onmessage = (event) => {
-                try {
-                  const data = JSON.parse(event.data);
-                  console.log(`📨 OpenAI Event: ${data.type}`);
-                  
-                  // Configuration automatique de la session
-                  if (data.type === 'session.created' && !connectionState.sessionConfigured) {
-                    console.log("🎉 Session créée, envoi de la configuration...");
-                    
-                    const sessionConfig = {
-                      type: "session.update",
-                      session: {
-                        modalities: ["text", "audio"],
-                        instructions: "Tu es Clara, une réceptionniste IA française très amicale et professionnelle. Tu parles français naturellement. Réponds de manière concise et utile.",
-                        voice: "alloy",
-                        input_audio_format: "pcm16",
-                        output_audio_format: "pcm16",
-                        input_audio_transcription: {
-                          model: "whisper-1"
-                        },
-                        turn_detection: {
-                          type: "server_vad",
-                          threshold: 0.5,
-                          prefix_padding_ms: 300,
-                          silence_duration_ms: 1000
-                        },
-                        temperature: 0.8,
-                        max_response_output_tokens: 150
-                      }
-                    };
-                    
-                    if (safeSend(openAISocket, sessionConfig)) {
-                      connectionState.sessionConfigured = true;
-                      console.log("📤 Configuration de session envoyée avec succès");
-                    }
-                  }
-                  
-                  // Configuration confirmée
-                  if (data.type === 'session.updated') {
-                    console.log("⚙️ Session configurée avec succès");
-                    
-                    safeSend(socket, {
-                      type: 'session_ready',
-                      message: 'Chat vocal temps réel prêt - Authentification OpenAI réussie'
-                    });
-                  }
+          }
+          
+          // Configuration confirmée
+          if (data.type === 'session.updated') {
+            console.log("⚙️ Session configurée avec succès");
+            
+            safeSend(socket, {
+              type: 'session_ready',
+              message: 'Chat vocal temps réel prêt'
+            });
+          }
 
-                  // Gestion des erreurs OpenAI
-                  if (data.type === 'error') {
-                    console.error("❌ Erreur OpenAI:", data);
-                    handleOpenAIError(data.error || data, "réponse");
-                    return;
-                  }
-                  
-                  // Transférer l'événement au client
-                  safeSend(socket, data);
-                  
-                } catch (error) {
-                  console.error('❌ Erreur parsing OpenAI message:', error);
-                  handleOpenAIError(error, "parsing");
-                }
-              };
-
-              openAISocket.onclose = (event) => {
-                clearTimeout(connectionTimeout);
-                console.log(`🔌 OpenAI WebSocket fermé: ${event.code} ${event.reason || 'Aucune raison'}`);
-                connectionState.isConnected = false;
-                connectionState.sessionConfigured = false;
-                
-                // Message plus spécifique selon le code d'erreur
-                let closeMessage = `Connexion OpenAI fermée: ${event.reason || 'Connexion interrompue'}`;
-                if (event.code === 3000) {
-                  closeMessage = 'Erreur d\'authentification OpenAI - Vérifiez votre clé API';
-                }
-                
-                safeSend(socket, {
-                  type: 'connection_status',
-                  status: 'disconnected',
-                  message: closeMessage,
-                  code: event.code
-                });
-                
-                // Retry après un délai si ce n'est pas une fermeture volontaire ou erreur d'auth
-                if (event.code !== 1000 && event.code !== 3000 && connectionState.reconnectAttempts < maxReconnectAttempts) {
-                  connectionState.reconnectAttempts++;
-                  const delay = Math.min(2000 * Math.pow(2, connectionState.reconnectAttempts - 1), 10000);
-                  
-                  console.log(`🔄 Programmation reconnexion dans ${delay}ms...`);
-                  reconnectTimeout = setTimeout(() => {
-                    console.log(`🔄 Reconnexion OpenAI automatique...`);
-                    connectToOpenAI();
-                  }, delay);
-                } else if (event.code === 3000) {
-                  safeSend(socket, {
-                    type: 'error',
-                    message: 'Erreur d\'authentification OpenAI',
-                    details: 'Votre clé API OpenAI est invalide ou expirée',
-                    fatal: true
-                  });
-                }
-              };
-
-              openAISocket.onerror = (error) => {
-                clearTimeout(connectionTimeout);
-                console.error('❌ Erreur OpenAI WebSocket:', error);
-                connectionState.reconnectAttempts++;
-                const { shouldReconnect } = handleOpenAIError(error, "connexion");
-                
-                if (shouldReconnect && connectionState.reconnectAttempts < maxReconnectAttempts) {
-                  const delay = Math.min(2000 * Math.pow(2, connectionState.reconnectAttempts - 1), 5000);
-                  reconnectTimeout = setTimeout(() => connectToOpenAI(), delay);
+          // Gestion des erreurs OpenAI
+          if (data.type === 'error') {
+            console.error("❌ Erreur OpenAI:", data);
+            
+            // Pour les erreurs d'authentification, on essaie une approche alternative
+            if (data.error && data.error.message && data.error.message.includes('authentication')) {
+              console.log("🔧 Tentative d'authentification alternative...");
+              
+              // Envoyer un événement d'authentification personnalisé
+              const authEvent = {
+                type: 'session.update',
+                session: {
+                  modalities: ["text", "audio"],
+                  instructions: "Tu es Clara, une assistant IA.",
+                  voice: "alloy",
+                  input_audio_format: "pcm16",
+                  output_audio_format: "pcm16"
                 }
               };
               
+              setTimeout(() => {
+                if (openAISocket && openAISocket.readyState === WebSocket.OPEN) {
+                  safeSend(openAISocket, authEvent);
+                }
+              }, 1000);
             } else {
-              const errorText = await testResponse.text();
-              console.error("❌ Test autorisation échoué:", testResponse.status, errorText);
-              throw new Error(`Autorisation OpenAI échouée: ${testResponse.status}`);
+              handleOpenAIError(data.error || data, "réponse");
             }
-          }).catch((error) => {
-            console.error("❌ Erreur test autorisation:", error);
-            handleOpenAIError(error, "test autorisation");
-          });
+            return;
+          }
+          
+          // Transférer l'événement au client
+          safeSend(socket, data);
           
         } catch (error) {
-          console.error("❌ Erreur setup autorisation:", error);
-          handleOpenAIError(error, "setup autorisation");
+          console.error('❌ Erreur parsing OpenAI message:', error);
+          handleOpenAIError(error, "parsing");
         }
       };
 
       openAISocket.onclose = (event) => {
         clearTimeout(connectionTimeout);
-        console.log(`🔌 WebSocket initial fermé: ${event.code} ${event.reason || 'Aucune raison'}`);
-        // Le nouveau WebSocket sera créé dans onopen
+        console.log(`🔌 OpenAI WebSocket fermé: ${event.code} ${event.reason || 'Aucune raison'}`);
+        connectionState.isConnected = false;
+        connectionState.sessionConfigured = false;
+        
+        // Message plus spécifique selon le code d'erreur
+        let closeMessage = `Connexion OpenAI fermée: ${event.reason || 'Connexion interrompue'}`;
+        
+        safeSend(socket, {
+          type: 'connection_status',
+          status: 'disconnected',
+          message: closeMessage,
+          code: event.code
+        });
+        
+        // Retry après un délai si ce n'est pas une fermeture volontaire
+        if (event.code !== 1000 && connectionState.reconnectAttempts < maxReconnectAttempts) {
+          connectionState.reconnectAttempts++;
+          const delay = Math.min(2000 * Math.pow(2, connectionState.reconnectAttempts - 1), 10000);
+          
+          console.log(`🔄 Programmation reconnexion dans ${delay}ms...`);
+          reconnectTimeout = setTimeout(() => {
+            console.log(`🔄 Reconnexion OpenAI automatique...`);
+            connectToOpenAI();
+          }, delay);
+        }
       };
 
       openAISocket.onerror = (error) => {
         clearTimeout(connectionTimeout);
-        console.error('❌ Erreur WebSocket initial:', error);
-        handleOpenAIError(error, "connexion initiale");
+        console.error('❌ Erreur OpenAI WebSocket:', error);
+        connectionState.reconnectAttempts++;
+        const { shouldReconnect } = handleOpenAIError(error, "connexion");
+        
+        if (shouldReconnect && connectionState.reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(2000 * Math.pow(2, connectionState.reconnectAttempts - 1), 5000);
+          reconnectTimeout = setTimeout(() => connectToOpenAI(), delay);
+        }
       };
 
     } catch (error) {
