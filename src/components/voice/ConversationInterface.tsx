@@ -34,12 +34,71 @@ const getSupportedMimeType = (): string => {
   return '';
 };
 
+// Détection d'activité vocale simple
+class VoiceActivityDetector {
+  private audioContext: AudioContext;
+  private analyser: AnalyserNode;
+  private dataArray: Uint8Array;
+  private silenceStart: number = 0;
+  private isSpeaking: boolean = false;
+  private silenceThreshold: number = 40; // Seuil de silence
+  private silenceDuration: number = 1500; // 1.5 secondes de silence
+
+  constructor(
+    private stream: MediaStream,
+    private onSpeechStart: () => void,
+    private onSpeechEnd: () => void
+  ) {
+    this.audioContext = new AudioContext();
+    this.analyser = this.audioContext.createAnalyser();
+    this.analyser.fftSize = 512;
+    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+    
+    const source = this.audioContext.createMediaStreamSource(stream);
+    source.connect(this.analyser);
+    
+    this.startDetection();
+  }
+
+  private startDetection() {
+    const checkAudio = () => {
+      this.analyser.getByteFrequencyData(this.dataArray);
+      
+      const volume = this.dataArray.reduce((acc, val) => acc + val, 0) / this.dataArray.length;
+      const now = Date.now();
+      
+      if (volume > this.silenceThreshold) {
+        if (!this.isSpeaking) {
+          console.log('🎤 Début de parole détecté');
+          this.isSpeaking = true;
+          this.onSpeechStart();
+        }
+        this.silenceStart = now;
+      } else {
+        if (this.isSpeaking && (now - this.silenceStart) > this.silenceDuration) {
+          console.log('🔇 Fin de parole détectée');
+          this.isSpeaking = false;
+          this.onSpeechEnd();
+        }
+      }
+      
+      requestAnimationFrame(checkAudio);
+    };
+    
+    checkAudio();
+  }
+
+  stop() {
+    this.audioContext.close();
+  }
+}
+
 export const ConversationInterface = () => {
   const { toast } = useToast();
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -48,6 +107,9 @@ export const ConversationInterface = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const vadRef = useRef<VoiceActivityDetector | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const isProcessingRef = useRef<boolean>(false);
 
   const connectWebSocket = useCallback(() => {
     if (isConnected || isConnecting) return;
@@ -66,7 +128,7 @@ export const ConversationInterface = () => {
         
         toast({
           title: "🎉 Connexion établie",
-          description: "Vous pouvez maintenant parler avec Clara !",
+          description: "Mode conversation temps réel activé !",
         });
       };
 
@@ -108,6 +170,13 @@ export const ConversationInterface = () => {
               if (data.audioData && isAudioEnabled) {
                 await playAIResponse(data.audioData, aiMessage.id);
               }
+              
+              // Redémarrer l'écoute après la réponse de l'IA
+              setTimeout(() => {
+                if (isListening && !isProcessingRef.current) {
+                  startNewRecording();
+                }
+              }, 500);
               break;
               
             case 'error':
@@ -129,13 +198,21 @@ export const ConversationInterface = () => {
         setIsConnected(false);
         setIsConnecting(false);
         setWs(null);
+        stopListening();
         
         if (event.code !== 1000) {
           toast({
             title: "Connexion fermée",
-            description: "Cliquez sur 'Se connecter' pour reconnecter",
+            description: "Reconnexion automatique en cours...",
             variant: "destructive"
           });
+          
+          // Tentative de reconnexion automatique
+          setTimeout(() => {
+            if (!isConnected) {
+              connectWebSocket();
+            }
+          }, 3000);
         }
       };
 
@@ -158,7 +235,7 @@ export const ConversationInterface = () => {
         variant: "destructive"
       });
     }
-  }, [isConnected, isConnecting, toast, isAudioEnabled]);
+  }, [isConnected, isConnecting, toast, isAudioEnabled, isListening]);
 
   const playAIResponse = async (base64Audio: string, messageId: string) => {
     try {
@@ -211,6 +288,82 @@ export const ConversationInterface = () => {
     }
   };
 
+  const processAudioChunks = useCallback(async () => {
+    if (isProcessingRef.current || audioChunksRef.current.length === 0) return;
+    
+    isProcessingRef.current = true;
+    console.log('🎬 Traitement des chunks audio...');
+    
+    const supportedMimeType = getSupportedMimeType();
+    const audioBlob = new Blob(audioChunksRef.current, { 
+      type: supportedMimeType || 'audio/webm' 
+    });
+    
+    console.log(`📋 Blob audio créé: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Audio = (reader.result as string).split(',')[1];
+      console.log(`📤 Envoi audio base64: ${base64Audio.length} caractères`);
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'audio_message',
+          audio: base64Audio
+        }));
+      }
+      
+      // Reset chunks pour le prochain enregistrement
+      audioChunksRef.current = [];
+      isProcessingRef.current = false;
+    };
+    reader.readAsDataURL(audioBlob);
+  }, [ws]);
+
+  const startNewRecording = useCallback(async () => {
+    if (!isConnected || !streamRef.current || isProcessingRef.current) return;
+    
+    try {
+      const supportedMimeType = getSupportedMimeType();
+      const mediaRecorderOptions: MediaRecorderOptions = {
+        audioBitsPerSecond: 32000
+      };
+      
+      if (supportedMimeType) {
+        mediaRecorderOptions.mimeType = supportedMimeType;
+      }
+      
+      const mediaRecorder = new MediaRecorder(streamRef.current, mediaRecorderOptions);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+          console.log(`📦 Chunk audio ajouté: ${event.data.size} bytes`);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        console.log('⏹️ MediaRecorder arrêté, traitement...');
+        processAudioChunks();
+      };
+      
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(100); // Chunks plus petits pour plus de réactivité
+      
+      console.log('🎤 Nouvel enregistrement démarré');
+      
+    } catch (error) {
+      console.error('❌ Erreur démarrage enregistrement:', error);
+    }
+  }, [isConnected, processAudioChunks]);
+
+  const stopCurrentRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      console.log('🛑 Arrêt enregistrement en cours...');
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
   const startListening = async () => {
     if (!isConnected) {
       toast({
@@ -222,7 +375,7 @@ export const ConversationInterface = () => {
     }
 
     try {
-      console.log('🎤 Demande d\'accès au microphone...');
+      console.log('🎤 Demande d\'accès au microphone pour conversation temps réel...');
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -235,79 +388,26 @@ export const ConversationInterface = () => {
       });
       
       streamRef.current = stream;
-      console.log('✅ Accès microphone accordé');
+      setIsListening(true);
       
-      // Détecter le format supporté
-      const supportedMimeType = getSupportedMimeType();
-      
-      const mediaRecorderOptions: MediaRecorderOptions = {
-        audioBitsPerSecond: 32000
-      };
-      
-      // Ajouter le mimeType seulement s'il est supporté
-      if (supportedMimeType) {
-        mediaRecorderOptions.mimeType = supportedMimeType;
-      }
-      
-      console.log('🎙️ Configuration MediaRecorder:', mediaRecorderOptions);
-      
-      const mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
-      
-      const audioChunks: BlobPart[] = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-          console.log(`📦 Chunk audio reçu: ${event.data.size} bytes`);
+      // Initialiser la détection d'activité vocale
+      vadRef.current = new VoiceActivityDetector(
+        stream,
+        () => {
+          // Début de parole
+          console.log('🗣️ Début de parole - démarrage enregistrement');
+          startNewRecording();
+        },
+        () => {
+          // Fin de parole
+          console.log('🤐 Fin de parole - arrêt enregistrement');
+          stopCurrentRecording();
         }
-      };
-      
-      mediaRecorder.onstop = async () => {
-        console.log('⏹️ Arrêt de l\'enregistrement, traitement des chunks...');
-        
-        const audioBlob = new Blob(audioChunks, { 
-          type: supportedMimeType || 'audio/webm' 
-        });
-        
-        console.log(`📋 Blob audio créé: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
-        
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Audio = (reader.result as string).split(',')[1];
-          console.log(`📤 Envoi audio base64: ${base64Audio.length} caractères`);
-          
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'audio_message',
-              audio: base64Audio
-            }));
-          } else {
-            toast({
-              title: "Erreur",
-              description: "Connexion WebSocket fermée",
-              variant: "destructive"
-            });
-          }
-        };
-        reader.readAsDataURL(audioBlob);
-      };
-      
-      mediaRecorder.onerror = (event) => {
-        console.error('❌ MediaRecorder error:', event);
-        toast({
-          title: "Erreur d'enregistrement",
-          description: "Problème avec l'enregistrement audio",
-          variant: "destructive"
-        });
-      };
-      
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(1000);
-      setIsRecording(true);
+      );
       
       toast({
-        title: "🎤 Enregistrement démarré",
-        description: "Parlez maintenant...",
+        title: "🎤 Mode conversation activé",
+        description: "Parlez naturellement, l'IA vous répondra automatiquement",
       });
       
     } catch (error) {
@@ -319,8 +419,6 @@ export const ConversationInterface = () => {
           errorMessage = "Permission microphone refusée. Veuillez autoriser l'accès au microphone.";
         } else if (error.name === 'NotFoundError') {
           errorMessage = "Aucun microphone trouvé sur cet appareil.";
-        } else if (error.name === 'NotSupportedError') {
-          errorMessage = "Format audio non supporté par ce navigateur.";
         }
       }
       
@@ -332,25 +430,38 @@ export const ConversationInterface = () => {
     }
   };
 
-  const stopListening = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      console.log('🛑 Arrêt de l\'enregistrement...');
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => {
-          track.stop();
-          console.log('🔇 Track audio arrêté');
-        });
-      }
-      
-      toast({
-        title: "⏹️ Enregistrement terminé",
-        description: "Traitement en cours...",
-      });
+  const stopListening = useCallback(() => {
+    console.log('🔇 Arrêt du mode conversation...');
+    
+    setIsListening(false);
+    isProcessingRef.current = false;
+    
+    if (vadRef.current) {
+      vadRef.current.stop();
+      vadRef.current = null;
     }
-  };
+    
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('🔇 Track audio arrêté');
+      });
+      streamRef.current = null;
+    }
+    
+    // Reset chunks
+    audioChunksRef.current = [];
+    
+    toast({
+      title: "🔇 Mode conversation arrêté",
+      description: "Conversation terminée",
+    });
+  }, []);
 
   const clearConversation = () => {
     setConversation([]);
@@ -390,9 +501,7 @@ export const ConversationInterface = () => {
       if (ws) {
         ws.close();
       }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      stopListening();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -400,7 +509,7 @@ export const ConversationInterface = () => {
         currentAudioRef.current.pause();
       }
     };
-  }, []);
+  }, [stopListening]);
 
   return (
     <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-blue-50 to-purple-50">
@@ -408,9 +517,10 @@ export const ConversationInterface = () => {
         <CardTitle className="text-3xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
             <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
-            Conversation avec Clara
+            Conversation Temps Réel avec Clara
             {isAISpeaking && <Activity className="w-5 h-5 ml-3 text-green-500 animate-pulse" />}
             {isConnecting && <Zap className="w-5 h-5 ml-3 text-blue-500 animate-spin" />}
+            {isListening && <Activity className="w-5 h-5 ml-3 text-red-500 animate-pulse" />}
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -439,10 +549,20 @@ export const ConversationInterface = () => {
             <div className="flex items-center">
               <Users className="w-5 h-5 mr-2" />
               <span className="font-semibold">
-                {isConnected ? '✅ Connecté à Clara' : isConnecting ? '🔄 Connexion en cours...' : '❌ Déconnecté'}
+                {isConnected ? 
+                  (isListening ? '🎤 En écoute - Mode conversation temps réel' : '✅ Connecté à Clara') 
+                  : isConnecting ? '🔄 Connexion en cours...' : '❌ Déconnecté'}
               </span>
             </div>
-            {!isConnected && !isConnecting && (
+            {isConnected ? (
+              <Button 
+                onClick={isListening ? stopListening : startListening} 
+                size="sm"
+                variant={isListening ? "destructive" : "default"}
+              >
+                {isListening ? 'Arrêter conversation' : 'Démarrer conversation'}
+              </Button>
+            ) : (
               <Button onClick={connectWebSocket} size="sm">
                 Se connecter
               </Button>
@@ -455,8 +575,8 @@ export const ConversationInterface = () => {
           {conversation.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">Démarrez une conversation avec Clara !</p>
-              <p className="text-sm">Connectez-vous puis cliquez sur le microphone pour commencer à parler</p>
+              <p className="text-lg">Conversation temps réel avec Clara !</p>
+              <p className="text-sm">Connectez-vous puis démarrez la conversation pour parler naturellement</p>
             </div>
           ) : (
             conversation.map((message) => (
@@ -498,43 +618,19 @@ export const ConversationInterface = () => {
           )}
         </div>
 
-        {/* Voice Controls */}
-        <div className="flex justify-center">
-          <Button
-            onClick={isRecording ? stopListening : startListening}
-            disabled={!isConnected || isAISpeaking}
-            size="lg"
-            className={`relative h-20 w-20 rounded-full text-white shadow-lg transition-all duration-300 ${
-              isRecording
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse scale-110'
-                : isAISpeaking
-                ? 'bg-green-500 cursor-not-allowed opacity-75'
-                : 'bg-electric-blue hover:bg-blue-600 hover:scale-105'
-            }`}
-          >
-            {isAISpeaking ? (
-              <Activity className="w-8 h-8 animate-pulse" />
-            ) : isRecording ? (
-              <MicOff className="w-8 h-8" />
-            ) : (
-              <Mic className="w-8 h-8" />
-            )}
-          </Button>
-        </div>
-
         {/* Status Text */}
         <div className="text-center">
           {isAISpeaking ? (
             <p className="text-green-600 font-medium animate-pulse">
               🤖 Clara vous répond...
             </p>
-          ) : isRecording ? (
-            <p className="text-red-600 font-medium animate-pulse">
-              🎤 À l'écoute... Parlez maintenant
+          ) : isListening ? (
+            <p className="text-red-600 font-medium">
+              🎤 Mode conversation temps réel activé - Parlez naturellement !
             </p>
           ) : isConnected ? (
             <p className="text-blue-600 font-medium">
-              💬 Appuyez sur le microphone pour parler avec Clara
+              💬 Cliquez sur "Démarrer conversation" pour un mode temps réel
             </p>
           ) : isConnecting ? (
             <p className="text-blue-600 font-medium animate-pulse">
@@ -548,13 +644,13 @@ export const ConversationInterface = () => {
         </div>
 
         {/* Quick Actions */}
-        {isConnected && (
+        {isConnected && !isListening && (
           <div className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => sendQuickMessage('Bonjour Clara, comment allez-vous ?')}
               variant="outline"
               size="sm"
-              disabled={isRecording || isAISpeaking}
+              disabled={isAISpeaking}
             >
               👋 Saluer Clara
             </Button>
@@ -562,7 +658,7 @@ export const ConversationInterface = () => {
               onClick={() => sendQuickMessage('Pouvez-vous me parler de vos capacités ?')}
               variant="outline"
               size="sm"
-              disabled={isRecording || isAISpeaking}
+              disabled={isAISpeaking}
             >
               🤖 Capacités
             </Button>
