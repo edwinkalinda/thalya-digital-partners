@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Loader2, TestTube } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const TestLoginButton: React.FC = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -26,35 +27,60 @@ export const TestLoginButton: React.FC = () => {
       if (signInError && signInError.message.includes('Invalid login credentials')) {
         console.log('Compte non trouvé, création du compte de test...');
         
-        // Si la connexion échoue, crée le compte de test
-        const { error: signUpError } = await signUp(testEmail, testPassword, "Test", "User");
+        // Crée le compte directement avec Supabase sans confirmation d'email
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: testEmail,
+          password: testPassword,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              first_name: "Test",
+              last_name: "User",
+            },
+          },
+        });
         
         if (signUpError) {
           console.error('Erreur lors de la création du compte:', signUpError);
         } else {
-          console.log('Compte créé, tentative de connexion...');
+          console.log('Compte créé avec succès:', data);
           
-          // Puis tente de se connecter à nouveau après un délai
-          setTimeout(async () => {
-            const { error: retryError } = await signIn(testEmail, testPassword);
-            if (!retryError) {
-              console.log('Connexion réussie!');
+          // Si le compte est créé avec succès, tente une connexion immédiate
+          if (data.user && !data.user.email_confirmed_at) {
+            console.log('Tentative de connexion malgré email non confirmé...');
+            
+            // Essaie de forcer la connexion avec signInWithPassword
+            const { data: sessionData, error: forceSignInError } = await supabase.auth.signInWithPassword({
+              email: testEmail,
+              password: testPassword,
+            });
+            
+            if (!forceSignInError && sessionData.session) {
+              console.log('Connexion forcée réussie!');
               navigate('/dashboard');
             } else {
-              console.error('Erreur lors de la reconnexion:', retryError);
+              console.log('Connexion forcée échouée, redirection vers message d\'information');
+              // Affiche un message explicatif à l'utilisateur
+              alert('Le compte de test a été créé mais nécessite une confirmation par email. Veuillez vérifier votre boîte email ou utiliser un compte existant.');
             }
-            setIsLoading(false);
-          }, 2000);
-          return; // Sort de la fonction pour éviter de définir isLoading à false
+          } else {
+            console.log('Connexion automatique après création du compte');
+            navigate('/dashboard');
+          }
         }
       } else if (!signInError) {
         console.log('Connexion directe réussie!');
         navigate('/dashboard');
+      } else if (signInError.message.includes('Email not confirmed')) {
+        console.log('Email non confirmé, affichage du message d\'information');
+        alert('Le compte existe mais l\'email n\'est pas confirmé. Veuillez vérifier votre boîte email ou contacter le support.');
       } else {
         console.error('Erreur de connexion:', signInError);
+        alert(`Erreur de connexion: ${signInError.message}`);
       }
     } catch (error) {
       console.error('Test login error:', error);
+      alert('Une erreur inattendue s\'est produite lors de la connexion de test.');
     } finally {
       setIsLoading(false);
     }
