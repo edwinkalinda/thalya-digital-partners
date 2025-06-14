@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { TestLoginButton } from "@/components/auth/TestLoginButton";
 import { useAuth } from "@/hooks/useAuth";
 import Logo from "@/components/layout/header/Logo";
 
@@ -157,6 +158,9 @@ const Login = () => {
                   <RegisterForm onSubmit={handleRegister} isLoading={isLoading} />
                 </TabsContent>
               </Tabs>
+
+              {/* Bouton de test temporaire */}
+              <TestLoginButton />
             </CardContent>
 
             <CardFooter className="text-center border-t border-graphite-100 pt-4 sm:pt-6 px-4 sm:px-6">
