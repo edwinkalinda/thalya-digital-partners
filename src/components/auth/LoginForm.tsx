@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,18 +37,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
+        
         <FormField
           control={form.control}
           name="email"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel className="text-graphite-700 font-medium">Email</FormLabel>
+              <FormLabel className="text-gray-700 font-medium">Email</FormLabel>
               <FormControl>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-graphite-400 w-4 h-4 transition-colors group-focus-within:text-electric-blue" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-colors group-focus-within:text-blue-500" />
                   <Input
                     placeholder="votre@email.com"
-                    className="pl-10 h-11 sm:h-12 border-graphite-200 focus:border-electric-blue focus:ring-electric-blue/20 transition-all duration-300"
+                    className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-300"
                     {...field}
                   />
                   {fieldState.error && (
@@ -81,21 +81,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
           name="password"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel className="text-graphite-700 font-medium">Mot de passe</FormLabel>
+              <FormLabel className="text-gray-700 font-medium">Mot de passe</FormLabel>
               <FormControl>
                 <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-graphite-400 w-4 h-4 transition-colors group-focus-within:text-electric-blue" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-colors group-focus-within:text-blue-500" />
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="pl-10 pr-12 h-11 sm:h-12 border-graphite-200 focus:border-electric-blue focus:ring-electric-blue/20 transition-all duration-300"
+                    className="pl-10 pr-12 h-11 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-300"
                     {...field}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-electric-blue/10 transition-colors duration-200"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-blue-500/10 transition-colors duration-200"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -121,29 +121,32 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
         <div className="flex justify-end">
           <Link 
             to="/forgot-password" 
-            className="text-sm text-electric-blue hover:text-blue-600 transition-colors duration-200"
+            className="text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
           >
             Mot de passe oublié ?
           </Link>
         </div>
 
         <motion.div
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           <Button 
             type="submit" 
-            className="w-full h-12 sm:h-14 relative overflow-hidden bg-gradient-to-r from-electric-blue via-blue-600 to-electric-blue text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
+            className="w-full h-12 sm:h-14 relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white font-semibold text-base rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border-0 group"
             disabled={isLoading}
           >
-            {/* Animated background overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-electric-blue to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
-            {/* Button content */}
+            
+            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            
+            
+            <div className="absolute inset-0 rounded-xl bg-blue-400/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+            
+            
             <div className="relative z-10 flex items-center justify-center">
               {isLoading ? (
                 <div className="flex items-center">
@@ -152,7 +155,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   />
-                  <span className="text-white/90">Connexion en cours...</span>
+                  <span className="text-white">Connexion en cours...</span>
                 </div>
               ) : (
                 <span className="flex items-center">
