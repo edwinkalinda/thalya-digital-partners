@@ -37,6 +37,8 @@ export const RealtimeVoiceChat = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const connectionAttempts = useRef(0);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Formats audio supportés avec détection automatique
   const getSupportedMimeType = useCallback(() => {
@@ -59,7 +61,20 @@ export const RealtimeVoiceChat = () => {
     return '';
   }, []);
 
-  // Connexion WebSocket optimisée avec gestion d'erreurs améliorée
+  // Fonction pour envoyer un ping périodique
+  const startPingInterval = useCallback(() => {
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
+    
+    pingIntervalRef.current = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+      }
+    }, 30000); // Ping toutes les 30 secondes
+  }, [ws]);
+
+  // Connexion WebSocket avec timeout et gestion d'erreurs améliorée
   const connectWebSocket = useCallback(() => {
     if (isConnecting || (isConnected && ws?.readyState === WebSocket.OPEN)) {
       console.log('⚠️ Connexion déjà en cours ou établie');
@@ -72,21 +87,40 @@ export const RealtimeVoiceChat = () => {
     
     console.log(`🔌 Tentative de connexion ${connectionAttempts.current} au chat vocal Gemini...`);
     
+    // Nettoyer les timeouts précédents
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current);
+    }
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
+    
     try {
       const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
       
-      // Timeout de connexion
-      const connectionTimeout = setTimeout(() => {
+      // Timeout de connexion plus court et plus agressif
+      connectionTimeoutRef.current = setTimeout(() => {
         if (websocket.readyState === WebSocket.CONNECTING) {
-          console.error('⏰ Timeout de connexion WebSocket');
+          console.error('⏰ Timeout de connexion WebSocket (8s)');
           websocket.close();
           setIsConnecting(false);
-          setConnectionError('Timeout de connexion - Vérifiez votre connexion');
+          setConnectionError('Timeout de connexion - Le serveur ne répond pas');
+          
+          // Tentative de reconnexion automatique
+          if (connectionAttempts.current < 3) {
+            setTimeout(() => {
+              console.log('🔄 Reconnexion automatique...');
+              connectWebSocket();
+            }, 2000);
+          }
         }
-      }, 10000);
+      }, 8000);
 
       websocket.onopen = () => {
-        clearTimeout(connectionTimeout);
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+        }
+        
         console.log('✅ WebSocket connecté avec succès');
         setIsConnected(true);
         setIsConnecting(false);
@@ -98,6 +132,9 @@ export const RealtimeVoiceChat = () => {
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
         }
+        
+        // Démarrer le ping automatique
+        startPingInterval();
         
         // Test de ping immédiat pour vérifier la connexion
         websocket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
@@ -118,6 +155,11 @@ export const RealtimeVoiceChat = () => {
               console.log('🎉 Statut:', data.message);
               if (data.engine) {
                 setAiEngine(data.engine);
+              }
+              // Forcer le statut connecté si on reçoit ce message
+              if (!isConnected) {
+                setIsConnected(true);
+                setIsConnecting(false);
               }
               break;
               
@@ -174,11 +216,12 @@ export const RealtimeVoiceChat = () => {
               break;
               
             case 'pong':
-              console.log('🏓 Pong reçu:', {
-                engine: data.engine || 'serveur',
-                timestamp: data.timestamp,
-                connected: data.connected
-              });
+              console.log('🏓 Pong reçu - Connexion active');
+              // S'assurer que le statut est correct
+              if (!isConnected) {
+                setIsConnected(true);
+                setIsConnecting(false);
+              }
               break;
 
             default:
@@ -191,14 +234,20 @@ export const RealtimeVoiceChat = () => {
       };
 
       websocket.onclose = (event) => {
-        clearTimeout(connectionTimeout);
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+        }
+        if (pingIntervalRef.current) {
+          clearInterval(pingIntervalRef.current);
+        }
+        
         console.log('🔌 WebSocket fermé:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
         setWs(null);
         
         if (event.code !== 1000 && connectionAttempts.current < 5) {
-          const retryDelay = Math.min(3000 * connectionAttempts.current, 15000);
+          const retryDelay = Math.min(2000 * connectionAttempts.current, 10000);
           setConnectionError(`Connexion fermée - Reconnexion dans ${retryDelay/1000}s...`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -209,14 +258,17 @@ export const RealtimeVoiceChat = () => {
           setConnectionError('Impossible de se connecter après 5 tentatives');
           toast({
             title: "Connexion échouée",
-            description: "Impossible de se connecter au serveur",
+            description: "Impossible de se connecter au serveur. Vérifiez votre connexion.",
             variant: "destructive"
           });
         }
       };
 
       websocket.onerror = (error) => {
-        clearTimeout(connectionTimeout);
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+        }
+        
         console.error('❌ Erreur WebSocket:', error);
         setIsConnecting(false);
         setConnectionError('Erreur de connexion WebSocket');
@@ -232,7 +284,7 @@ export const RealtimeVoiceChat = () => {
       setConnectionError('Erreur lors de la création de la connexion');
       console.error('❌ Erreur création WebSocket:', error);
     }
-  }, [isConnecting, isConnected, ws, toast]);
+  }, [isConnecting, isConnected, ws, toast, startPingInterval]);
 
   // Lecture audio optimisée
   const playAudioStreaming = async (base64Audio: string, messageId: string) => {
@@ -422,15 +474,25 @@ export const RealtimeVoiceChat = () => {
     setMessages(prev => [...prev, userMessage]);
   };
 
-  const sendPing = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-    }
-  };
-
   const clearMessages = () => {
     setMessages([]);
     setLatencyStats(null);
+  };
+
+  // Déconnexion manuelle
+  const disconnect = () => {
+    if (ws) {
+      ws.close(1000);
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
+    setIsConnected(false);
+    setIsConnecting(false);
+    setConnectionError(null);
   };
 
   useEffect(() => {
@@ -439,6 +501,12 @@ export const RealtimeVoiceChat = () => {
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
       }
       if (ws) {
         ws.close(1000);
@@ -466,12 +534,22 @@ export const RealtimeVoiceChat = () => {
             )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => ws?.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))} disabled={!isConnected} size="sm" variant="ghost">
+            <Button 
+              onClick={() => ws?.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }))} 
+              disabled={!isConnected} 
+              size="sm" 
+              variant="ghost"
+            >
               Ping
             </Button>
-            <Button onClick={() => { setMessages([]); setLatencyStats(null); }} size="sm" variant="ghost">
+            <Button onClick={clearMessages} size="sm" variant="ghost">
               Clear
             </Button>
+            {isConnected && (
+              <Button onClick={disconnect} size="sm" variant="outline">
+                Déconnecter
+              </Button>
+            )}
           </div>
         </CardTitle>
       </CardHeader>
