@@ -1,51 +1,68 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import AvatarAnimation from "../ui/AvatarAnimation";
+import { Play } from "lucide-react";
 
 const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-6 lg:px-8 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100 opacity-50"></div>
-      
+    <section className="min-h-screen flex items-center justify-center px-6 lg:px-8 relative overflow-hidden pt-16">
       <div className="max-w-7xl mx-auto text-center relative z-10">
         <div className="animate-fade-in">
+          {/* Tagline */}
+          <p className="text-graphite-600 text-lg mb-6 font-medium">
+            Votre Partenaire en Automatisation Intelligente
+          </p>
+          
           {/* Main Title */}
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight mb-6">
-            Plus qu'une IA.
+          <h1 className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-tight">
+            Automatisez votre
             <br />
-            <span className="text-gradient">Un partenaire.</span>
+            <span className="text-deep-black">business,</span>
+            <br />
+            <span className="text-gradient">libérez votre potentiel.</span>
           </h1>
           
           {/* Subtitle */}
-          <p className="text-xl md:text-2xl lg:text-3xl text-graphite-600 max-w-4xl mx-auto mb-12 font-light leading-relaxed">
-            Déployez des agents IA ultra-personnalisés qui gèrent vos appels, 
-            enchantent vos clients et automatisent vos opérations, le tout via une simple conversation.
+          <p className="text-xl md:text-2xl text-graphite-600 max-w-4xl mx-auto mb-12 font-normal leading-relaxed">
+            Thalya automatise les composantes clés de votre entreprise – de la gestion des 
+            stocks à la relation client – pour une efficacité et une croissance sans précédent.
           </p>
           
-          {/* Avatar Animation */}
-          <div className="mb-12">
-            <AvatarAnimation />
-          </div>
-          
-          {/* CTA Button */}
-          <div className="animate-slide-up">
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <Button 
               size="lg" 
-              className="bg-electric-blue hover:bg-blue-600 text-pure-white px-12 py-6 text-xl font-semibold rounded-2xl transition-all duration-300 hover:scale-105 animate-glow"
+              className="bg-deep-black hover:bg-graphite-800 text-pure-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:scale-105"
               onClick={() => navigate('/onboarding')}
             >
-              Donner Vie à votre IA
+              Découvrir l'automatisation →
+            </Button>
+            
+            <Button 
+              variant="outline"
+              size="lg"
+              className="border-graphite-300 text-graphite-700 hover:bg-graphite-50 px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Voir les cas d'usages
             </Button>
           </div>
           
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <div className="w-6 h-10 border-2 border-graphite-300 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-graphite-400 rounded-full mt-2 animate-pulse"></div>
+          {/* Trust indicators */}
+          <div className="flex items-center justify-center space-x-8 text-sm text-graphite-500">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+              Gestion de stocks optimisée
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+              Support client 24/7 automatisé
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+              Processus métier fluidifiés
             </div>
           </div>
         </div>
