@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,15 +30,19 @@ export const VoiceTestCard = () => {
     
     try {
       console.log('Testing ElevenLabs voice:', selectedVoice);
+      console.log('Test text:', testText);
       
+      // Nettoyer l'URL précédente si elle existe
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
+
       const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-        body: {
+        body: JSON.stringify({
           text: testText,
           voiceId: selectedVoice
-        },
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        })
       });
 
       if (error) {
@@ -47,18 +50,12 @@ export const VoiceTestCard = () => {
         throw new Error(error.message);
       }
 
-      console.log('Response received, data type:', typeof data);
-      console.log('Response data:', data);
-
-      // Nettoyer l'URL précédente si elle existe
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-        setAudioUrl(null);
-      }
+      console.log('Response received from ElevenLabs function');
 
       // Vérifier si on a bien reçu un ArrayBuffer
       if (!data || !(data instanceof ArrayBuffer)) {
-        throw new Error('Données audio invalides reçues');
+        console.error('Invalid data type received:', typeof data);
+        throw new Error('Données audio invalides reçues du serveur');
       }
 
       console.log('Audio buffer size:', data.byteLength, 'bytes');
