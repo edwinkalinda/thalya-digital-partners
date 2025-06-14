@@ -19,16 +19,19 @@ serve(async (req) => {
   console.log("🚀 Client WebSocket connecté");
 
   let openAISocket: WebSocket | null = null;
-  let isConnected = false;
-  let sessionConfigured = false;
-  let reconnectAttempts = 0;
+  let connectionState = {
+    isConnected: false,
+    sessionConfigured: false,
+    reconnectAttempts: 0
+  };
   const maxReconnectAttempts = 3;
 
   // Fonction pour envoyer des messages en sécurité
   const safeSend = (ws: WebSocket | null, data: any) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       try {
-        ws.send(JSON.stringify(data));
+        const message = typeof data === 'string' ? data : JSON.stringify(data);
+        ws.send(message);
         return true;
       } catch (error) {
         console.error("❌ Erreur envoi message:", error);
@@ -38,9 +41,33 @@ serve(async (req) => {
     return false;
   };
 
+  // Fonction pour gérer les erreurs OpenAI de manière robuste
+  const handleOpenAIError = (error: any) => {
+    console.error('❌ Erreur OpenAI:', error);
+    
+    let errorMessage = 'Erreur de connexion OpenAI';
+    
+    if (error && typeof error === 'object') {
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error && error.error.message) {
+        errorMessage = error.error.message;
+      }
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
+    safeSend(socket, {
+      type: 'error',
+      message: errorMessage
+    });
+    
+    return errorMessage;
+  };
+
   // Connexion à l'API OpenAI Realtime avec retry logic
   const connectToOpenAI = async () => {
-    if (reconnectAttempts >= maxReconnectAttempts) {
+    if (connectionState.reconnectAttempts >= maxReconnectAttempts) {
       console.error("❌ Trop de tentatives de reconnexion");
       safeSend(socket, {
         type: 'error',
@@ -55,7 +82,7 @@ serve(async (req) => {
         throw new Error('OPENAI_API_KEY not configured');
       }
 
-      console.log(`🔌 Tentative de connexion OpenAI (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+      console.log(`🔌 Tentative de connexion OpenAI (${connectionState.reconnectAttempts + 1}/${maxReconnectAttempts})`);
       
       const url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01";
       
@@ -68,8 +95,8 @@ serve(async (req) => {
 
       openAISocket.onopen = () => {
         console.log("✅ Connecté à OpenAI Realtime API");
-        isConnected = true;
-        reconnectAttempts = 0; // Reset counter on success
+        connectionState.isConnected = true;
+        connectionState.reconnectAttempts = 0;
         
         safeSend(socket, {
           type: 'connection_status',
@@ -84,7 +111,7 @@ serve(async (req) => {
           console.log(`📨 OpenAI Event: ${data.type}`);
           
           // Configuration automatique de la session
-          if (data.type === 'session.created' && !sessionConfigured) {
+          if (data.type === 'session.created' && !connectionState.sessionConfigured) {
             console.log("🎉 Session créée, envoi de la configuration...");
             
             const sessionConfig = {
@@ -110,7 +137,7 @@ serve(async (req) => {
             };
             
             if (safeSend(openAISocket, sessionConfig)) {
-              sessionConfigured = true;
+              connectionState.sessionConfigured = true;
               console.log("📤 Configuration de session envoyée");
             }
           }
@@ -130,17 +157,14 @@ serve(async (req) => {
           
         } catch (error) {
           console.error('❌ Erreur parsing OpenAI message:', error);
-          safeSend(socket, {
-            type: 'error',
-            message: 'Erreur de traitement du message OpenAI'
-          });
+          handleOpenAIError(error);
         }
       };
 
       openAISocket.onclose = (event) => {
         console.log(`🔌 OpenAI WebSocket fermé: ${event.code} ${event.reason || 'Aucune raison'}`);
-        isConnected = false;
-        sessionConfigured = false;
+        connectionState.isConnected = false;
+        connectionState.sessionConfigured = false;
         
         safeSend(socket, {
           type: 'connection_status',
@@ -148,9 +172,9 @@ serve(async (req) => {
           message: `Connexion OpenAI fermée: ${event.reason || 'Connexion interrompue'}`
         });
         
-        // Retry après un délai
-        if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
-          reconnectAttempts++;
+        // Retry après un délai si ce n'est pas une fermeture volontaire
+        if (event.code !== 1000 && connectionState.reconnectAttempts < maxReconnectAttempts) {
+          connectionState.reconnectAttempts++;
           setTimeout(() => {
             console.log(`🔄 Reconnexion OpenAI dans 2s...`);
             connectToOpenAI();
@@ -160,25 +184,14 @@ serve(async (req) => {
 
       openAISocket.onerror = (error) => {
         console.error('❌ Erreur OpenAI WebSocket:', error);
-        reconnectAttempts++;
-        
-        // Ne pas essayer d'envoyer si la socket est fermée
-        if (socket.readyState === WebSocket.OPEN) {
-          safeSend(socket, {
-            type: 'error',
-            message: 'Erreur de connexion OpenAI'
-          });
-        }
+        connectionState.reconnectAttempts++;
+        handleOpenAIError(error);
       };
 
     } catch (error) {
       console.error('❌ Erreur connexion OpenAI:', error);
-      reconnectAttempts++;
-      
-      safeSend(socket, {
-        type: 'error',
-        message: `Erreur OpenAI: ${error.message}`
-      });
+      connectionState.reconnectAttempts++;
+      handleOpenAIError(error);
     }
   };
 
@@ -209,13 +222,13 @@ serve(async (req) => {
         });
         
         // Tenter une reconnexion
-        if (!isConnected && reconnectAttempts < maxReconnectAttempts) {
+        if (!connectionState.isConnected && connectionState.reconnectAttempts < maxReconnectAttempts) {
           connectToOpenAI();
         }
         return;
       }
 
-      if (!sessionConfigured) {
+      if (!connectionState.sessionConfigured) {
         console.error('❌ Session OpenAI non configurée');
         safeSend(socket, {
           type: 'error',

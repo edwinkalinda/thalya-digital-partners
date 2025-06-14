@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ class AudioRecorder {
   }
 }
 
-// Fonction pour encoder l'audio au format requis par OpenAI
+// Fonction pour encoder l'audio au format requis par OpenAI (corrigée)
 const encodeAudioForAPI = (float32Array: Float32Array): string => {
   const int16Array = new Int16Array(float32Array.length);
   for (let i = 0; i < float32Array.length; i++) {
@@ -83,11 +84,11 @@ const encodeAudioForAPI = (float32Array: Float32Array): string => {
   
   const uint8Array = new Uint8Array(int16Array.buffer);
   let binary = '';
-  const chunkSize = 0x8000;
   
-  for (let i = 0; i < uint8Array.length; i += chunkSize) {
-    const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  // Traitement par chunks pour éviter les erreurs de mémoire
+  for (let i = 0; i < uint8Array.length; i += 1024) {
+    const chunk = uint8Array.subarray(i, Math.min(i + 1024, uint8Array.length));
+    binary += String.fromCharCode(...Array.from(chunk));
   }
   
   return btoa(binary);
@@ -203,7 +204,6 @@ export const ConversationInterface = () => {
     setSessionReady(false);
     setConnectionStatus('Connexion au serveur...');
     
-    // Clear any existing reconnect timeout
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -228,7 +228,7 @@ export const ConversationInterface = () => {
           
           switch (data.type) {
             case 'connection_status':
-              setConnectionStatus(data.message);
+              setConnectionStatus(data.message || 'Status mis à jour');
               if (data.status === 'connected') {
                 toast({
                   title: "🔗 Connexion",
@@ -238,7 +238,7 @@ export const ConversationInterface = () => {
               break;
               
             case 'session_ready':
-              setConnectionStatus(data.message);
+              setConnectionStatus(data.message || 'Session prête');
               setSessionReady(true);
               
               toast({
@@ -268,45 +268,49 @@ export const ConversationInterface = () => {
               break;
               
             case 'conversation.item.input_audio_transcription.completed':
-              console.log(`📝 Transcription: ${data.transcript}`);
-              
-              const userMessage: ConversationMessage = {
-                id: Date.now().toString(),
-                type: 'user',
-                text: data.transcript,
-                timestamp: Date.now()
-              };
-              
-              setConversation(prev => [...prev, userMessage]);
-              setConnectionStatus('💭 Clara prépare sa réponse...');
+              if (data.transcript) {
+                console.log(`📝 Transcription: ${data.transcript}`);
+                
+                const userMessage: ConversationMessage = {
+                  id: Date.now().toString(),
+                  type: 'user',
+                  text: data.transcript,
+                  timestamp: Date.now()
+                };
+                
+                setConversation(prev => [...prev, userMessage]);
+                setConnectionStatus('💭 Clara prépare sa réponse...');
+              }
               break;
               
             case 'response.audio_transcript.delta':
               setConnectionStatus('🗣️ Clara répond...');
               
-              setConversation(prev => {
-                const lastMessage = prev[prev.length - 1];
-                if (lastMessage && lastMessage.type === 'ai' && lastMessage.id.endsWith('_current')) {
-                  return [
-                    ...prev.slice(0, -1),
-                    {
-                      ...lastMessage,
-                      text: lastMessage.text + data.delta
-                    }
-                  ];
-                } else {
-                  return [
-                    ...prev,
-                    {
-                      id: Date.now().toString() + '_current',
-                      type: 'ai' as const,
-                      text: data.delta,
-                      timestamp: Date.now(),
-                      hasAudio: true
-                    }
-                  ];
-                }
-              });
+              if (data.delta) {
+                setConversation(prev => {
+                  const lastMessage = prev[prev.length - 1];
+                  if (lastMessage && lastMessage.type === 'ai' && lastMessage.id.endsWith('_current')) {
+                    return [
+                      ...prev.slice(0, -1),
+                      {
+                        ...lastMessage,
+                        text: lastMessage.text + data.delta
+                      }
+                    ];
+                  } else {
+                    return [
+                      ...prev,
+                      {
+                        id: Date.now().toString() + '_current',
+                        type: 'ai' as const,
+                        text: data.delta,
+                        timestamp: Date.now(),
+                        hasAudio: true
+                      }
+                    ];
+                  }
+                });
+              }
               break;
               
             case 'response.audio_transcript.done':
@@ -348,11 +352,7 @@ export const ConversationInterface = () => {
             case 'error':
               console.error('❌ Erreur serveur:', data);
               
-              // Gestion sécurisée des messages d'erreur
-              const errorMessage = typeof data.message === 'string' 
-                ? data.message 
-                : 'Erreur de communication';
-              
+              const errorMessage = data.message || 'Erreur de communication';
               setConnectionStatus(`❌ ${errorMessage}`);
               
               toast({
@@ -361,7 +361,6 @@ export const ConversationInterface = () => {
                 variant: "destructive"
               });
               
-              // Reconnexion automatique pour certaines erreurs
               if (errorMessage.includes('OpenAI') || errorMessage.includes('connexion')) {
                 scheduleReconnect();
               }
@@ -389,14 +388,12 @@ export const ConversationInterface = () => {
         setWs(null);
         setConnectionStatus('Connexion fermée');
         
-        // Nettoyer l'enregistrement si actif
         if (audioRecorderRef.current) {
           audioRecorderRef.current.stop();
           audioRecorderRef.current = null;
           setIsRecording(false);
         }
         
-        // Reconnexion automatique si pas de fermeture volontaire
         if (event.code !== 1000) {
           scheduleReconnect();
         }
@@ -428,7 +425,7 @@ export const ConversationInterface = () => {
       return;
     }
 
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000); // Backoff exponentiel
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
     setReconnectAttempts(prev => prev + 1);
     setConnectionStatus(`🔄 Reconnexion dans ${Math.ceil(delay/1000)}s...`);
     
@@ -489,7 +486,7 @@ export const ConversationInterface = () => {
     }
   };
 
-  // Ping périodique amélioré
+  // Ping périodique
   useEffect(() => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
@@ -506,7 +503,7 @@ export const ConversationInterface = () => {
     return () => clearInterval(pingInterval);
   }, [ws]);
 
-  // Nettoyage amélioré
+  // Nettoyage
   useEffect(() => {
     return () => {
       if (reconnectTimeoutRef.current) {
@@ -549,7 +546,7 @@ export const ConversationInterface = () => {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Status amélioré */}
+        {/* Status */}
         <div className={`p-4 rounded-lg border-l-4 ${
           sessionReady 
             ? 'bg-green-50 border-green-500' 
@@ -649,7 +646,7 @@ export const ConversationInterface = () => {
           </div>
         )}
 
-        {/* Status footer amélioré */}
+        {/* Status footer */}
         <div className="text-center">
           {sessionReady ? (
             <p className="text-green-600 font-medium">
