@@ -9,19 +9,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const loginSchema = z.object({
   email: z.string()
     .min(1, "L'email est requis")
-    .email("Format d'email invalide")
-    .max(100, "L'email ne peut pas dépasser 100 caractères"),
+    .email("Format d'email invalide"),
   password: z.string()
-    .min(6, "Le mot de passe doit contenir au moins 6 caractères")
-    .max(50, "Le mot de passe ne peut pas dépasser 50 caractères")
-    .regex(/(?=.*[a-z])/, "Le mot de passe doit contenir au moins une minuscule")
-    .regex(/(?=.*[A-Z])/, "Le mot de passe doit contenir au moins une majuscule")
-    .regex(/(?=.*\d)/, "Le mot de passe doit contenir au moins un chiffre"),
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   rememberMe: z.boolean().default(false),
 });
 
@@ -35,7 +30,6 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [attemptCount, setAttemptCount] = useState(0);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -48,44 +42,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
   });
 
   const handleSubmit = (data: LoginForm) => {
-    setAttemptCount(prev => prev + 1);
     onSubmit(data);
   };
 
-  const watchedFields = form.watch();
   const isFormValid = form.formState.isValid;
-  const hasErrors = Object.keys(form.formState.errors).length > 0;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5 sm:space-y-6">
         
         {/* Affichage des erreurs générales */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center space-x-2"
-            >
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Limitation des tentatives */}
-        {attemptCount >= 3 && (
+        {error && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center space-x-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center space-x-2"
           >
-            <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-            <p className="text-sm text-amber-700">
-              Plusieurs tentatives détectées. Vérifiez vos identifiants.
-            </p>
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <p className="text-sm text-red-700">{error}</p>
           </motion.div>
         )}
         
@@ -121,18 +95,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
                   )}
                 </div>
               </FormControl>
-              <AnimatePresence>
-                {fieldState.error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FormMessage />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
@@ -174,18 +137,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
                   </Button>
                 </div>
               </FormControl>
-              <AnimatePresence>
-                {fieldState.error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FormMessage />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
@@ -221,27 +173,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
           </Link>
         </div>
 
-        {/* Indicateur de force du formulaire */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Validation du formulaire</span>
-            <span className={isFormValid ? 'text-green-600' : 'text-gray-400'}>
-              {isFormValid ? 'Valide' : hasErrors ? 'Erreurs détectées' : 'En attente'}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <motion.div
-              className={`h-1 rounded-full transition-all duration-300 ${
-                isFormValid ? 'bg-green-500' : hasErrors ? 'bg-red-500' : 'bg-gray-300'
-              }`}
-              initial={{ width: 0 }}
-              animate={{ 
-                width: isFormValid ? '100%' : hasErrors ? '30%' : watchedFields.email || watchedFields.password ? '60%' : '0%' 
-              }}
-            />
-          </div>
-        </div>
-
         <motion.div
           whileHover={{ scale: isLoading ? 1 : 1.02 }}
           whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -253,8 +184,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
             disabled={isLoading || !isFormValid}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-            <div className="absolute inset-0 rounded-xl bg-blue-400/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
             
             <div className="relative z-10 flex items-center justify-center">
               {isLoading ? (
