@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import StarBorder from "@/components/ui/StarBorder";
 
@@ -34,6 +34,15 @@ const CTAButtons = () => {
           className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
         >
           <span>Dashboard</span>
+        </Button>
+
+        <Button
+          onClick={() => navigate('/ai-config')}
+          variant="outline"
+          className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
+        >
+          <Settings className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+          <span>Config IA</span>
         </Button>
 
         <Button
