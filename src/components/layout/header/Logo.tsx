@@ -1,10 +1,28 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import MetallicPaint from "@/components/ui/MetallicPaint";
+import { createThalyaLogoSVG, svgToImageData } from "@/utils/createThalyaLogo";
 
 const Logo = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const [logoImageData, setLogoImageData] = useState<ImageData | null>(null);
+
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const svgString = createThalyaLogoSVG();
+        const imageData = await svgToImageData(svgString);
+        setLogoImageData(imageData);
+      } catch (error) {
+        console.error('Error loading logo:', error);
+      }
+    };
+
+    loadLogo();
+  }, []);
 
   const handleLogoClick = () => {
     navigate('/');
@@ -20,12 +38,21 @@ const Logo = () => {
     <div className="flex items-center group cursor-pointer" onClick={handleLogoClick}>
       <div className="relative">
         <div className="w-8 h-8 sm:w-10 sm:h-10 relative mr-2 sm:mr-3 transition-all duration-300 group-hover:scale-110">
-          <div className="absolute inset-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-electric-blue to-emerald-500 rounded-full transition-all duration-300 group-hover:shadow-lg group-hover:shadow-electric-blue/20"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-pure-white rounded-full"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 border border-electric-blue/30 rounded-full animate-pulse"></div>
-            <div className="absolute inset-0 w-6 h-6 sm:w-8 sm:h-8 border border-electric-blue/20 rounded-full animate-pulse animation-delay-1000 transform -translate-x-0.5 -translate-y-0.5 sm:-translate-x-1 sm:-translate-y-1"></div>
-          </div>
+          {logoImageData ? (
+            <MetallicPaint 
+              imageData={logoImageData}
+              params={{
+                patternScale: 2,
+                refraction: 0.015,
+                edge: 1,
+                patternBlur: 0.005,
+                liquid: 0.07,
+                speed: 0.3,
+              }}
+            />
+          ) : (
+            <div className="absolute inset-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-electric-blue to-emerald-500 rounded-full transition-all duration-300 group-hover:shadow-lg group-hover:shadow-electric-blue/20"></div>
+          )}
         </div>
       </div>
       
