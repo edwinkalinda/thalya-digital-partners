@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, TestTube } from "lucide-react";
 
 export const TestLoginButton: React.FC = () => {
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -23,13 +23,14 @@ export const TestLoginButton: React.FC = () => {
       
       if (signInError && signInError.message.includes('Invalid login credentials')) {
         // Si la connexion échoue, crée le compte de test
-        const { signUp } = useAuth();
         await signUp(testEmail, testPassword, "Test", "User");
         
         // Puis tente de se connecter à nouveau
         setTimeout(async () => {
-          await signIn(testEmail, testPassword);
-          navigate('/dashboard');
+          const { error: retryError } = await signIn(testEmail, testPassword);
+          if (!retryError) {
+            navigate('/dashboard');
+          }
         }, 1000);
       } else if (!signInError) {
         navigate('/dashboard');
