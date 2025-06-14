@@ -1,13 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import StarBorder from "@/components/ui/StarBorder";
-
 const Header = () => {
   const navigate = useNavigate();
-
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
+  return <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo Thalya ultra-simple */}
@@ -56,22 +52,15 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="flex items-center space-x-4">
-            <Button variant="outline" className="hidden md:inline-flex hover:bg-electric-blue/5 hover:text-electric-blue hover:border-electric-blue/30 transition-all duration-300">
+            <Button variant="outline" className="hidden md:inline-flex hover:bg-electric-blue/5 hover:text-electric-blue hover:border-electric-blue/30 transition-all duration-300 bg-slate-950 hover:bg-slate-800">
               Connexion
             </Button>
-            <StarBorder 
-              color="#0066FF"
-              speed="4s"
-              className="transition-all duration-300 hover:scale-105"
-              onClick={() => navigate('/onboarding')}
-            >
+            <StarBorder color="#0066FF" speed="4s" className="transition-all duration-300 hover:scale-105" onClick={() => navigate('/onboarding')}>
               Demander une démo
             </StarBorder>
           </div>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
