@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Orb from '../components/ui/Orb';
 import ChatInterface from '../components/onboarding/ChatInterface';
 import ProgressIndicator from '../components/onboarding/ProgressIndicator';
+import Header from '../components/layout/Header';
 import { Mic, MicOff, Send } from 'lucide-react';
 
 interface Message {
@@ -93,7 +93,10 @@ const Onboarding = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100 flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-graphite-200">
+      <Header />
+      
+      {/* Main Header - adjusted for fixed header */}
+      <div className="pt-16 p-6 border-b border-graphite-200">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
