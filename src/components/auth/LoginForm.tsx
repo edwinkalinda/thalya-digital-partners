@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,17 +47,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
               <FormLabel className="text-gray-700 font-medium">Email</FormLabel>
               <FormControl>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-colors group-focus-within:text-blue-500" />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 transition-colors group-focus-within:text-blue-500" />
                   <Input
                     placeholder="votre@email.com"
-                    className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-300"
+                    className="pl-12 h-12 sm:h-14 border-0 bg-gray-50/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-transparent placeholder:text-gray-400"
                     {...field}
                   />
                   {fieldState.error && (
-                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 w-4 h-4" />
+                    <AlertCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 text-red-500 w-5 h-5" />
                   )}
                   {!fieldState.error && field.value && (
-                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
+                    <CheckCircle className="absolute right-4 top-1/2 transform -translate-y-1/2 text-green-500 w-5 h-5" />
                   )}
                 </div>
               </FormControl>
@@ -84,21 +85,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
               <FormLabel className="text-gray-700 font-medium">Mot de passe</FormLabel>
               <FormControl>
                 <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 transition-colors group-focus-within:text-blue-500" />
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 transition-colors group-focus-within:text-blue-500" />
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="pl-10 pr-12 h-11 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 transition-all duration-300"
+                    className="pl-12 pr-14 h-12 sm:h-14 border-0 bg-gray-50/80 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-transparent placeholder:text-gray-400"
                     {...field}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-blue-500/10 transition-colors duration-200"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-blue-500/10 rounded-lg transition-colors duration-200"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
                 </div>
               </FormControl>
