@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -151,7 +150,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
 
         <Button 
           type="submit" 
-          className="w-full h-11 sm:h-12 bg-gradient-to-r from-electric-blue to-blue-600 hover:from-blue-600 hover:to-electric-blue text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100" 
+          className="w-full h-11 sm:h-12 text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100" 
           disabled={isLoading}
         >
           {isLoading ? (
