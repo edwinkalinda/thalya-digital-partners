@@ -16,23 +16,47 @@ serve(async (req) => {
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
-  console.log("🚀 WebSocket connecté pour chat vocal temps réel");
+  console.log("🚀 Client WebSocket connecté");
 
   let openAISocket: WebSocket | null = null;
   let isConnected = false;
   let sessionConfigured = false;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 3;
 
-  // Connexion à l'API OpenAI Realtime
+  // Fonction pour envoyer des messages en sécurité
+  const safeSend = (ws: WebSocket | null, data: any) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(data));
+        return true;
+      } catch (error) {
+        console.error("❌ Erreur envoi message:", error);
+        return false;
+      }
+    }
+    return false;
+  };
+
+  // Connexion à l'API OpenAI Realtime avec retry logic
   const connectToOpenAI = async () => {
+    if (reconnectAttempts >= maxReconnectAttempts) {
+      console.error("❌ Trop de tentatives de reconnexion");
+      safeSend(socket, {
+        type: 'error',
+        message: 'Connexion OpenAI impossible après plusieurs tentatives'
+      });
+      return;
+    }
+
     try {
       const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
       if (!OPENAI_API_KEY) {
         throw new Error('OPENAI_API_KEY not configured');
       }
 
-      console.log("🔌 Connexion à OpenAI Realtime API...");
+      console.log(`🔌 Tentative de connexion OpenAI (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
       
-      // URL correcte pour l'API Realtime
       const url = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01";
       
       openAISocket = new WebSocket(url, [], {
@@ -45,6 +69,13 @@ serve(async (req) => {
       openAISocket.onopen = () => {
         console.log("✅ Connecté à OpenAI Realtime API");
         isConnected = true;
+        reconnectAttempts = 0; // Reset counter on success
+        
+        safeSend(socket, {
+          type: 'connection_status',
+          status: 'connected',
+          message: 'Connexion OpenAI établie'
+        });
       };
 
       openAISocket.onmessage = (event) => {
@@ -52,15 +83,15 @@ serve(async (req) => {
           const data = JSON.parse(event.data);
           console.log(`📨 OpenAI Event: ${data.type}`);
           
-          // Configuration automatique de la session après connexion
+          // Configuration automatique de la session
           if (data.type === 'session.created' && !sessionConfigured) {
-            console.log("🎉 Session créée, configuration...");
+            console.log("🎉 Session créée, envoi de la configuration...");
             
             const sessionConfig = {
               type: "session.update",
               session: {
                 modalities: ["text", "audio"],
-                instructions: "Tu es Clara, une réceptionniste IA française amicale et professionnelle. Réponds de manière naturelle et concise en français. Tu aides les clients avec leurs questions.",
+                instructions: "Tu es Clara, une réceptionniste IA française très amicale et professionnelle. Tu parles français naturellement. Réponds de manière concise et utile.",
                 voice: "alloy",
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",
@@ -71,70 +102,83 @@ serve(async (req) => {
                   type: "server_vad",
                   threshold: 0.5,
                   prefix_padding_ms: 300,
-                  silence_duration_ms: 500
+                  silence_duration_ms: 1000
                 },
-                temperature: 0.7,
+                temperature: 0.8,
                 max_response_output_tokens: 150
               }
             };
             
-            openAISocket?.send(JSON.stringify(sessionConfig));
-            sessionConfigured = true;
-            console.log("📤 Configuration de session envoyée");
+            if (safeSend(openAISocket, sessionConfig)) {
+              sessionConfigured = true;
+              console.log("📤 Configuration de session envoyée");
+            }
           }
           
           // Configuration confirmée
           if (data.type === 'session.updated') {
             console.log("⚙️ Session configurée avec succès");
             
-            // Notifier le client que tout est prêt
-            socket.send(JSON.stringify({
-              type: 'connection_established',
-              message: 'Chat vocal temps réel activé',
-              status: 'ready'
-            }));
+            safeSend(socket, {
+              type: 'session_ready',
+              message: 'Chat vocal temps réel prêt'
+            });
           }
           
-          // Transférer tous les événements au client
-          socket.send(event.data);
+          // Transférer l'événement au client
+          safeSend(socket, data);
           
         } catch (error) {
           console.error('❌ Erreur parsing OpenAI message:', error);
-          socket.send(JSON.stringify({
+          safeSend(socket, {
             type: 'error',
             message: 'Erreur de traitement du message OpenAI'
-          }));
+          });
         }
       };
 
       openAISocket.onclose = (event) => {
-        console.log(`🔌 OpenAI WebSocket fermé: ${event.code} ${event.reason}`);
+        console.log(`🔌 OpenAI WebSocket fermé: ${event.code} ${event.reason || 'Aucune raison'}`);
         isConnected = false;
         sessionConfigured = false;
         
-        socket.send(JSON.stringify({
-          type: 'error',
-          message: `Connexion OpenAI fermée: ${event.reason || 'Raison inconnue'}`
-        }));
+        safeSend(socket, {
+          type: 'connection_status',
+          status: 'disconnected',
+          message: `Connexion OpenAI fermée: ${event.reason || 'Connexion interrompue'}`
+        });
+        
+        // Retry après un délai
+        if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+          reconnectAttempts++;
+          setTimeout(() => {
+            console.log(`🔄 Reconnexion OpenAI dans 2s...`);
+            connectToOpenAI();
+          }, 2000);
+        }
       };
 
       openAISocket.onerror = (error) => {
         console.error('❌ Erreur OpenAI WebSocket:', error);
-        isConnected = false;
-        sessionConfigured = false;
+        reconnectAttempts++;
         
-        socket.send(JSON.stringify({
-          type: 'error',
-          message: 'Erreur de connexion OpenAI'
-        }));
+        // Ne pas essayer d'envoyer si la socket est fermée
+        if (socket.readyState === WebSocket.OPEN) {
+          safeSend(socket, {
+            type: 'error',
+            message: 'Erreur de connexion OpenAI'
+          });
+        }
       };
 
     } catch (error) {
       console.error('❌ Erreur connexion OpenAI:', error);
-      socket.send(JSON.stringify({
+      reconnectAttempts++;
+      
+      safeSend(socket, {
         type: 'error',
         message: `Erreur OpenAI: ${error.message}`
-      }));
+      });
     }
   };
 
@@ -149,56 +193,68 @@ serve(async (req) => {
       console.log(`📨 Client Event: ${data.type}`);
       
       if (data.type === 'ping') {
-        socket.send(JSON.stringify({ 
+        safeSend(socket, { 
           type: 'pong', 
           timestamp: Date.now() 
-        }));
+        });
         return;
       }
 
-      // Vérifier que OpenAI est connecté et configuré
+      // Vérifier l'état de la connexion avant de transférer
       if (!openAISocket || openAISocket.readyState !== WebSocket.OPEN) {
-        console.error('❌ OpenAI WebSocket non connecté');
-        socket.send(JSON.stringify({
+        console.error('❌ OpenAI WebSocket non disponible, état:', openAISocket?.readyState);
+        safeSend(socket, {
           type: 'error',
-          message: 'OpenAI non connecté'
-        }));
+          message: 'OpenAI non connecté, reconnexion en cours...'
+        });
+        
+        // Tenter une reconnexion
+        if (!isConnected && reconnectAttempts < maxReconnectAttempts) {
+          connectToOpenAI();
+        }
         return;
       }
 
       if (!sessionConfigured) {
         console.error('❌ Session OpenAI non configurée');
-        socket.send(JSON.stringify({
+        safeSend(socket, {
           type: 'error',
-          message: 'Session non configurée'
-        }));
+          message: 'Session non configurée, patientez...'
+        });
         return;
       }
 
       // Transférer le message à OpenAI
-      openAISocket.send(JSON.stringify(data));
-      console.log(`📤 Message transféré à OpenAI: ${data.type}`);
+      if (safeSend(openAISocket, data)) {
+        console.log(`📤 Message transféré à OpenAI: ${data.type}`);
+      } else {
+        console.error('❌ Échec transfert message à OpenAI');
+        safeSend(socket, {
+          type: 'error',
+          message: 'Impossible de transférer le message'
+        });
+      }
       
     } catch (error) {
       console.error('❌ Erreur parsing client message:', error);
-      socket.send(JSON.stringify({
+      safeSend(socket, {
         type: 'error',
         message: 'Format de message invalide'
-      }));
+      });
     }
   };
 
   socket.onclose = () => {
     console.log("🔌 Client WebSocket fermé");
-    if (openAISocket) {
-      openAISocket.close();
+    if (openAISocket && openAISocket.readyState === WebSocket.OPEN) {
+      openAISocket.close(1000, "Client disconnected");
     }
   };
   
   socket.onerror = (error) => {
     console.error("❌ Erreur Client WebSocket:", error);
-    if (openAISocket) {
-      openAISocket.close();
+    if (openAISocket && openAISocket.readyState === WebSocket.OPEN) {
+      openAISocket.close(1000, "Client error");
     }
   };
 
