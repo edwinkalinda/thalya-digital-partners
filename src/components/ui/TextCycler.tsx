@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -9,10 +10,7 @@ import {
   useState,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-function cn(...classes: (string | undefined | boolean)[]) {
-  return classes.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 interface TextCyclerProps {
   texts: string[];
@@ -47,9 +45,9 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
   const {
     texts,
     transition = { type: "spring", damping: 25, stiffness: 300 },
-    initial = { y: "100%", opacity: 0 },
+    initial = { y: 20, opacity: 0 },
     animate = { y: 0, opacity: 1 },
-    exit = { y: "-120%", opacity: 0 },
+    exit = { y: -20, opacity: 0 },
     animatePresenceMode = "wait",
     animatePresenceInitial = false,
     rotationInterval = 2000,
@@ -76,7 +74,6 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
   console.log('Current text index:', currentTextIndex);
 
   const splitIntoCharacters = (text: string) => {
-    // Simple character splitting that works with TypeScript
     return Array.from(text);
   };
 
@@ -209,16 +206,7 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
   console.log('TextCycler: Rendering with elements:', elements);
 
   return (
-    <motion.span
-      className={cn(
-        "flex flex-wrap whitespace-pre-wrap relative",
-        mainClassName,
-        className
-      )}
-      {...rest}
-      layout
-      transition={transition}
-    >
+    <div className={cn("inline-flex flex-wrap whitespace-pre-wrap", className)} {...rest}>
       <span className="sr-only">{texts[currentTextIndex]}</span>
       <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
         <motion.div
@@ -226,10 +214,12 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
           className={cn(
             splitBy === "lines"
               ? "flex flex-col w-full"
-              : "flex flex-wrap whitespace-pre-wrap relative"
+              : "flex flex-wrap whitespace-pre-wrap"
           )}
-          layout
-          aria-hidden="true"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
         >
           {elements.map((wordObj, wordIndex, array) => {
             const previousCharsCount = array
@@ -248,20 +238,20 @@ const TextCycler = forwardRef<TextCyclerRef, TextCyclerProps>((props, ref) => {
                       delay: getStaggerDelay(
                         previousCharsCount + charIndex,
                         array.reduce((sum, word) => sum + word.characters.length, 0)
-                      ),
+                      ) / 1000, // Convert to seconds
                     }}
                     className={cn("inline-block", elementLevelClassName)}
                   >
                     {char}
                   </motion.span>
                 ))}
-                {wordObj.needsSpace && <span className="whitespace-pre"> </span>}
+                {wordObj.needsSpace && <span> </span>}
               </span>
             );
           })}
         </motion.div>
       </AnimatePresence>
-    </motion.span>
+    </div>
   );
 });
 
