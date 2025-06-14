@@ -44,7 +44,7 @@ const registerSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 
-// Animations optimisées
+// Animations optimisées avec types corrects
 const containerVariants = {
   hidden: { opacity: 0, y: 30 },
   visible: { 
@@ -52,13 +52,22 @@ const containerVariants = {
     y: 0,
     transition: { 
       duration: 0.6,
-      ease: [0.25, 0.46, 0.45, 0.94],
+      ease: "easeOut",
       staggerChildren: 0.1
     }
   }
 };
 
 const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.4, ease: "easeOut" }
+  }
+};
+
+const tabVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { 
     opacity: 1, 
@@ -243,9 +252,10 @@ const Login = () => {
                   <TabsContent value="login" className="space-y-5 sm:space-y-6">
                     <motion.div
                       key="login"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
+                      variants={tabVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
                       transition={{ duration: 0.3 }}
                     >
                       <Form {...loginForm}>
@@ -366,9 +376,10 @@ const Login = () => {
                   <TabsContent value="register" className="space-y-5 sm:space-y-6">
                     <motion.div
                       key="register"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
+                      variants={tabVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
                       transition={{ duration: 0.3 }}
                     >
                       <Form {...registerForm}>
