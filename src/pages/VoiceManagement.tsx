@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, PhoneCall, Settings, Activity, Volume2 } from "lucide-react";
+import { Phone, PhoneCall, Settings, Activity, Volume2, Play, Loader2 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { supabase } from "@/integrations/supabase/client";
 
 const VoiceManagement = () => {
   const { toast } = useToast();
@@ -16,6 +17,7 @@ const VoiceManagement = () => {
   const [selectedVoice, setSelectedVoice] = useState('pFZP5JQG7iQjIQuC4Bku'); // Lily par défaut
   const [isTestCalling, setIsTestCalling] = useState(false);
   const [isTestingVoice, setIsTestingVoice] = useState(false);
+  const [testText, setTestText] = useState("Bonjour, je suis votre assistante vocale Thalya. Comment puis-je vous aider aujourd'hui ?");
 
   // Voix ElevenLabs optimisées pour le français
   const elevenLabsVoices = [
@@ -59,35 +61,42 @@ const VoiceManagement = () => {
     setIsTestingVoice(true);
     
     try {
-      const response = await fetch('https://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/elevenlabs-tts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: "Bonjour, je suis votre assistante vocale Thalya. Comment puis-je vous aider aujourd'hui ?",
+      console.log('Testing ElevenLabs voice:', selectedVoice);
+      
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: {
+          text: testText,
           voiceId: selectedVoice
-        }),
+        }
       });
 
-      if (response.ok) {
-        const audioBuffer = await response.arrayBuffer();
-        const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        await audio.play();
-        
-        toast({
-          title: "Test vocal réussi",
-          description: "La voix sélectionnée a été testée avec succès.",
-        });
-      } else {
-        throw new Error('Erreur lors du test vocal');
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message);
       }
-    } catch (error) {
+
+      // L'edge function retourne directement l'audio
+      const audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      await audio.play();
+      
       toast({
-        title: "Erreur",
-        description: "Impossible de tester la voix. Vérifiez votre clé API ElevenLabs.",
+        title: "Test vocal réussi ✅",
+        description: `La voix ${elevenLabsVoices.find(v => v.id === selectedVoice)?.name} a été testée avec succès.`,
+      });
+
+      // Nettoyer l'URL après lecture
+      audio.addEventListener('ended', () => {
+        URL.revokeObjectURL(audioUrl);
+      });
+      
+    } catch (error) {
+      console.error('Voice test error:', error);
+      toast({
+        title: "Erreur de test vocal",
+        description: "Impossible de tester la voix. Vérifiez votre clé API ElevenLabs dans les secrets Supabase.",
         variant: "destructive"
       });
     } finally {
@@ -106,27 +115,27 @@ const VoiceManagement = () => {
             <div className="flex items-center justify-center mb-4">
               <Phone className="w-12 h-12 text-electric-blue mr-4" />
               <h1 className="text-4xl font-bold text-deep-black">
-                Gestion Vocale Thalya
+                Test Système Vocal Thalya
               </h1>
             </div>
             <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-              Configurez et gérez votre agent IA réceptionniste vocal avec ElevenLabs
+              Testez et configurez votre agent IA réceptionniste vocal avec ElevenLabs
             </p>
           </div>
 
-          {/* Configuration des voix ElevenLabs */}
+          {/* Test des voix ElevenLabs */}
           <Card className="shadow-xl border-0">
             <CardHeader>
               <CardTitle className="text-2xl text-deep-black flex items-center">
-                <Volume2 className="w-6 h-6 mr-2 text-electric-blue" />
-                Configuration Vocale ElevenLabs
+                <Play className="w-6 h-6 mr-2 text-electric-blue" />
+                Test des Voix ElevenLabs
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h3 className="font-semibold text-green-800 mb-2">✅ ElevenLabs intégré</h3>
                 <p className="text-green-700 text-sm">
-                  Votre système utilise maintenant ElevenLabs pour une latence ultra-faible (200-400ms de gain) et une qualité vocale exceptionnelle.
+                  Votre système utilise maintenant ElevenLabs pour une latence ultra-faible et une qualité vocale exceptionnelle.
                 </p>
               </div>
 
@@ -150,13 +159,33 @@ const VoiceManagement = () => {
                   </Select>
                 </div>
 
+                <div>
+                  <Label htmlFor="test_text">Texte de test</Label>
+                  <Input
+                    id="test_text"
+                    value={testText}
+                    onChange={(e) => setTestText(e.target.value)}
+                    placeholder="Entrez le texte à tester..."
+                    className="border-graphite-300 focus:border-electric-blue"
+                  />
+                </div>
+
                 <Button 
                   onClick={handleTestVoice}
-                  disabled={isTestingVoice}
-                  variant="outline"
-                  className="w-full"
+                  disabled={isTestingVoice || !testText.trim()}
+                  className="w-full bg-electric-blue hover:bg-blue-600"
                 >
-                  {isTestingVoice ? 'Test en cours...' : 'Tester la voix sélectionnée'}
+                  {isTestingVoice ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Test en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-2" />
+                      Tester la voix sélectionnée
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -180,7 +209,7 @@ const VoiceManagement = () => {
                   <li><code>TWILIO_ACCOUNT_SID</code> - Votre SID de compte Twilio</li>
                   <li><code>TWILIO_AUTH_TOKEN</code> - Votre token d'authentification Twilio</li>
                   <li><code>OPENAI_API_KEY</code> - Votre clé API OpenAI (pour Whisper STT)</li>
-                  <li><code>ELEVENLABS_API_KEY</code> - Votre clé API ElevenLabs (pour TTS)</li>
+                  <li><code>ELEVENLABS_API_KEY</code> - ✅ Votre clé API ElevenLabs (configurée)</li>
                 </ul>
               </div>
 
@@ -265,7 +294,7 @@ const VoiceManagement = () => {
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
                   <p className="font-semibold text-green-800">ElevenLabs</p>
-                  <p className="text-sm text-green-600">Intégré</p>
+                  <p className="text-sm text-green-600">✅ Intégré</p>
                 </div>
                 <div className="text-center p-4 bg-yellow-50 rounded-lg">
                   <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mb-2"></div>
@@ -275,7 +304,7 @@ const VoiceManagement = () => {
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
                   <p className="font-semibold text-green-800">Edge Functions</p>
-                  <p className="text-sm text-green-600">Déployées</p>
+                  <p className="text-sm text-green-600">✅ Déployées</p>
                 </div>
               </div>
             </CardContent>

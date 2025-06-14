@@ -45,6 +45,11 @@ const App = () => (
               <AIConfig />
             </ProtectedRoute>
           } />
+          <Route path="/voice-management" element={
+            <ProtectedRoute>
+              <VoiceManagement />
+            </ProtectedRoute>
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
