@@ -9,40 +9,60 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo forestier abstrait */}
+          {/* Logo Thalya abstrait naturel */}
           <div className="flex items-center group cursor-pointer">
             <div className="relative">
-              {/* Conteneur principal du logo forestier */}
-              <div className="w-14 h-14 relative mr-3 transition-all duration-700 group-hover:scale-110">
-                {/* Tronc principal - base de l'arbre */}
-                <div className="absolute bottom-0 left-1/2 w-2 h-6 bg-gradient-to-t from-amber-800 to-amber-600 transform -translate-x-1/2 rounded-b-sm transition-all duration-500 group-hover:h-7"></div>
+              {/* Conteneur principal du logo Thalya */}
+              <div className="w-16 h-12 relative mr-4 transition-all duration-700 group-hover:scale-110">
+                {/* T - Forme d'arbre stylisée */}
+                <div className="absolute left-0 top-0">
+                  <div className="w-1 h-8 bg-gradient-to-b from-emerald-600 to-emerald-800 rounded-full transform transition-all duration-500 group-hover:scale-110"></div>
+                  <div className="absolute -top-1 -left-1 w-3 h-3 bg-gradient-to-br from-lime-400 to-emerald-500 rounded-full transform transition-all duration-300 group-hover:rotate-12"></div>
+                </div>
+
+                {/* H - Double vague naturelle */}
+                <div className="absolute left-3 top-1">
+                  <div className="w-1 h-6 bg-gradient-to-b from-teal-500 to-emerald-600 rounded-full"></div>
+                  <div className="absolute top-3 left-0 w-2 h-0.5 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full"></div>
+                  <div className="absolute top-0 left-2 w-1 h-6 bg-gradient-to-b from-teal-500 to-emerald-600 rounded-full"></div>
+                </div>
+
+                {/* A - Forme de feuille stylisée */}
+                <div className="absolute left-6 top-0">
+                  <div className="w-3 h-4 bg-gradient-to-br from-lime-400 via-emerald-500 to-green-600 rounded-[50%_70%_30%_80%] transform rotate-12 transition-all duration-400 group-hover:rotate-24"></div>
+                  <div className="absolute top-2 left-0.5 w-1.5 h-0.5 bg-emerald-700 rounded-full"></div>
+                </div>
+
+                {/* L - Tige courbée */}
+                <div className="absolute left-9 top-0">
+                  <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-green-700 rounded-full"></div>
+                  <div className="absolute bottom-0 left-0 w-2 h-0.5 bg-gradient-to-r from-emerald-600 to-green-600 rounded-full"></div>
+                </div>
+
+                {/* Y - Forme de branche qui se divise */}
+                <div className="absolute left-11 top-0">
+                  <div className="w-0.5 h-3 bg-gradient-to-b from-teal-500 to-emerald-600 rounded-full transform rotate-12 origin-bottom"></div>
+                  <div className="w-0.5 h-3 bg-gradient-to-b from-teal-500 to-emerald-600 rounded-full transform -rotate-12 origin-bottom"></div>
+                  <div className="absolute top-3 left-0 w-0.5 h-3 bg-gradient-to-b from-emerald-600 to-green-700 rounded-full"></div>
+                </div>
+
+                {/* A - Seconde feuille */}
+                <div className="absolute right-0 top-1">
+                  <div className="w-2.5 h-3 bg-gradient-to-br from-emerald-400 via-teal-500 to-green-600 rounded-[60%_40%_70%_30%] transform -rotate-12 transition-all duration-500 group-hover:-rotate-24"></div>
+                  <div className="absolute top-1 left-0.5 w-1 h-0.5 bg-green-700 rounded-full"></div>
+                </div>
+
+                {/* Éléments organiques connecteurs */}
+                <div className="absolute bottom-0 left-1 w-12 h-1 bg-gradient-to-r from-emerald-300/40 via-teal-300/60 to-green-300/40 rounded-full transition-all duration-700 group-hover:scale-110"></div>
                 
-                {/* Feuillage principal - couronne de l'arbre */}
-                <div className="absolute top-2 left-1/2 w-8 h-8 bg-gradient-to-br from-emerald-500 via-green-400 to-teal-500 transform -translate-x-1/2 rounded-[70%_30%_60%_40%] transition-all duration-700 group-hover:scale-110 group-hover:rotate-12 shadow-lg"></div>
+                {/* Particules de vie */}
+                <div className="absolute top-0 left-2 w-1 h-1 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 animate-pulse transition-opacity duration-300"></div>
+                <div className="absolute top-1 right-1 w-0.5 h-0.5 bg-lime-400 rounded-full opacity-0 group-hover:opacity-100 animate-bounce animation-delay-1000 transition-opacity duration-300"></div>
+                <div className="absolute bottom-1 left-4 w-1 h-1 bg-emerald-300 rounded-full opacity-0 group-hover:opacity-100 animate-ping animation-delay-2000 transition-opacity duration-300"></div>
                 
-                {/* Feuillage secondaire - branches latérales */}
-                <div className="absolute top-3 left-2 w-5 h-5 bg-gradient-to-br from-lime-400 to-emerald-500 rounded-[60%_40%_70%_30%] transform rotate-45 transition-all duration-500 group-hover:rotate-[60deg] opacity-80"></div>
-                <div className="absolute top-4 right-2 w-4 h-4 bg-gradient-to-br from-green-400 to-forest-green rounded-[40%_60%_50%_50%] transform -rotate-30 transition-all duration-500 group-hover:rotate-0 opacity-70"></div>
-                
-                {/* Détails de feuilles volantes */}
-                <div className="absolute top-1 left-4 w-2 h-2 bg-gradient-to-r from-lime-300 to-green-400 rounded-[50%_70%_30%_80%] transform rotate-12 transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 opacity-60"></div>
-                <div className="absolute top-6 right-1 w-1.5 h-1.5 bg-gradient-to-r from-emerald-300 to-teal-400 rounded-[60%_40%_80%_20%] transform -rotate-45 transition-all duration-400 group-hover:translate-x-2 group-hover:translate-y-1 opacity-50"></div>
-                
-                {/* Racines stylisées */}
-                <div className="absolute bottom-0 left-3 w-3 h-1.5 bg-gradient-to-r from-amber-700 to-amber-500 rounded-full transform rotate-12 opacity-40 transition-all duration-500 group-hover:scale-110"></div>
-                <div className="absolute bottom-0 right-3 w-2.5 h-1 bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transform -rotate-12 opacity-30 transition-all duration-500 group-hover:scale-110"></div>
-                
-                {/* Effet de lueur naturelle */}
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/20 via-green-400/20 to-teal-500/20 rounded-full opacity-0 group-hover:opacity-100 blur-xl transition-all duration-700"></div>
-                
-                {/* Particules magiques de la forêt */}
-                <div className="absolute top-0 left-1 w-1 h-1 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 animate-bounce transition-opacity duration-300"></div>
-                <div className="absolute top-2 right-0 w-0.5 h-0.5 bg-lime-400 rounded-full opacity-0 group-hover:opacity-100 animate-pulse animation-delay-1000 transition-opacity duration-300"></div>
-                <div className="absolute bottom-2 left-0 w-1 h-1 bg-emerald-300 rounded-full opacity-0 group-hover:opacity-100 animate-ping animation-delay-2000 transition-opacity duration-300"></div>
+                {/* Aura naturelle */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-teal-400/15 to-green-400/10 rounded-xl opacity-0 group-hover:opacity-100 blur-sm transition-all duration-700"></div>
               </div>
-              
-              {/* Élément de sous-bois - mousse stylisée */}
-              <div className="absolute -bottom-2 left-8 w-6 h-2 bg-gradient-to-r from-green-200 to-emerald-200 rounded-full opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
             </div>
             
             <div className="flex flex-col">
