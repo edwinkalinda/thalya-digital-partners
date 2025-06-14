@@ -13,8 +13,32 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voiceId = 'pFZP5JQG7iQjIQuC4Bku' } = await req.json();
+    // Vérifier que la requête a un body
+    const contentType = req.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Content-Type must be application/json');
+    }
+
+    const body = await req.text();
+    if (!body || body.trim() === '') {
+      throw new Error('Request body is empty');
+    }
+
+    let requestData;
+    try {
+      requestData = JSON.parse(body);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Request body:', body);
+      throw new Error('Invalid JSON in request body');
+    }
+
+    const { text, voiceId = 'pFZP5JQG7iQjIQuC4Bku' } = requestData;
     
+    if (!text || text.trim() === '') {
+      throw new Error('Text parameter is required and cannot be empty');
+    }
+
     console.log(`Converting text to speech with ElevenLabs: ${text}`);
 
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -46,7 +70,6 @@ serve(async (req) => {
     
     console.log(`Successfully generated audio from ElevenLabs, size: ${audioBuffer.byteLength} bytes`);
 
-    // Retourner directement l'ArrayBuffer avec les bons headers
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
