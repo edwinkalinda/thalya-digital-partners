@@ -137,7 +137,7 @@ serve(async (req) => {
     return { errorMessage, shouldReconnect };
   };
 
-  // Connexion à l'API OpenAI Realtime avec authentification correcte
+  // Connexion à l'API OpenAI Realtime avec URL authentifiée
   const connectToOpenAI = async () => {
     if (connectionState.reconnectAttempts >= maxReconnectAttempts) {
       console.error("❌ Trop de tentatives de reconnexion");
@@ -158,19 +158,13 @@ serve(async (req) => {
         openAISocket = null;
       }
       
-      // URL avec le bon endpoint et paramètres pour l'API Realtime
-      const url = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`;
+      // URL avec authentification incluse directement dans l'URL
+      const url = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01&authorization=Bearer ${OPENAI_API_KEY}`;
       
-      console.log("📡 Création WebSocket OpenAI avec URL:", url);
-      console.log("🔐 Utilisation de l'authentification Bearer:", OPENAI_API_KEY.substring(0, 10) + "...");
+      console.log("📡 Création WebSocket OpenAI avec authentification dans l'URL");
       
-      // Créer le WebSocket avec les headers d'authentification appropriés
-      openAISocket = new WebSocket(url, {
-        headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "OpenAI-Beta": "realtime=v1"
-        }
-      });
+      // Créer le WebSocket sans headers (Deno ne les supporte pas)
+      openAISocket = new WebSocket(url);
 
       // Timeout pour la connexion
       const connectionTimeout = setTimeout(() => {
