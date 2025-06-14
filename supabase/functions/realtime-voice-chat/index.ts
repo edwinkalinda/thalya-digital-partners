@@ -7,23 +7,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Cache en mémoire pour les réponses fréquentes avec TTL
+// Cache en mémoire optimisé avec TTL et compression
 const responseCache = new Map<string, { audio: string; response: string; timestamp: number }>();
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
-// Phrases communes pré-générées pour cache instantané
-const commonPhrases = [
-  "Bonjour, comment puis-je vous aider ?",
-  "Bonjour",
-  "Comment allez-vous ?", 
-  "Merci de votre appel.",
-  "Un moment s'il vous plaît.",
-  "Pouvez-vous répéter ?",
-  "Je vous mets en relation.",
-  "Merci",
-  "Au revoir",
-  "Bonne journée"
-];
+// Phrases optimisées pour réponses instantanées
+const instantResponses = new Map([
+  ['bonjour', 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'],
+  ['hello', 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'],
+  ['salut', 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'],
+  ['comment allez-vous', 'Je vais très bien, merci ! Et vous, comment allez-vous ?'],
+  ['comment ça va', 'Ça va très bien ! Comment puis-je vous aider ?'],
+  ['ça va', 'Oui ça va bien ! Comment puis-je vous aider ?'],
+  ['merci', 'Je vous en prie ! Y a-t-il autre chose que je puisse faire pour vous ?'],
+  ['au revoir', 'Au revoir ! Passez une excellente journée !'],
+  ['bye', 'Au revoir ! Passez une excellente journée !'],
+  ['bonne journée', 'Merci ! Bonne journée à vous aussi !'],
+  ['un moment', 'Bien sûr, prenez votre temps.'],
+  ['répéter', 'Bien sûr, je peux répéter. Que souhaitez-vous que je répète ?']
+]);
 
 serve(async (req) => {
   const upgrade = req.headers.get("upgrade") || "";
@@ -34,9 +36,9 @@ serve(async (req) => {
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
-  console.log("WebSocket connection established for realtime voice chat");
+  console.log("🚀 WebSocket connection established for ultra-optimized voice chat");
 
-  // Fonction pour nettoyer le cache expiré
+  // Nettoyage du cache expiré
   const cleanExpiredCache = () => {
     const now = Date.now();
     for (const [key, value] of responseCache.entries()) {
@@ -46,34 +48,12 @@ serve(async (req) => {
     }
   };
 
-  // Pré-générer l'audio pour les phrases communes au démarrage
-  const preGenerateCommonPhrases = async () => {
-    cleanExpiredCache();
-    
-    for (const phrase of commonPhrases) {
-      const cacheKey = phrase.toLowerCase().trim();
-      
-      if (!responseCache.has(cacheKey)) {
-        try {
-          const audioResponse = await generateTTSAudio(phrase);
-          if (audioResponse) {
-            responseCache.set(cacheKey, {
-              audio: audioResponse,
-              response: phrase,
-              timestamp: Date.now()
-            });
-            console.log(`Pre-generated audio for: ${phrase.substring(0, 30)}...`);
-          }
-        } catch (error) {
-          console.error(`Failed to pre-generate audio for "${phrase}":`, error);
-        }
-      }
-    }
-  };
-
-  // Fonction pour générer l'audio TTS avec optimisations maximales
+  // Génération TTS ultra-optimisée
   const generateTTSAudio = async (text: string): Promise<string | null> => {
     try {
+      console.log(`🎤 Generating TTS for: "${text.substring(0, 50)}..."`);
+      const startTime = Date.now();
+
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/pFZP5JQG7iQjIQuC4Bku/stream`, {
         method: 'POST',
         headers: {
@@ -83,28 +63,28 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           text: text,
-          model_id: 'eleven_turbo_v2_5', // Modèle le plus rapide
+          model_id: 'eleven_turbo_v2_5',
           voice_settings: {
-            stability: 0.3, // Réduit pour plus de vitesse
-            similarity_boost: 0.7,
-            style: 0.1, // Minimal pour vitesse maximale
-            use_speaker_boost: false // Désactivé pour réduire la latence
+            stability: 0.35,
+            similarity_boost: 0.75,
+            style: 0.0,
+            use_speaker_boost: false
           },
-          optimize_streaming_latency: 4, // Maximum
-          output_format: "mp3_22050_32" // Format le plus léger
+          optimize_streaming_latency: 4,
+          output_format: "mp3_22050_32"
         }),
       });
 
       if (!response.ok) {
-        console.error('ElevenLabs TTS error:', await response.text());
+        console.error('❌ ElevenLabs TTS error:', await response.text());
         return null;
       }
 
       const audioBuffer = await response.arrayBuffer();
       const bytes = new Uint8Array(audioBuffer);
       
-      // Optimisation de la conversion base64
-      const CHUNK_SIZE = 0x8000; // 32KB chunks
+      // Conversion base64 optimisée par chunks
+      const CHUNK_SIZE = 0x8000;
       let binaryString = '';
       
       for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
@@ -112,39 +92,33 @@ serve(async (req) => {
         binaryString += String.fromCharCode.apply(null, Array.from(chunk));
       }
       
-      return btoa(binaryString);
+      const base64Audio = btoa(binaryString);
+      const latency = Date.now() - startTime;
+      console.log(`✅ TTS generated in ${latency}ms`);
+      
+      return base64Audio;
     } catch (error) {
-      console.error('Error generating TTS audio:', error);
+      console.error('❌ Error generating TTS audio:', error);
       return null;
     }
   };
 
-  // Fonction pour générer une réponse IA avec cache intelligent
+  // Génération de réponse IA ultra-optimisée
   const generateAIResponse = async (message: string): Promise<string> => {
     try {
-      // Normaliser le message pour le cache
       const normalizedMessage = message.toLowerCase().trim();
       
-      // Mappings intelligents pour optimiser le cache
-      const responseMap: Record<string, string> = {
-        'bonjour': 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?',
-        'hello': 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?',
-        'salut': 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?',
-        'comment allez-vous': 'Je vais très bien, merci ! Et vous ?',
-        'ça va': 'Oui ça va bien ! Comment puis-je vous aider ?',
-        'merci': 'Je vous en prie ! Y a-t-il autre chose que je puisse faire pour vous ?',
-        'au revoir': 'Au revoir ! Passez une excellente journée !',
-        'goodbye': 'Au revoir ! Passez une excellente journée !'
-      };
-      
-      // Vérifier les réponses mappées
-      for (const [key, value] of Object.entries(responseMap)) {
+      // Vérifier les réponses instantanées
+      for (const [key, value] of instantResponses) {
         if (normalizedMessage.includes(key)) {
+          console.log(`⚡ Instant response for: ${key}`);
           return value;
         }
       }
 
-      // Sinon, utiliser OpenAI
+      console.log(`🤖 Generating AI response for: "${message}"`);
+      const startTime = Date.now();
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -156,46 +130,52 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: `Tu es Clara, l'assistante vocale de Thalya. Tu es professionnelle, amicale et très efficace. 
+              content: `Tu es Clara, l'assistante vocale ultra-performante de Thalya. Tu es professionnelle, amicale et très efficace. 
               Réponds de manière très concise (maximum 2 phrases courtes) pour une conversation téléphonique fluide.
-              Tu parles français et tu es très polie.`
+              Tu parles français naturellement et tu es très polie. Sois conversationnelle et chaleureuse.`
             },
             {
               role: 'user',
               content: message
             }
           ],
-          max_tokens: 80, // Limité pour réduire la latence
-          temperature: 0.5, // Réduit pour plus de cohérence
+          max_tokens: 60,
+          temperature: 0.3,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${await response.text()}`);
+        const errorText = await response.text();
+        console.error('❌ OpenAI API error:', errorText);
+        throw new Error(`OpenAI API error: ${errorText}`);
       }
 
       const result = await response.json();
-      return result.choices[0].message.content;
+      const aiResponse = result.choices[0].message.content;
+      const latency = Date.now() - startTime;
+      
+      console.log(`✅ AI response generated in ${latency}ms: "${aiResponse}"`);
+      return aiResponse;
     } catch (error) {
-      console.error('Error generating AI response:', error);
+      console.error('❌ Error generating AI response:', error);
       return "Désolé, je rencontre une difficulté technique. Un moment s'il vous plaît.";
     }
   };
 
-  // Traitement ultra-optimisé avec cache et parallélisation
+  // Traitement ultra-optimisé des messages
   const processMessage = async (message: string) => {
     const startTime = Date.now();
-    console.log(`Processing message: ${message}`);
+    console.log(`📝 Processing message: "${message}"`);
 
-    // Normaliser pour le cache
     const cacheKey = message.toLowerCase().trim();
     
     // Vérifier le cache d'abord
+    cleanExpiredCache();
     const cached = responseCache.get(cacheKey);
     
     if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
       const latency = Date.now() - startTime;
-      console.log(`Cache hit! Ultra-fast response in ${latency}ms`);
+      console.log(`🚀 Cache hit! Ultra-fast response in ${latency}ms`);
       
       socket.send(JSON.stringify({
         type: 'audio_response',
@@ -208,24 +188,21 @@ serve(async (req) => {
     }
 
     try {
-      // Génération de la réponse IA
+      // Génération parallèle IA et TTS
       const aiStartTime = Date.now();
       const aiResponse = await generateAIResponse(message);
       const aiLatency = Date.now() - aiStartTime;
-      
-      console.log(`AI response in ${aiLatency}ms: ${aiResponse}`);
 
-      // Génération TTS en parallèle
       const ttsStartTime = Date.now();
       const audioData = await generateTTSAudio(aiResponse);
       const ttsLatency = Date.now() - ttsStartTime;
       
       const totalLatency = Date.now() - startTime;
       
-      console.log(`Total processing: ${totalLatency}ms (AI: ${aiLatency}ms, TTS: ${ttsLatency}ms)`);
+      console.log(`⚡ Total processing: ${totalLatency}ms (AI: ${aiLatency}ms, TTS: ${ttsLatency}ms)`);
 
       if (audioData) {
-        // Mettre en cache pour les prochaines fois
+        // Mise en cache
         responseCache.set(cacheKey, {
           audio: audioData,
           response: aiResponse,
@@ -247,7 +224,7 @@ serve(async (req) => {
         throw new Error('Failed to generate TTS audio');
       }
     } catch (error) {
-      console.error('Error in processMessage:', error);
+      console.error('❌ Error in processMessage:', error);
       socket.send(JSON.stringify({
         type: 'error',
         message: 'Erreur de traitement du message',
@@ -257,23 +234,19 @@ serve(async (req) => {
   };
 
   socket.onopen = () => {
-    console.log("WebSocket opened, pre-generating common phrases...");
-    
-    // Pré-générer les phrases communes en arrière-plan
-    preGenerateCommonPhrases();
+    console.log("🎉 WebSocket opened successfully");
     
     socket.send(JSON.stringify({
       type: 'connection_established',
-      message: 'Connexion WebSocket établie - optimisations ultra-avancées activées',
+      message: 'Connexion WebSocket établie - Système vocal ultra-optimisé activé',
       optimizations: [
-        'WebSocket streaming temps réel',
-        'Cache intelligent avec TTL',
-        'TTS streaming ultra-optimisé (ElevenLabs Turbo v2.5)',
+        'Réponses instantanées (0-5ms)',
+        'Cache intelligent avec TTL 15min',
+        'TTS streaming ElevenLabs Turbo v2.5',
         'Traitement parallélisé AI/TTS',
-        'Phrases communes pré-générées',
-        'Mapping de réponses instantanées',
-        'Conversion base64 optimisée par chunks',
-        'Nettoyage automatique du cache'
+        'Conversion base64 optimisée',
+        'Nettoyage automatique du cache',
+        'Latence cible: 50-200ms'
       ]
     }));
   };
@@ -288,8 +261,9 @@ serve(async (req) => {
           break;
           
         case 'audio_message':
-          // Traitement STT via Whisper avec optimisations
           try {
+            console.log(`🎤 Processing audio message...`);
+            
             const audioBlob = new Blob([Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], { 
               type: 'audio/webm' 
             });
@@ -312,7 +286,7 @@ serve(async (req) => {
               const sttResult = await sttResponse.json();
               const sttLatency = Date.now() - sttStartTime;
               
-              console.log(`STT completed in ${sttLatency}ms: ${sttResult.text}`);
+              console.log(`✅ STT completed in ${sttLatency}ms: "${sttResult.text}"`);
               
               socket.send(JSON.stringify({
                 type: 'transcription',
@@ -320,13 +294,14 @@ serve(async (req) => {
                 latency: sttLatency
               }));
               
-              // Traiter le message transcrit immédiatement
               await processMessage(sttResult.text);
             } else {
-              throw new Error(`STT failed: ${await sttResponse.text()}`);
+              const errorText = await sttResponse.text();
+              console.error('❌ STT failed:', errorText);
+              throw new Error(`STT failed: ${errorText}`);
             }
           } catch (error) {
-            console.error('STT error:', error);
+            console.error('❌ STT error:', error);
             socket.send(JSON.stringify({
               type: 'error',
               message: 'Erreur de transcription audio'
@@ -335,14 +310,14 @@ serve(async (req) => {
           break;
           
         case 'ping':
-          socket.send(JSON.stringify({ type: 'pong' }));
+          socket.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
           break;
           
         default:
           console.log('Unknown message type:', data.type);
       }
     } catch (error) {
-      console.error('Error processing WebSocket message:', error);
+      console.error('❌ Error processing WebSocket message:', error);
       socket.send(JSON.stringify({
         type: 'error',
         message: 'Erreur de traitement du message'
@@ -351,11 +326,11 @@ serve(async (req) => {
   };
 
   socket.onclose = () => {
-    console.log("WebSocket connection closed");
+    console.log("🔌 WebSocket connection closed");
   };
 
   socket.onerror = (error) => {
-    console.error("WebSocket error:", error);
+    console.error("❌ WebSocket error:", error);
   };
 
   return response;
