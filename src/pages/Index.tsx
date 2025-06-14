@@ -1,12 +1,18 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import Hero from '../components/sections/Hero';
+import AIHub from '../components/sections/AIHub';
+import ThalyaDifference from '../components/sections/ThalyaDifference';
+import Philosophy from '../components/sections/Philosophy';
+import FinalCTA from '../components/sections/FinalCTA';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-pure-white text-deep-black">
+      <Hero />
+      <AIHub />
+      <ThalyaDifference />
+      <Philosophy />
+      <FinalCTA />
     </div>
   );
 };
