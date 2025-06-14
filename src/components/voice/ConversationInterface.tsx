@@ -18,11 +18,11 @@ export const ConversationInterface = () => {
   const { toast } = useToast();
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [conversationMode, setConversationMode] = useState<'text' | 'voice'>('voice');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -30,88 +30,115 @@ export const ConversationInterface = () => {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const connectWebSocket = useCallback(() => {
-    if (isConnected) return;
+    if (isConnected || isConnecting) return;
     
-    console.log('🔌 Connecting to conversation WebSocket...');
+    setIsConnecting(true);
+    console.log('🔌 Attempting to connect to conversation WebSocket...');
     
-    const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
-    
-    websocket.onopen = () => {
-      console.log('✅ Conversation WebSocket connected');
-      setIsConnected(true);
-      setWs(websocket);
+    try {
+      const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
       
-      toast({
-        title: "🎉 Conversation démarrée",
-        description: "Vous pouvez maintenant parler avec Clara !",
-      });
-    };
-
-    websocket.onmessage = async (event) => {
-      try {
-        const data = JSON.parse(event.data);
+      websocket.onopen = () => {
+        console.log('✅ Conversation WebSocket connected successfully');
+        setIsConnected(true);
+        setIsConnecting(false);
+        setWs(websocket);
         
-        switch (data.type) {
-          case 'connection_established':
-            console.log('🎊 Conversation ready');
-            break;
-            
-          case 'transcription':
-            console.log(`👤 Vous: ${data.text}`);
-            
-            const userMessage: ConversationMessage = {
-              id: Date.now().toString(),
-              type: 'user',
-              text: data.text,
-              timestamp: Date.now()
-            };
-            
-            setConversation(prev => [...prev, userMessage]);
-            break;
-            
-          case 'audio_response':
-            console.log(`🤖 Clara: ${data.response}`);
-            
-            const aiMessage: ConversationMessage = {
-              id: Date.now().toString() + '_ai',
-              type: 'ai',
-              text: data.response,
-              audioData: data.audioData,
-              timestamp: Date.now()
-            };
-            
-            setConversation(prev => [...prev, aiMessage]);
-            
-            if (data.audioData && isAudioEnabled) {
-              await playAIResponse(data.audioData, aiMessage.id);
-            }
-            break;
-            
-          case 'error':
-            console.error('❌ Conversation error:', data.message);
-            toast({
-              title: "Erreur de conversation",
-              description: data.message,
-              variant: "destructive"
-            });
-            break;
+        toast({
+          title: "🎉 Connexion établie",
+          description: "Vous pouvez maintenant parler avec Clara !",
+        });
+      };
+
+      websocket.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          switch (data.type) {
+            case 'connection_established':
+              console.log('🎊 Conversation ready');
+              break;
+              
+            case 'transcription':
+              console.log(`👤 Vous: ${data.text}`);
+              
+              const userMessage: ConversationMessage = {
+                id: Date.now().toString(),
+                type: 'user',
+                text: data.text,
+                timestamp: Date.now()
+              };
+              
+              setConversation(prev => [...prev, userMessage]);
+              break;
+              
+            case 'audio_response':
+              console.log(`🤖 Clara: ${data.response}`);
+              
+              const aiMessage: ConversationMessage = {
+                id: Date.now().toString() + '_ai',
+                type: 'ai',
+                text: data.response,
+                audioData: data.audioData,
+                timestamp: Date.now()
+              };
+              
+              setConversation(prev => [...prev, aiMessage]);
+              
+              if (data.audioData && isAudioEnabled) {
+                await playAIResponse(data.audioData, aiMessage.id);
+              }
+              break;
+              
+            case 'error':
+              console.error('❌ Conversation error:', data.message);
+              toast({
+                title: "Erreur de conversation",
+                description: data.message,
+                variant: "destructive"
+              });
+              break;
+          }
+        } catch (error) {
+          console.error('❌ Error parsing conversation message:', error);
         }
-      } catch (error) {
-        console.error('❌ Error parsing conversation message:', error);
-      }
-    };
+      };
 
-    websocket.onclose = () => {
-      console.log('🔌 Conversation disconnected');
-      setIsConnected(false);
-      setWs(null);
-    };
+      websocket.onclose = (event) => {
+        console.log('🔌 Conversation disconnected', event.code, event.reason);
+        setIsConnected(false);
+        setIsConnecting(false);
+        setWs(null);
+        
+        if (event.code !== 1000) {
+          toast({
+            title: "Connexion fermée",
+            description: "Cliquez sur 'Se connecter' pour reconnecter",
+            variant: "destructive"
+          });
+        }
+      };
 
-    websocket.onerror = (error) => {
-      console.error('❌ Conversation WebSocket error:', error);
-    };
+      websocket.onerror = (error) => {
+        console.error('❌ Conversation WebSocket error:', error);
+        setIsConnecting(false);
+        toast({
+          title: "Erreur de connexion",
+          description: "Impossible de se connecter au serveur vocal",
+          variant: "destructive"
+        });
+      };
 
-  }, [isConnected, toast, isAudioEnabled]);
+    } catch (error) {
+      console.error('❌ Failed to create WebSocket:', error);
+      setIsConnecting(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la connexion WebSocket",
+        variant: "destructive"
+      });
+    }
+  }, [isConnected, isConnecting, toast, isAudioEnabled]);
 
   const playAIResponse = async (base64Audio: string, messageId: string) => {
     try {
@@ -165,11 +192,16 @@ export const ConversationInterface = () => {
   };
 
   const startListening = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Non connecté",
+        description: "Veuillez d'abord vous connecter",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 22050 });
-      }
-      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 22050,
@@ -207,6 +239,12 @@ export const ConversationInterface = () => {
               type: 'audio_message',
               audio: base64Audio
             }));
+          } else {
+            toast({
+              title: "Erreur",
+              description: "Connexion WebSocket fermée",
+              variant: "destructive"
+            });
           }
         };
         reader.readAsDataURL(audioBlob);
@@ -216,11 +254,16 @@ export const ConversationInterface = () => {
       mediaRecorder.start(1000);
       setIsRecording(true);
       
+      toast({
+        title: "🎤 Enregistrement démarré",
+        description: "Parlez maintenant...",
+      });
+      
     } catch (error) {
       console.error('❌ Microphone access error:', error);
       toast({
         title: "Erreur microphone",
-        description: "Impossible d'accéder au microphone",
+        description: "Impossible d'accéder au microphone. Vérifiez les permissions.",
         variant: "destructive"
       });
     }
@@ -234,6 +277,11 @@ export const ConversationInterface = () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+      
+      toast({
+        title: "⏹️ Enregistrement terminé",
+        description: "Traitement en cours...",
+      });
     }
   };
 
@@ -243,6 +291,31 @@ export const ConversationInterface = () => {
       title: "Conversation effacée",
       description: "Nouvelle conversation démarrée",
     });
+  };
+
+  const sendQuickMessage = (message: string) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "Non connecté",
+        description: "Veuillez d'abord vous connecter",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    ws.send(JSON.stringify({
+      type: 'text_message',
+      message: message
+    }));
+
+    const userMessage: ConversationMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      text: message,
+      timestamp: Date.now()
+    };
+    
+    setConversation(prev => [...prev, userMessage]);
   };
 
   useEffect(() => {
@@ -270,6 +343,7 @@ export const ConversationInterface = () => {
             <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
             Conversation avec Clara
             {isAISpeaking && <Activity className="w-5 h-5 ml-3 text-green-500 animate-pulse" />}
+            {isConnecting && <Zap className="w-5 h-5 ml-3 text-blue-500 animate-spin" />}
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -298,10 +372,10 @@ export const ConversationInterface = () => {
             <div className="flex items-center">
               <Users className="w-5 h-5 mr-2" />
               <span className="font-semibold">
-                {isConnected ? '✅ Connecté à Clara' : '❌ Déconnecté'}
+                {isConnected ? '✅ Connecté à Clara' : isConnecting ? '🔄 Connexion en cours...' : '❌ Déconnecté'}
               </span>
             </div>
-            {!isConnected && (
+            {!isConnected && !isConnecting && (
               <Button onClick={connectWebSocket} size="sm">
                 Se connecter
               </Button>
@@ -315,7 +389,7 @@ export const ConversationInterface = () => {
             <div className="text-center text-gray-500 py-8">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p className="text-lg">Démarrez une conversation avec Clara !</p>
-              <p className="text-sm">Cliquez sur le microphone pour commencer à parler</p>
+              <p className="text-sm">Connectez-vous puis cliquez sur le microphone pour commencer à parler</p>
             </div>
           ) : (
             conversation.map((message) => (
@@ -395,9 +469,13 @@ export const ConversationInterface = () => {
             <p className="text-blue-600 font-medium">
               💬 Appuyez sur le microphone pour parler avec Clara
             </p>
+          ) : isConnecting ? (
+            <p className="text-blue-600 font-medium animate-pulse">
+              🔄 Connexion en cours...
+            </p>
           ) : (
             <p className="text-gray-500">
-              🔌 Connectez-vous pour démarrer la conversation
+              🔌 Cliquez sur "Se connecter" pour démarrer
             </p>
           )}
         </div>
@@ -406,14 +484,7 @@ export const ConversationInterface = () => {
         {isConnected && (
           <div className="grid grid-cols-2 gap-2">
             <Button
-              onClick={() => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                  ws.send(JSON.stringify({
-                    type: 'text_message',
-                    message: 'Bonjour Clara, comment allez-vous ?'
-                  }));
-                }
-              }}
+              onClick={() => sendQuickMessage('Bonjour Clara, comment allez-vous ?')}
               variant="outline"
               size="sm"
               disabled={isRecording || isAISpeaking}
@@ -421,14 +492,7 @@ export const ConversationInterface = () => {
               👋 Saluer Clara
             </Button>
             <Button
-              onClick={() => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                  ws.send(JSON.stringify({
-                    type: 'text_message',
-                    message: 'Pouvez-vous me parler de vos capacités ?'
-                  }));
-                }
-              }}
+              onClick={() => sendQuickMessage('Pouvez-vous me parler de vos capacités ?')}
               variant="outline"
               size="sm"
               disabled={isRecording || isAISpeaking}
