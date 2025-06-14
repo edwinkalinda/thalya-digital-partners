@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, MicOff, MessageSquare, Play, Volume2, Loader2 } from "lucide-react";
+import { Mic, MicOff, MessageSquare, Play, Volume2, Loader2, RefreshCw } from "lucide-react";
 
 interface ConversationMessage {
   id: string;
@@ -179,6 +179,7 @@ export const ConversationInterface = () => {
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<string>('');
   const [isAIResponsePlaying, setIsAIResponsePlaying] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
@@ -194,6 +195,7 @@ export const ConversationInterface = () => {
     if (isConnected || isConnecting) return;
     
     setIsConnecting(true);
+    setSessionReady(false);
     setConnectionStatus('Connexion au chat vocal temps réel...');
     
     try {
@@ -204,12 +206,7 @@ export const ConversationInterface = () => {
         setIsConnected(true);
         setIsConnecting(false);
         setWs(websocket);
-        setConnectionStatus('Chat vocal temps réel prêt');
-        
-        toast({
-          title: "🎙️ Chat vocal activé",
-          description: "Vous pouvez maintenant parler avec Clara",
-        });
+        setConnectionStatus('Connexion à OpenAI...');
       };
 
       websocket.onmessage = async (event) => {
@@ -220,14 +217,22 @@ export const ConversationInterface = () => {
           switch (data.type) {
             case 'connection_established':
               setConnectionStatus(data.message);
+              setSessionReady(true);
+              
+              toast({
+                title: "🎙️ Chat vocal activé",
+                description: "Vous pouvez maintenant parler avec Clara",
+              });
               break;
               
             case 'session.created':
               console.log('🎉 Session OpenAI créée');
+              setConnectionStatus('Configuration de la session...');
               break;
               
             case 'session.updated':
               console.log('⚙️ Session OpenAI configurée');
+              setConnectionStatus('Session configurée, prête à utiliser');
               break;
               
             case 'input_audio_buffer.speech_started':
@@ -315,6 +320,14 @@ export const ConversationInterface = () => {
                 description: data.message,
                 variant: "destructive"
               });
+              
+              // Tentative de reconnexion automatique
+              if (data.message.includes('OpenAI')) {
+                setTimeout(() => {
+                  console.log('🔄 Tentative de reconnexion...');
+                  connectWebSocket();
+                }, 5000);
+              }
               break;
               
             case 'pong':
@@ -330,6 +343,7 @@ export const ConversationInterface = () => {
         console.log(`🔌 WebSocket fermé:`, event.code);
         setIsConnected(false);
         setIsConnecting(false);
+        setSessionReady(false);
         setWs(null);
         setConnectionStatus('Déconnecté');
         
@@ -343,21 +357,23 @@ export const ConversationInterface = () => {
       websocket.onerror = (error) => {
         console.error('❌ Erreur WebSocket:', error);
         setIsConnecting(false);
+        setSessionReady(false);
         setConnectionStatus('Erreur connexion');
       };
 
     } catch (error) {
       console.error('❌ Erreur WebSocket:', error);
       setIsConnecting(false);
+      setSessionReady(false);
       setConnectionStatus('Erreur');
     }
   }, [isConnected, isConnecting, toast]);
 
   const startRecording = async () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !sessionReady) {
       toast({
         title: "Erreur",
-        description: "WebSocket non connecté",
+        description: "Session non prête",
         variant: "destructive"
       });
       return;
@@ -365,7 +381,7 @@ export const ConversationInterface = () => {
 
     try {
       audioRecorderRef.current = new AudioRecorder((audioData) => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        if (ws && ws.readyState === WebSocket.OPEN && sessionReady) {
           const encodedAudio = encodeAudioForAPI(audioData);
           ws.send(JSON.stringify({
             type: 'input_audio_buffer.append',
@@ -436,17 +452,36 @@ export const ConversationInterface = () => {
             <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
             Clara - IA Réceptionniste Vocale
           </div>
-          <Button onClick={() => setConversation([])} size="sm" variant="ghost">
-            Effacer
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setConversation([])} size="sm" variant="ghost">
+              Effacer
+            </Button>
+            {!isConnected && (
+              <Button onClick={connectWebSocket} size="sm" disabled={isConnecting}>
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Connexion...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reconnecter
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       
       <CardContent className="space-y-6">
         {/* Status */}
         <div className={`p-4 rounded-lg border-l-4 ${
-          isConnected 
+          sessionReady 
             ? 'bg-green-50 border-green-500' 
+            : isConnected 
+            ? 'bg-yellow-50 border-yellow-500'
             : 'bg-red-50 border-red-500'
         }`}>
           <div className="flex items-center justify-between">
@@ -463,18 +498,6 @@ export const ConversationInterface = () => {
                 )}
               </div>
             </div>
-            {!isConnected && (
-              <Button onClick={connectWebSocket} size="sm" disabled={isConnecting}>
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Connexion...
-                  </>
-                ) : (
-                  'Se connecter'
-                )}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -518,7 +541,7 @@ export const ConversationInterface = () => {
         </div>
 
         {/* Contrôles vocaux */}
-        {isConnected && (
+        {sessionReady && (
           <div className="flex justify-center">
             <Button 
               onClick={isRecording ? stopRecording : startRecording}
@@ -545,13 +568,17 @@ export const ConversationInterface = () => {
 
         {/* Status */}
         <div className="text-center">
-          {isConnected ? (
+          {sessionReady ? (
             <p className="text-green-600 font-medium">
               🎙️ Conversation vocale temps réel active
             </p>
           ) : isConnecting ? (
             <p className="text-blue-600 font-medium animate-pulse">
               🔄 Connexion au système vocal...
+            </p>
+          ) : isConnected ? (
+            <p className="text-yellow-600 font-medium">
+              ⚙️ Configuration de la session...
             </p>
           ) : (
             <p className="text-gray-500">
