@@ -35,7 +35,7 @@ const Onboarding = () => {
   const [conversation, setConversation] = useState<Message[]>([
     {
       role: 'ai' as const,
-      message: "Bonjour ! Je suis l'IA Chef d'Orchestre de Thalya. Je vais vous aider à créer votre agent IA personnalisé. Commençons par une question simple : quel nom souhaitez-vous donner à votre IA réceptionniste ?",
+      message: "Bonjour ! Je suis Thalya. Je vais vous aider à créer votre agent IA personnalisé. Commençons par une question simple : quel nom souhaitez-vous donner à votre IA réceptionniste ?",
       timestamp: Date.now()
     }
   ]);
@@ -166,7 +166,7 @@ const Onboarding = () => {
               />
             </div>
             <h2 className="text-lg sm:text-xl font-semibold text-deep-black mb-2">
-              IA Chef d'Orchestre
+              Thalya
             </h2>
             <p className="text-sm sm:text-base text-graphite-600">
               Je vous guide dans la création de votre IA
