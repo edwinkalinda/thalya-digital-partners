@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ const Onboarding = () => {
   
   const navigate = useNavigate();
   const { addAgent } = useAgents();
-  const { addNotifications } = useNotifications();
+  const { addNotification } = useNotifications();
   
   const [conversation, setConversation] = useState<Message[]>([
     {
@@ -116,7 +117,7 @@ const Onboarding = () => {
           };
           
           addAgent(newAgent);
-          addNotifications('success', `L'IA ${agentData.name} a été créée avec succès !`);
+          addNotification('success', `L'IA ${agentData.name} a été créée avec succès !`);
           navigate('/onboarding-success');
         }, 2000);
       }
