@@ -136,19 +136,21 @@ const Onboarding = () => {
       {/* Header */}
       <Header />
       
-      {/* Main Header - adjusted for fixed header */}
+      {/* Main Header - improved layout to prevent cropping */}
       <div className="flex-shrink-0 pt-16 p-4 sm:p-6 border-b border-graphite-200 bg-pure-white/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-deep-black">Configuration de votre IA</h1>
               <p className="text-sm sm:text-base text-graphite-600">Créons ensemble votre agent IA personnalisé</p>
             </div>
-            <div className="flex-shrink-0 overflow-x-auto">
-              <ProgressIndicator 
-                steps={onboardingSteps} 
-                currentStep={currentStep} 
-              />
+            <div className="flex-shrink-0 w-full overflow-x-auto">
+              <div className="min-w-max">
+                <ProgressIndicator 
+                  steps={onboardingSteps} 
+                  currentStep={currentStep} 
+                />
+              </div>
             </div>
           </div>
         </div>
