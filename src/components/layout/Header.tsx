@@ -1,21 +1,19 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import StarBorder from "@/components/ui/StarBorder";
-
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === '/';
-
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({
+        behavior: 'smooth'
+      });
     }
   };
-
   const handleBack = () => {
     if (window.history.length > 1) {
       navigate(-1);
@@ -23,24 +21,15 @@ const Header = () => {
       navigate('/');
     }
   };
-
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
+  return <header className="fixed top-0 left-0 right-0 z-50 bg-pure-white/80 backdrop-blur-md border-b border-graphite-200">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo Thalya ultra-simple */}
           <div className="flex items-center">
             {/* Bouton de retour - affiché seulement si on n'est pas sur la page d'accueil */}
-            {!isHomePage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBack}
-                className="mr-4 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300"
-              >
+            {!isHomePage && <Button variant="ghost" size="icon" onClick={handleBack} className="mr-4 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300">
                 <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
+              </Button>}
             
             <div className="flex items-center group cursor-pointer" onClick={() => navigate('/')}>
               <div className="relative">
@@ -67,46 +56,28 @@ const Header = () => {
           </div>
 
           {/* Navigation - affichée seulement sur la page d'accueil */}
-          {isHomePage && (
-            <nav className="hidden md:flex items-center space-x-8">
-              <button 
-                onClick={() => scrollToSection('ai-hub')}
-                className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
-              >
+          {isHomePage && <nav className="hidden md:flex items-center space-x-8">
+              <button onClick={() => scrollToSection('ai-hub')} className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer">
                 Modules IA
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
               </button>
-              <button 
-                onClick={() => scrollToSection('thalya-difference')}
-                className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
-              >
+              <button onClick={() => scrollToSection('thalya-difference')} className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer">
                 Avantages
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
               </button>
-              <button 
-                onClick={() => scrollToSection('philosophy')}
-                className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
-              >
+              <button onClick={() => scrollToSection('philosophy')} className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer">
                 Témoignages
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
               </button>
-              <button 
-                onClick={() => scrollToSection('final-cta')}
-                className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
-              >
+              <button onClick={() => scrollToSection('final-cta')} className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer">
                 Tarifs
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
               </button>
-            </nav>
-          )}
+            </nav>}
 
           {/* CTA Buttons */}
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              className="hidden md:inline-flex border-graphite-300 text-graphite-700 hover:bg-electric-blue/5 hover:text-electric-blue hover:border-electric-blue/30 transition-all duration-300"
-              onClick={() => navigate('/login')}
-            >
+            <Button variant="outline" onClick={() => navigate('/login')} className="">
               Connexion
             </Button>
             <StarBorder color="#0066FF" speed="4s" className="transition-all duration-300 hover:scale-105" onClick={() => navigate('/onboarding')}>
@@ -115,8 +86,6 @@ const Header = () => {
           </div>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
