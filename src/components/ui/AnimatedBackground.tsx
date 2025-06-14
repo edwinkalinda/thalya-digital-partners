@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import Dither from './Dither';
+import Iridescence from './Iridescence';
 
 const AnimatedBackground = () => {
   const [mounted, setMounted] = useState(false);
@@ -14,14 +14,11 @@ const AnimatedBackground = () => {
   return (
     <div className="fixed inset-0 -z-10 distortion-container">
       <div style={{ width: '100%', height: '100%', position: 'absolute' }}>
-        <Dither
-          waveColor={[0.2, 0.4, 0.8]}
-          disableAnimation={false}
-          enableMouseInteraction={true}
-          mouseRadius={0.3}
-          waveAmplitude={0.2}
-          waveFrequency={2}
-          waveSpeed={0.03}
+        <Iridescence
+          color={[0.2, 0.4, 0.8]}
+          speed={1.0}
+          amplitude={0.1}
+          mouseReact={true}
         />
       </div>
     </div>

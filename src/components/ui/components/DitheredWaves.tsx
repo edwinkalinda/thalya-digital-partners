@@ -55,7 +55,7 @@ export function DitheredWaves({
     }
   });
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handlePointerMove = (e: any) => {
     if (!enableMouseInteraction) return;
     const rect = gl.domElement.getBoundingClientRect();
     const dpr = gl.getPixelRatio();
