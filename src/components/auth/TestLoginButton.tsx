@@ -15,7 +15,7 @@ export function TestLoginButton() {
       if (error.message?.includes('Invalid login credentials')) {
         try {
           // Si les identifiants sont invalides, créer le compte test
-          await signUp('test@example.com', 'password123');
+          await signUp('test@example.com', 'password123', 'Test', 'User');
           toast({
             title: "Compte test créé",
             description: "Un compte test a été créé. Vérifiez votre email pour confirmer.",
