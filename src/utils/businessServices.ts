@@ -61,7 +61,7 @@ export async function fetchOrCreateCallerProfile(phone: string): Promise<{ profi
   return { profile: data };
 }
 
-export async function upsertCallerProfile(profile: Partial<CallerProfile>): Promise<boolean> {
+export async function upsertCallerProfile(profile: Partial<CallerProfile> & { phone_number: string }): Promise<boolean> {
   const { error } = await supabase
     .from('caller_profiles')
     .upsert(profile, { onConflict: 'phone_number' });
