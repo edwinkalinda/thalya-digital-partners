@@ -1,237 +1,145 @@
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { PasswordStrength } from './PasswordStrength';
-
-const registerSchema = z.object({
-  name: z.string()
-    .min(2, "Le nom doit contenir au moins 2 caractères")
-    .max(50, "Le nom ne peut pas dépasser 50 caractères")
-    .regex(/^[a-zA-ZÀ-ÿ\s]*$/, "Le nom ne peut contenir que des lettres"),
-  email: z.string()
-    .min(1, "L'email est requis")
-    .email("Format d'email invalide"),
-  password: z.string()
-    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-    .max(50, "Le mot de passe ne peut pas dépasser 50 caractères")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirmPassword"],
-});
-
-type RegisterForm = z.infer<typeof registerSchema>;
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
 interface RegisterFormProps {
-  onSubmit: (data: RegisterForm) => void;
+  onSubmit: (data: { 
+    name: string; 
+    email: string; 
+    password: string; 
+    confirmPassword: string; 
+  }) => Promise<void>;
   isLoading: boolean;
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isLoading }) => {
+export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
 
-  const form = useForm<RegisterForm>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
-    mode: "onChange"
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-  const passwordValue = form.watch("password");
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
+    await onSubmit({ name, email, password, confirmPassword });
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel className="text-graphite-700 font-medium">Nom complet</FormLabel>
-              <FormControl>
-                <div className="relative group">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-graphite-400 w-4 h-4 transition-colors group-focus-within:text-electric-blue" />
-                  <Input
-                    placeholder="Votre nom"
-                    className="pl-10 h-11 sm:h-12 border-graphite-200 focus:border-electric-blue focus:ring-electric-blue/20 transition-all duration-300"
-                    {...field}
-                  />
-                  {fieldState.error && (
-                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 w-4 h-4" />
-                  )}
-                  {!fieldState.error && field.value && (
-                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                  )}
-                </div>
-              </FormControl>
-              <AnimatePresence>
-                {fieldState.error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FormMessage />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </FormItem>
-          )}
-        />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      <div className="space-y-2">
+        <label htmlFor="name" className="text-sm font-medium text-gray-700">
+          Nom complet
+        </label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
+            placeholder="Jean Dupont"
+            required
+          />
+        </div>
+      </div>
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel className="text-graphite-700 font-medium">Email</FormLabel>
-              <FormControl>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-graphite-400 w-4 h-4 transition-colors group-focus-within:text-electric-blue" />
-                  <Input
-                    placeholder="votre@email.com"
-                    className="pl-10 h-11 sm:h-12 border-graphite-200 focus:border-electric-blue focus:ring-electric-blue/20 transition-all duration-300"
-                    {...field}
-                  />
-                  {fieldState.error && (
-                    <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-500 w-4 h-4" />
-                  )}
-                  {!fieldState.error && field.value && (
-                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 w-4 h-4" />
-                  )}
-                </div>
-              </FormControl>
-              <AnimatePresence>
-                {fieldState.error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FormMessage />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel className="text-graphite-700 font-medium">Mot de passe</FormLabel>
-              <FormControl>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-graphite-400 w-4 h-4 transition-colors group-focus-within:text-electric-blue" />
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10 pr-12 h-11 sm:h-12 border-graphite-200 focus:border-electric-blue focus:ring-electric-blue/20 transition-all duration-300"
-                    {...field}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-electric-blue/10 transition-colors duration-200"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </FormControl>
-              
-              <PasswordStrength password={field.value} />
+      <div className="space-y-2">
+        <label htmlFor="register-email" className="text-sm font-medium text-gray-700">
+          Email
+        </label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            id="register-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
+            placeholder="votre@email.com"
+            required
+          />
+        </div>
+      </div>
 
-              <AnimatePresence>
-                {fieldState.error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FormMessage />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </FormItem>
-          )}
-        />
+      <div className="space-y-2">
+        <label htmlFor="register-password" className="text-sm font-medium text-gray-700">
+          Mot de passe
+        </label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            id="register-password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
+            placeholder="••••••••"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
 
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel className="text-graphite-700 font-medium">Confirmer le mot de passe</FormLabel>
-              <FormControl>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-graphite-400 w-4 h-4 transition-colors group-focus-within:text-electric-blue" />
-                  <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10 pr-12 h-11 sm:h-12 border-graphite-200 focus:border-electric-blue focus:ring-electric-blue/20 transition-all duration-300"
-                    {...field}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-electric-blue/10 transition-colors duration-200"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </FormControl>
-              <AnimatePresence>
-                {fieldState.error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FormMessage />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </FormItem>
-          )}
-        />
+      <div className="space-y-2">
+        <label htmlFor="confirm-password" className="text-sm font-medium text-gray-700">
+          Confirmer le mot de passe
+        </label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            id="confirm-password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
+            placeholder="••••••••"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
 
-        <Button 
-          type="submit" 
-          className="w-full h-11 sm:h-12 bg-gradient-to-r from-electric-blue to-blue-600 hover:from-blue-600 hover:to-electric-blue text-white font-medium transition-all duration-300 transform hover:scale-[1.01] disabled:scale-100" 
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <div className="flex items-center">
-              <motion.div 
-                className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full mr-2"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-              Création en cours...
-            </div>
-          ) : (
-            "Créer un compte"
-          )}
-        </Button>
-      </form>
-    </Form>
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-electric-blue hover:bg-blue-600 py-3"
+      >
+        {isLoading ? 'Création...' : 'Créer un compte'}
+      </Button>
+    </form>
   );
-};
+}

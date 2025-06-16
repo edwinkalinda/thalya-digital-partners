@@ -2,7 +2,10 @@
 import { Phone, Brain, Activity } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { GoogleGenAILiveChat } from "@/components/voice/GoogleGenAILiveChat";
+import { RealtimeVoiceChat } from "@/components/voice/RealtimeVoiceChat";
+import { ConversationInterface } from "@/components/voice/ConversationInterface";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const VoiceManagement = () => {
   return (
@@ -10,22 +13,40 @@ const VoiceManagement = () => {
       <Header />
       
       <div className="pt-16 container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center mb-4">
               <Brain className="w-12 h-12 text-electric-blue mr-4" />
               <h1 className="text-4xl font-bold text-deep-black">
-                Clara - Google GenAI Live
+                Clara - Gestion Vocale IA
               </h1>
             </div>
-            <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-              Nouvelle génération de chat vocal avec Google Gemini 2.0 Flash Live - Audio natif temps réel
+            <p className="text-xl text-graphite-600 max-w-3xl mx-auto">
+              Interface complète de chat vocal avec Google Gemini, OpenAI Realtime et conversation temps réel
             </p>
           </div>
 
-          {/* Interface de chat vocal Google GenAI */}
-          <GoogleGenAILiveChat />
+          {/* Onglets pour les différentes interfaces */}
+          <Tabs defaultValue="genai" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="genai">Google GenAI Live</TabsTrigger>
+              <TabsTrigger value="realtime">WebSocket Gemini</TabsTrigger>
+              <TabsTrigger value="conversation">OpenAI Realtime</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="genai" className="space-y-8">
+              <GoogleGenAILiveChat />
+            </TabsContent>
+
+            <TabsContent value="realtime" className="space-y-8">
+              <RealtimeVoiceChat />
+            </TabsContent>
+
+            <TabsContent value="conversation" className="space-y-8">
+              <ConversationInterface />
+            </TabsContent>
+          </Tabs>
 
           {/* Informations sur les capacités */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -33,12 +54,12 @@ const VoiceManagement = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-blue-800 flex items-center">
                   <Brain className="w-5 h-5 mr-2" />
-                  Gemini 2.0 Flash Live
+                  Google GenAI Live
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-blue-700">
-                  API native Google GenAI avec traitement audio direct sans transcription intermédiaire.
+                  API native Google GenAI avec traitement audio direct via Supabase Edge Functions sécurisées.
                 </p>
               </CardContent>
             </Card>
@@ -47,12 +68,12 @@ const VoiceManagement = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-green-800 flex items-center">
                   <Activity className="w-5 h-5 mr-2" />
-                  Latence Ultra-Faible
+                  WebSocket Temps Réel
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-green-700">
-                  Communication audio bidirectionnelle en temps réel avec latence minimale native.
+                  Communication bidirectionnelle avec Gemini via WebSocket pour latence minimale.
                 </p>
               </CardContent>
             </Card>
@@ -61,12 +82,12 @@ const VoiceManagement = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-purple-800 flex items-center">
                   <Phone className="w-5 h-5 mr-2" />
-                  Multimodal Natif
+                  OpenAI Realtime
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-purple-700">
-                  Traitement simultané audio et texte avec voix synthétique naturelle intégrée.
+                  Interface de conversation avancée avec gestion audio optimisée et reconnexion automatique.
                 </p>
               </CardContent>
             </Card>
@@ -76,45 +97,41 @@ const VoiceManagement = () => {
           <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200">
             <CardHeader>
               <CardTitle className="text-xl text-indigo-800">
-                🎯 Comment utiliser Clara avec Google GenAI Live
+                🎯 Utilisation des interfaces vocales Clara
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-start space-x-3">
-                  <span className="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">1</span>
-                  <div>
-                    <p className="font-medium text-indigo-800">Configuration</p>
-                    <p className="text-indigo-600">Ajoutez VITE_GOOGLE_GENAI_API_KEY dans votre fichier .env</p>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-indigo-800">Google GenAI Live</h4>
+                  <ul className="text-indigo-600 space-y-1">
+                    <li>• Chat texte sécurisé</li>
+                    <li>• Réponses Gemini Flash</li>
+                    <li>• Tests intégrés</li>
+                  </ul>
                 </div>
-                <div className="flex items-start space-x-3">
-                  <span className="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">2</span>
-                  <div>
-                    <p className="font-medium text-indigo-800">Connexion Native</p>
-                    <p className="text-indigo-600">Connexion directe à l'API Gemini 2.0 Flash Live</p>
-                  </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-green-800">WebSocket Gemini</h4>
+                  <ul className="text-green-600 space-y-1">
+                    <li>• Audio temps réel</li>
+                    <li>• Latence ultra-faible</li>
+                    <li>• Statistiques live</li>
+                  </ul>
                 </div>
-                <div className="flex items-start space-x-3">
-                  <span className="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">3</span>
-                  <div>
-                    <p className="font-medium text-indigo-800">Audio Direct</p>
-                    <p className="text-indigo-600">Parlez directement sans transcription intermédiaire</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <span className="bg-indigo-100 text-indigo-800 rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">4</span>
-                  <div>
-                    <p className="font-medium text-indigo-800">Réponses Instantanées</p>
-                    <p className="text-indigo-600">Clara répond en audio natif avec latence minimale</p>
-                  </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-purple-800">OpenAI Realtime</h4>
+                  <ul className="text-purple-600 space-y-1">
+                    <li>• Conversation fluide</li>
+                    <li>• Reconnexion auto</li>
+                    <li>• Gestion d'erreurs</li>
+                  </ul>
                 </div>
               </div>
               
               <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800 font-medium">⚠️ Configuration requise :</p>
                 <p className="text-xs text-amber-700 mt-1">
-                  Clé API Google GenAI avec accès à Gemini 2.0 Flash Live (version expérimentale)
+                  Clés API configurées dans les secrets Supabase : GOOGLE_GENAI_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY
                 </p>
               </div>
             </CardContent>

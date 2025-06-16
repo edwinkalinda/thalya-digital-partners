@@ -1,90 +1,39 @@
 
-export function createThalyaLogoSVG(): string {
+export const createThalyaLogoSVG = (): string => {
   return `
-    <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-      <!-- Fond transparent -->
-      <rect width="200" height="200" fill="transparent"/>
-      
-      <!-- Boucle supérieure gauche -->
-      <path d="M 30 70
-               C 30 40, 60 40, 60 70
-               C 60 85, 75 100, 100 100
-               C 125 100, 140 85, 140 70
-               C 140 40, 170 40, 170 70
-               C 170 130, 100 130, 100 70
-               C 100 55, 85 40, 70 40
-               C 45 40, 30 55, 30 70 Z" 
-            fill="black"/>
-      
-      <!-- Boucle supérieure droite -->
-      <path d="M 170 70
-               C 170 40, 140 40, 140 70
-               C 140 85, 125 100, 100 100
-               C 75 100, 60 85, 60 70
-               C 60 40, 30 40, 30 70
-               C 30 130, 100 130, 100 70
-               C 100 55, 115 40, 130 40
-               C 155 40, 170 55, 170 70 Z" 
-            fill="black"/>
-      
-      <!-- Boucle inférieure gauche -->
-      <path d="M 30 130
-               C 30 160, 60 160, 60 130
-               C 60 115, 75 100, 100 100
-               C 125 100, 140 115, 140 130
-               C 140 160, 170 160, 170 130
-               C 170 70, 100 70, 100 130
-               C 100 145, 85 160, 70 160
-               C 45 160, 30 145, 30 130 Z" 
-            fill="black"/>
-      
-      <!-- Boucle inférieure droite -->
-      <path d="M 170 130
-               C 170 160, 140 160, 140 130
-               C 140 115, 125 100, 100 100
-               C 75 100, 60 115, 60 130
-               C 60 160, 30 160, 30 130
-               C 30 70, 100 70, 100 130
-               C 100 145, 115 160, 130 160
-               C 155 160, 170 145, 170 130 Z" 
-            fill="black"/>
-      
-      <!-- Zone centrale d'intersection -->
-      <circle cx="100" cy="100" r="25" fill="black"/>
+    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="thalyaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#0066FF;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#00D4FF;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <circle cx="16" cy="16" r="14" fill="url(#thalyaGradient)" />
+      <path d="M8 16 L16 8 L24 16 L16 24 Z" fill="white" opacity="0.8" />
     </svg>
   `;
-}
+};
 
-export function svgToImageData(svgString: string): Promise<ImageData> {
+export const svgToImageData = async (svgString: string): Promise<ImageData> => {
   return new Promise((resolve, reject) => {
-    const blob = new Blob([svgString], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
     const img = new Image();
+    
+    canvas.width = 32;
+    canvas.height = 32;
+    
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        reject(new Error('Could not get canvas context'));
-        return;
+      ctx?.drawImage(img, 0, 0, 32, 32);
+      const imageData = ctx?.getImageData(0, 0, 32, 32);
+      if (imageData) {
+        resolve(imageData);
+      } else {
+        reject(new Error('Failed to get image data'));
       }
-      
-      // Taille optimisée pour l'effet métallique
-      canvas.width = 200;
-      canvas.height = 200;
-      ctx.drawImage(img, 0, 0, 200, 200);
-      
-      const imageData = ctx.getImageData(0, 0, 200, 200);
-      URL.revokeObjectURL(url);
-      resolve(imageData);
     };
     
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to load SVG'));
-    };
-    
-    img.src = url;
+    img.onerror = reject;
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgString);
   });
-}
+};

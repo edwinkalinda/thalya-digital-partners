@@ -5,34 +5,16 @@ import { useToast } from "@/hooks/use-toast";
 export const useAudioRecording = (ws: WebSocket | null, isConnected: boolean) => {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
 
-  const getSupportedMimeType = useCallback(() => {
-    const types = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/ogg;codecs=opus',
-      'audio/mp4',
-      'audio/wav'
-    ];
-    
-    for (const type of types) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        console.log(`✅ Format audio supporté: ${type}`);
-        return type;
-      }
-    }
-    
-    console.warn('⚠️ Aucun format préféré supporté, utilisation par défaut');
-    return '';
-  }, []);
-
-  const startRecording = async () => {
-    if (!isConnected) {
+  const startRecording = useCallback(async () => {
+    if (!ws || !isConnected) {
       toast({
-        title: "Non connecté",
-        description: "Connectez-vous d'abord à Gemini",
+        title: "Erreur",
+        description: "Connexion non établie",
         variant: "destructive"
       });
       return;
@@ -41,94 +23,81 @@ export const useAudioRecording = (ws: WebSocket | null, isConnected: boolean) =>
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 22050,
+          sampleRate: 16000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }
       });
+
+      mediaStreamRef.current = stream;
+      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
       
-      streamRef.current = stream;
-      const supportedMimeType = getSupportedMimeType();
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       
-      const mediaRecorder = new MediaRecorder(stream, supportedMimeType ? {
-        mimeType: supportedMimeType,
-        audioBitsPerSecond: 32000
-      } : undefined);
-      
-      const audioChunks: BlobPart[] = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
+      processorRef.current.onaudioprocess = (event) => {
+        if (isRecording && ws && ws.readyState === WebSocket.OPEN) {
+          const inputData = event.inputBuffer.getChannelData(0);
+          const pcmData = new Int16Array(inputData.length);
+          
+          for (let i = 0; i < inputData.length; i++) {
+            const s = Math.max(-1, Math.min(1, inputData[i]));
+            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          
+          const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
+          
+          ws.send(JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: base64Audio
+          }));
         }
       };
+
+      source.connect(processorRef.current);
+      processorRef.current.connect(audioContextRef.current.destination);
       
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { 
-          type: supportedMimeType || 'audio/webm' 
-        });
-        
-        console.log(`🎤 Audio: ${audioBlob.size} bytes`);
-        
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Audio = (reader.result as string).split(',')[1];
-          
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            console.log('📤 Envoi à Gemini...');
-            ws.send(JSON.stringify({
-              type: 'audio_message',
-              audio: base64Audio
-            }));
-          } else {
-            toast({
-              title: "Connexion fermée",
-              description: "Reconnexion nécessaire",
-              variant: "destructive"
-            });
-          }
-        };
-        
-        reader.readAsDataURL(audioBlob);
-      };
-      
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(1000);
       setIsRecording(true);
       
       toast({
         title: "🎤 Enregistrement",
-        description: "Parlez à Clara...",
+        description: "Parlez maintenant...",
       });
-      
+
     } catch (error) {
-      console.error('❌ Erreur micro:', error);
+      console.error('Error starting recording:', error);
       toast({
         title: "Erreur microphone",
-        description: "Vérifiez les permissions",
+        description: "Impossible d'accéder au microphone",
         variant: "destructive"
       });
     }
-  };
+  }, [ws, isConnected, isRecording, toast]);
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+  const stopRecording = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
     }
-  };
+    
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    
+    setIsRecording(false);
+  }, []);
 
-  const cleanup = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-  };
+  const cleanup = useCallback(() => {
+    stopRecording();
+  }, [stopRecording]);
 
   return {
     isRecording,
