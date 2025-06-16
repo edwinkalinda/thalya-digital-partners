@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,11 +16,9 @@ type TableName =
   | 'restaurant_reservations'
   | 'thalya_connect_configs';
 
-interface QueryOptions {
+interface BasicQueryOptions {
   table: TableName;
   select?: string;
-  filters?: { [key: string]: any };
-  orderBy?: { column: string; ascending?: boolean };
   limit?: number;
 }
 
@@ -31,36 +29,19 @@ interface QueryResult<T> {
   refetch: () => void;
 }
 
-export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryResult<T> {
+export function useSecureSupabaseQuery<T = any>(options: BasicQueryOptions): QueryResult<T> {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const executeQuery = useCallback(async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
       let query = supabase.from(options.table).select(options.select || '*');
 
-      // Apply filters
-      if (options.filters) {
-        Object.entries(options.filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.eq(key, value);
-          }
-        });
-      }
-
-      // Apply ordering
-      if (options.orderBy) {
-        query = query.order(options.orderBy.column, { 
-          ascending: options.orderBy.ascending !== false 
-        });
-      }
-
-      // Apply limit
       if (options.limit) {
         query = query.limit(options.limit);
       }
@@ -84,15 +65,15 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
     } finally {
       setLoading(false);
     }
-  }, [options.table, options.select, options.limit, toast]);
+  };
 
   useEffect(() => {
-    executeQuery();
-  }, [executeQuery]);
+    fetchData();
+  }, [options.table, options.select, options.limit]);
 
-  const refetch = useCallback(() => {
-    executeQuery();
-  }, [executeQuery]);
+  const refetch = () => {
+    fetchData();
+  };
 
   return { data, loading, error, refetch };
 }
