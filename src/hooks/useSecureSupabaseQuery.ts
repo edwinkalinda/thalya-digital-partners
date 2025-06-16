@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,29 +35,37 @@ export function useSecureSupabaseQuery<T = any>({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Use refs to store the current values without causing dependency issues
+  const optionsRef = useRef({ table, select, filters, orderBy, limit });
+  optionsRef.current = { table, select, filters, orderBy, limit };
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      let query = supabase.from(table).select(select);
+      const { table: currentTable, select: currentSelect, filters: currentFilters, orderBy: currentOrderBy, limit: currentLimit } = optionsRef.current;
+
+      let query = supabase.from(currentTable).select(currentSelect);
 
       // Appliquer les filtres de manière sécurisée
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          query = query.eq(key, value);
-        }
-      });
+      if (currentFilters) {
+        Object.entries(currentFilters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.eq(key, value);
+          }
+        });
+      }
 
       // Appliquer le tri si spécifié
-      if (orderBy) {
-        query = query.order(orderBy.column, { ascending: orderBy.ascending ?? false });
+      if (currentOrderBy) {
+        query = query.order(currentOrderBy.column, { ascending: currentOrderBy.ascending ?? false });
       }
 
       // Appliquer la limite si spécifiée
-      if (limit) {
-        query = query.limit(limit);
+      if (currentLimit) {
+        query = query.limit(currentLimit);
       }
 
       const { data: result, error: fetchError } = await query;
@@ -79,11 +87,11 @@ export function useSecureSupabaseQuery<T = any>({
     } finally {
       setLoading(false);
     }
-  }, [table, select, limit, toast]);
+  }, [toast]);
 
   useEffect(() => {
     fetchData();
-  }, [table, select, limit]);
+  }, [fetchData, table, select, JSON.stringify(filters), JSON.stringify(orderBy), limit]);
 
   const refetch = useCallback(() => {
     fetchData();
