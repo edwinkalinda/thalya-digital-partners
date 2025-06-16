@@ -38,13 +38,6 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const { toast } = useToast();
 
-  // Extract options to avoid dependency issues
-  const tableName = options.table;
-  const selectClause = options.select || '*';
-  const queryFilters = options.filters || {};
-  const orderConfig = options.orderBy;
-  const limitValue = options.limit;
-
   useEffect(() => {
     let isMounted = true;
 
@@ -54,25 +47,27 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
         setError(null);
 
         // Build the query step by step
-        let query = supabase.from(tableName).select(selectClause);
+        let query = supabase.from(options.table).select(options.select || '*');
 
         // Apply filters
-        Object.entries(queryFilters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.eq(key, value);
+        if (options.filters) {
+          for (const [key, value] of Object.entries(options.filters)) {
+            if (value !== undefined && value !== null) {
+              query = query.eq(key, value);
+            }
           }
-        });
+        }
 
         // Apply ordering
-        if (orderConfig) {
-          query = query.order(orderConfig.column, { 
-            ascending: orderConfig.ascending !== false 
+        if (options.orderBy) {
+          query = query.order(options.orderBy.column, { 
+            ascending: options.orderBy.ascending !== false 
           });
         }
 
         // Apply limit
-        if (limitValue) {
-          query = query.limit(limitValue);
+        if (options.limit) {
+          query = query.limit(options.limit);
         }
 
         const { data: result, error: queryError } = await query;
@@ -107,7 +102,15 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
     return () => {
       isMounted = false;
     };
-  }, [tableName, selectClause, JSON.stringify(queryFilters), JSON.stringify(orderConfig), limitValue, refetchTrigger]);
+  }, [
+    options.table,
+    options.select,
+    options.limit,
+    refetchTrigger,
+    // Create stable string keys for complex objects
+    options.filters ? Object.keys(options.filters).sort().join(',') + ':' + Object.values(options.filters).join(',') : '',
+    options.orderBy ? `${options.orderBy.column}:${options.orderBy.ascending}` : ''
+  ]);
 
   const refetch = () => {
     setRefetchTrigger(prev => prev + 1);
