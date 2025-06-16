@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,102 +36,62 @@ export function useSecureSupabaseQuery<T = any>({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const showErrorToast = useCallback(() => {
+    toast({
+      title: "Erreur de chargement",
+      description: "Impossible de charger les données. Veuillez réessayer.",
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      let query = supabase.from(table).select(select);
+
+      // Appliquer les filtres de manière sécurisée
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.eq(key, value);
+        }
+      });
+
+      // Appliquer le tri si spécifié
+      if (orderBy) {
+        query = query.order(orderBy.column, { ascending: orderBy.ascending ?? false });
+      }
+
+      // Appliquer la limite si spécifiée
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data: result, error: fetchError } = await query;
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      setData((result as T[]) || []);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(errorMessage);
+      console.error('Erreur lors de la récupération des données:', err);
+      showErrorToast();
+    } finally {
+      setLoading(false);
+    }
+  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), limit, showErrorToast]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        let query = supabase.from(table).select(select);
-
-        // Appliquer les filtres de manière sécurisée
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.eq(key, value);
-          }
-        });
-
-        // Appliquer le tri si spécifié
-        if (orderBy) {
-          query = query.order(orderBy.column, { ascending: orderBy.ascending ?? false });
-        }
-
-        // Appliquer la limite si spécifiée
-        if (limit) {
-          query = query.limit(limit);
-        }
-
-        const { data: result, error: fetchError } = await query;
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        setData((result as T[]) || []);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        setError(errorMessage);
-        console.error('Erreur lors de la récupération des données:', err);
-        
-        toast({
-          title: "Erreur de chargement",
-          description: "Impossible de charger les données. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), limit, toast]);
+  }, [fetchData]);
 
-  const refetch = () => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        let query = supabase.from(table).select(select);
-
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.eq(key, value);
-          }
-        });
-
-        if (orderBy) {
-          query = query.order(orderBy.column, { ascending: orderBy.ascending ?? false });
-        }
-
-        if (limit) {
-          query = query.limit(limit);
-        }
-
-        const { data: result, error: fetchError } = await query;
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        setData((result as T[]) || []);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        setError(errorMessage);
-        console.error('Erreur lors de la récupération des données:', err);
-        
-        toast({
-          title: "Erreur de chargement", 
-          description: "Impossible de charger les données. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  const refetch = useCallback(() => {
     fetchData();
-  };
+  }, [fetchData]);
 
   return { data, loading, error, refetch };
 }
