@@ -1,11 +1,10 @@
-
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
-  type: 'user' | 'ai';
+  sender: 'user' | 'ai';
   text: string;
   timestamp: number;
 }
@@ -166,7 +165,7 @@ export const useOpenAIRealtimeChat = (): UseOpenAIRealtimeChatReturn => {
         if (data.transcript) {
           const userMessage: Message = {
             id: Date.now().toString(),
-            type: 'user',
+            sender: 'user',
             text: data.transcript,
             timestamp: Date.now()
           };
@@ -178,7 +177,7 @@ export const useOpenAIRealtimeChat = (): UseOpenAIRealtimeChatReturn => {
         if (data.delta) {
           setMessages(prev => {
             const lastMessage = prev[prev.length - 1];
-            if (lastMessage && lastMessage.type === 'ai' && lastMessage.id.endsWith('_current')) {
+            if (lastMessage && lastMessage.sender === 'ai' && lastMessage.id.endsWith('_current')) {
               return [
                 ...prev.slice(0, -1),
                 { ...lastMessage, text: lastMessage.text + data.delta }
@@ -188,7 +187,7 @@ export const useOpenAIRealtimeChat = (): UseOpenAIRealtimeChatReturn => {
                 ...prev,
                 {
                   id: Date.now().toString() + '_current',
-                  type: 'ai',
+                  sender: 'ai',
                   text: data.delta,
                   timestamp: Date.now()
                 }
@@ -239,10 +238,8 @@ export const useOpenAIRealtimeChat = (): UseOpenAIRealtimeChatReturn => {
     setIsConnecting(true);
     
     try {
-      // Initialiser le contexte audio
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       
-      // Créer la connexion WebSocket avec OpenAI
       const ws = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.supabase.co/functions/v1/openai-realtime-chat');
       
       ws.onopen = () => {
@@ -384,7 +381,7 @@ export const useOpenAIRealtimeChat = (): UseOpenAIRealtimeChatReturn => {
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      type: 'user',
+      sender: 'user',
       text,
       timestamp: Date.now()
     };
