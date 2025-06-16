@@ -9,6 +9,412 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      business_profiles: {
+        Row: {
+          appointment_type: string
+          booking_tools: string[] | null
+          business_name: string
+          business_type: string
+          created_at: string
+          id: string
+          intro_prompt: string | null
+          owner_email: string
+          phone_number: string | null
+          preferred_tone: string | null
+          restrictions: string | null
+          spoken_languages: string[] | null
+          webhook_url: string | null
+          working_hours: Json | null
+        }
+        Insert: {
+          appointment_type: string
+          booking_tools?: string[] | null
+          business_name: string
+          business_type: string
+          created_at?: string
+          id?: string
+          intro_prompt?: string | null
+          owner_email: string
+          phone_number?: string | null
+          preferred_tone?: string | null
+          restrictions?: string | null
+          spoken_languages?: string[] | null
+          webhook_url?: string | null
+          working_hours?: Json | null
+        }
+        Update: {
+          appointment_type?: string
+          booking_tools?: string[] | null
+          business_name?: string
+          business_type?: string
+          created_at?: string
+          id?: string
+          intro_prompt?: string | null
+          owner_email?: string
+          phone_number?: string | null
+          preferred_tone?: string | null
+          restrictions?: string | null
+          spoken_languages?: string[] | null
+          webhook_url?: string | null
+          working_hours?: Json | null
+        }
+        Relationships: []
+      }
+      caller_profiles: {
+        Row: {
+          business: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_contacted: string | null
+          last_seen_at: string | null
+          metadata: Json | null
+          name: string | null
+          notes: string | null
+          phone_number: string
+          preferred_language: string | null
+          tags: string[] | null
+          voice_signature: string | null
+        }
+        Insert: {
+          business?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contacted?: string | null
+          last_seen_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          phone_number: string
+          preferred_language?: string | null
+          tags?: string[] | null
+          voice_signature?: string | null
+        }
+        Update: {
+          business?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contacted?: string | null
+          last_seen_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          notes?: string | null
+          phone_number?: string
+          preferred_language?: string | null
+          tags?: string[] | null
+          voice_signature?: string | null
+        }
+        Relationships: []
+      }
+      clinic_appointments: {
+        Row: {
+          appointment_time: string
+          created_at: string
+          id: string
+          patient_name: string
+          phone_number: string
+          practitioner_type: string | null
+          reason: string | null
+          status: string | null
+        }
+        Insert: {
+          appointment_time: string
+          created_at?: string
+          id?: string
+          patient_name: string
+          phone_number: string
+          practitioner_type?: string | null
+          reason?: string | null
+          status?: string | null
+        }
+        Update: {
+          appointment_time?: string
+          created_at?: string
+          id?: string
+          patient_name?: string
+          phone_number?: string
+          practitioner_type?: string | null
+          reason?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      onboarding_analytics: {
+        Row: {
+          business_type: string | null
+          completed: boolean | null
+          created_at: string
+          duration: number | null
+          id: string
+          session_id: string
+          step_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          business_type?: string | null
+          completed?: boolean | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          session_id: string
+          step_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          business_type?: string | null
+          completed?: boolean | null
+          created_at?: string
+          duration?: number | null
+          id?: string
+          session_id?: string
+          step_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_logs: {
+        Row: {
+          business_profile_id: string | null
+          created_at: string
+          id: string
+          question: string
+          response: string
+        }
+        Insert: {
+          business_profile_id?: string | null
+          created_at?: string
+          id?: string
+          question: string
+          response: string
+        }
+        Update: {
+          business_profile_id?: string | null
+          created_at?: string
+          id?: string
+          question?: string
+          response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_logs_business_profile_id_fkey"
+            columns: ["business_profile_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_campaigns: {
+        Row: {
+          channels: string[] | null
+          created_at: string
+          description: string | null
+          id: string
+          message_template: string | null
+          schedule: Json | null
+          status: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          message_template?: string | null
+          schedule?: Json | null
+          status?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          message_template?: string | null
+          schedule?: Json | null
+          status?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      outreach_jobs: {
+        Row: {
+          attempts: number | null
+          campaign_id: string | null
+          channel: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          lead_id: string | null
+          scheduled_at: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          lead_id?: string | null
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          campaign_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          lead_id?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_jobs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_jobs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_leads: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          email: string
+          id: string
+          last_contacted_at: string | null
+          last_message: string | null
+          metadata: Json | null
+          name: string
+          phone: string | null
+          status: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          last_contacted_at?: string | null
+          last_message?: string | null
+          metadata?: Json | null
+          name: string
+          phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          last_contacted_at?: string | null
+          last_message?: string | null
+          metadata?: Json | null
+          name?: string
+          phone?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      real_estate_leads: {
+        Row: {
+          budget_range: string | null
+          client_name: string
+          created_at: string
+          email: string | null
+          id: string
+          notes: string | null
+          phone_number: string
+          preferred_area: string | null
+          property_type: string | null
+          status: string | null
+        }
+        Insert: {
+          budget_range?: string | null
+          client_name: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone_number: string
+          preferred_area?: string | null
+          property_type?: string | null
+          status?: string | null
+        }
+        Update: {
+          budget_range?: string | null
+          client_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string
+          preferred_area?: string | null
+          property_type?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      restaurant_reservations: {
+        Row: {
+          created_at: string
+          customer_name: string
+          id: string
+          party_size: number | null
+          phone_number: string
+          reservation_time: string
+          special_requests: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          id?: string
+          party_size?: number | null
+          phone_number: string
+          reservation_time: string
+          special_requests?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          id?: string
+          party_size?: number | null
+          phone_number?: string
+          reservation_time?: string
+          special_requests?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       thalya_connect_configs: {
         Row: {
           business_name: string

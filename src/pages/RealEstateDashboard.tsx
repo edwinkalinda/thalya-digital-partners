@@ -6,39 +6,41 @@ import { Home, Calendar, Phone, MapPin, FileText, Activity } from "lucide-react"
 import Header from "@/components/layout/Header";
 import { supabase } from '@/integrations/supabase/client';
 
-interface RealEstateVisit {
+interface RealEstateLead {
   id: string;
   client_name: string;
-  client_phone: string;
-  property_address: string;
-  preferred_date: string;
+  phone_number: string;
+  email?: string;
+  property_type?: string;
+  budget_range?: string;
+  preferred_area?: string;
   status: string;
   notes?: string;
   created_at: string;
 }
 
 const RealEstateDashboard = () => {
-  const [visits, setVisits] = useState<RealEstateVisit[]>([]);
+  const [leads, setLeads] = useState<RealEstateLead[]>([]);
   const [stats, setStats] = useState({
-    todayVisits: 0,
+    todayLeads: 0,
     totalProperties: 0,
-    pendingVisits: 0
+    pendingLeads: 0
   });
 
   useEffect(() => {
-    fetchVisits();
+    fetchLeads();
     fetchStats();
   }, []);
 
-  const fetchVisits = async () => {
+  const fetchLeads = async () => {
     const { data, error } = await supabase
-      .from('real_estate_visits')
+      .from('real_estate_leads')
       .select('*')
-      .order('preferred_date', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(10);
 
     if (!error && data) {
-      setVisits(data);
+      setLeads(data);
     }
   };
 
@@ -46,26 +48,26 @@ const RealEstateDashboard = () => {
     const today = new Date().toISOString().split('T')[0];
     
     const { data: todayData } = await supabase
-      .from('real_estate_visits')
+      .from('real_estate_leads')
       .select('id')
-      .gte('preferred_date', today)
-      .lt('preferred_date', today + 'T23:59:59');
+      .gte('created_at', today)
+      .lt('created_at', today + 'T23:59:59');
 
     const { data: totalData } = await supabase
-      .from('real_estate_visits')
-      .select('property_address');
+      .from('real_estate_leads')
+      .select('property_type');
 
     const { data: pendingData } = await supabase
-      .from('real_estate_visits')
+      .from('real_estate_leads')
       .select('id')
-      .eq('status', 'pending');
+      .eq('status', 'new');
 
-    const uniqueProperties = new Set(totalData?.map(item => item.property_address)).size;
+    const uniqueProperties = new Set(totalData?.map(item => item.property_type).filter(Boolean)).size;
 
     setStats({
-      todayVisits: todayData?.length || 0,
+      todayLeads: todayData?.length || 0,
       totalProperties: uniqueProperties || 0,
-      pendingVisits: pendingData?.length || 0
+      pendingLeads: pendingData?.length || 0
     });
   };
 
@@ -81,7 +83,7 @@ const RealEstateDashboard = () => {
               Tableau de bord Immobilier
             </h1>
             <p className="text-xl text-graphite-600">
-              Gestion des visites et propriétés
+              Gestion des prospects et propriétés
             </p>
           </div>
 
@@ -95,8 +97,8 @@ const RealEstateDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-green-600">{stats.todayVisits}</p>
-                <p className="text-sm text-green-700">Visites du jour</p>
+                <p className="text-3xl font-bold text-green-600">{stats.todayLeads}</p>
+                <p className="text-sm text-green-700">Nouveaux prospects</p>
               </CardContent>
             </Card>
 
@@ -104,12 +106,12 @@ const RealEstateDashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-blue-800 flex items-center">
                   <Home className="w-5 h-5 mr-2" />
-                  Propriétés
+                  Types
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-blue-600">{stats.totalProperties}</p>
-                <p className="text-sm text-blue-700">Propriétés référencées</p>
+                <p className="text-sm text-blue-700">Types de biens</p>
               </CardContent>
             </Card>
 
@@ -121,49 +123,46 @@ const RealEstateDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-orange-600">{stats.pendingVisits}</p>
-                <p className="text-sm text-orange-700">Visites en attente</p>
+                <p className="text-3xl font-bold text-orange-600">{stats.pendingLeads}</p>
+                <p className="text-sm text-orange-700">Prospects à traiter</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Visits */}
+          {/* Recent Leads */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl text-deep-black flex items-center">
                 <Activity className="w-6 h-6 mr-2 text-electric-blue" />
-                Visites récentes
+                Prospects récents
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {visits.map((visit) => (
-                  <div key={visit.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
+                {leads.map((lead) => (
+                  <div key={lead.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-white rounded-lg border border-green-200">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                         <Home className="w-5 h-5 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-deep-black">{visit.client_name}</p>
+                        <p className="font-semibold text-deep-black">{lead.client_name}</p>
                         <p className="text-sm text-graphite-600 flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
-                          {visit.property_address}
+                          {lead.preferred_area || 'Zone non spécifiée'}
                         </p>
                         <p className="text-sm text-graphite-600 flex items-center">
                           <Phone className="w-4 h-4 mr-1" />
-                          {visit.client_phone}
+                          {lead.phone_number}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-deep-black">
-                        {new Date(visit.preferred_date).toLocaleDateString('fr-FR')}
+                        {new Date(lead.created_at).toLocaleDateString('fr-FR')}
                       </p>
                       <p className="text-sm text-graphite-600">
-                        {new Date(visit.preferred_date).toLocaleTimeString('fr-FR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
+                        {lead.property_type || 'Type non spécifié'}
                       </p>
                     </div>
                   </div>

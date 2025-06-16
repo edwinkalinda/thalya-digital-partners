@@ -10,9 +10,9 @@ interface RestaurantReservation {
   id: string;
   customer_name: string;
   party_size: number;
-  time_slot: string;
+  reservation_time: string;
   status: string;
-  notes?: string;
+  special_requests?: string;
   created_at: string;
 }
 
@@ -31,9 +31,9 @@ const RestaurantDashboard = () => {
 
   const fetchReservations = async () => {
     const { data, error } = await supabase
-      .from('live_reservations')
+      .from('restaurant_reservations')
       .select('*')
-      .order('time_slot', { ascending: true })
+      .order('reservation_time', { ascending: true })
       .limit(10);
 
     if (!error && data) {
@@ -45,13 +45,13 @@ const RestaurantDashboard = () => {
     const today = new Date().toISOString().split('T')[0];
     
     const { data: todayData } = await supabase
-      .from('live_reservations')
+      .from('restaurant_reservations')
       .select('id, party_size')
-      .gte('time_slot', today)
-      .lt('time_slot', today + 'T23:59:59');
+      .gte('reservation_time', today)
+      .lt('reservation_time', today + 'T23:59:59');
 
     const { data: pendingData } = await supabase
-      .from('live_reservations')
+      .from('restaurant_reservations')
       .select('id')
       .eq('status', 'pending');
 
@@ -141,17 +141,17 @@ const RestaurantDashboard = () => {
                       <div>
                         <p className="font-semibold text-deep-black">{reservation.customer_name}</p>
                         <p className="text-sm text-graphite-600">{reservation.party_size} personnes</p>
-                        {reservation.notes && (
-                          <p className="text-xs text-graphite-500">{reservation.notes}</p>
+                        {reservation.special_requests && (
+                          <p className="text-xs text-graphite-500">{reservation.special_requests}</p>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-deep-black">
-                        {new Date(reservation.time_slot).toLocaleDateString('fr-FR')}
+                        {new Date(reservation.reservation_time).toLocaleDateString('fr-FR')}
                       </p>
                       <p className="text-sm text-graphite-600">
-                        {new Date(reservation.time_slot).toLocaleTimeString('fr-FR', { 
+                        {new Date(reservation.reservation_time).toLocaleTimeString('fr-FR', { 
                           hour: '2-digit', 
                           minute: '2-digit' 
                         })}
