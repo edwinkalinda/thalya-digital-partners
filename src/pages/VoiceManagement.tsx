@@ -1,40 +1,32 @@
 
 import { useState } from "react";
-import { Brain, Mic, MicOff, MessageCircle } from "lucide-react";
+import { Brain, Mic, MicOff, MessageCircle, Play, Square } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useOnboardingFlow } from "@/components/onboarding/useOnboardingFlow";
+import { Input } from "@/components/ui/input";
+import { useOpenAIRealtimeChat } from "@/hooks/useOpenAIRealtimeChat";
 import { MessageBubble } from "@/components/onboarding/MessageBubble";
-import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
-import { useToast } from "@/hooks/use-toast";
 
 const VoiceManagement = () => {
-  const { toast } = useToast();
   const [textInput, setTextInput] = useState('');
   
   const {
+    isConnected,
+    isConnecting,
     messages,
-    input,
-    setInput,
-    handleSend,
-    isLoading,
-    startOnboarding,
-    started,
-    finished
-  } = useOnboardingFlow();
-
-  const { startRecording, stopRecording, recording } = useVoiceRecorder((text) => {
-    setInput(text);
-    // Auto-send après transcription
-    setTimeout(() => handleSend(), 100);
-  });
+    isRecording,
+    startConversation,
+    endConversation,
+    sendTextMessage,
+    startRecording,
+    stopRecording
+  } = useOpenAIRealtimeChat();
 
   const handleTextSend = () => {
     if (textInput.trim()) {
-      setInput(textInput);
+      sendTextMessage(textInput);
       setTextInput('');
-      setTimeout(() => handleSend(), 100);
     }
   };
 
@@ -43,7 +35,7 @@ const VoiceManagement = () => {
     handleTextSend();
   };
 
-  if (!started) {
+  if (!isConnected && !isConnecting) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100">
         <Header />
@@ -54,7 +46,7 @@ const VoiceManagement = () => {
               <div className="flex items-center justify-center mb-6">
                 <Brain className="w-16 h-16 text-electric-blue mr-4" />
                 <h1 className="text-5xl font-bold text-deep-black">
-                  Onboarding Clara
+                  Clara - Onboarding IA
                 </h1>
               </div>
               <p className="text-xl text-graphite-600 max-w-3xl mx-auto mb-8">
@@ -63,18 +55,18 @@ const VoiceManagement = () => {
               
               <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-electric-blue/30 rounded-2xl p-8 mb-8">
                 <h3 className="text-2xl font-bold text-electric-blue mb-4">
-                  🎙️ Conversation en Temps Réel
+                  🎙️ Conversation Temps Réel avec OpenAI
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                   <div className="text-center p-4 bg-white/70 rounded-lg">
                     <MessageCircle className="w-8 h-8 mx-auto mb-2 text-blue-600" />
                     <p className="font-semibold text-blue-800">Chat Intelligent</p>
-                    <p className="text-blue-600">Questions personnalisées</p>
+                    <p className="text-blue-600">Conversation naturelle</p>
                   </div>
                   <div className="text-center p-4 bg-white/70 rounded-lg">
                     <Mic className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                    <p className="font-semibold text-purple-800">Vocal & Texte</p>
-                    <p className="text-purple-600">Interface multimodale</p>
+                    <p className="font-semibold text-purple-800">Audio Temps Réel</p>
+                    <p className="text-purple-600">Parlez directement à Clara</p>
                   </div>
                   <div className="text-center p-4 bg-white/70 rounded-lg">
                     <Brain className="w-8 h-8 mx-auto mb-2 text-green-600" />
@@ -85,64 +77,14 @@ const VoiceManagement = () => {
               </div>
               
               <Button 
-                onClick={startOnboarding}
+                onClick={startConversation}
+                disabled={isConnecting}
                 className="bg-gradient-to-r from-electric-blue to-purple-600 hover:from-blue-600 hover:to-purple-700 px-12 py-4 text-lg font-semibold"
                 size="lg"
               >
                 <Brain className="w-6 h-6 mr-3" />
-                Commencer l'Onboarding
+                {isConnecting ? 'Connexion...' : 'Commencer avec Clara'}
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (finished) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100">
-        <Header />
-        
-        <div className="pt-16 container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center space-y-8">
-              <div className="w-24 h-24 bg-gradient-to-r from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-4xl">✅</span>
-              </div>
-              
-              <h1 className="text-4xl font-bold text-deep-black">
-                Configuration Terminée !
-              </h1>
-              
-              <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-                Clara est maintenant configurée selon vos préférences et prête à servir vos clients.
-              </p>
-              
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-green-800 mb-2">
-                  🎉 Félicitations !
-                </h3>
-                <p className="text-green-700">
-                  Votre assistante IA personnalisée est opérationnelle. Vous pouvez maintenant tester ses capacités.
-                </p>
-              </div>
-              
-              <div className="flex gap-4 justify-center">
-                <Button 
-                  onClick={() => window.location.href = '/dashboard'}
-                  className="bg-electric-blue hover:bg-blue-600 px-8 py-3"
-                >
-                  Retour au Dashboard
-                </Button>
-                <Button 
-                  onClick={startOnboarding}
-                  variant="outline"
-                  className="px-8 py-3"
-                >
-                  Recommencer
-                </Button>
-              </div>
             </div>
           </div>
         </div>
@@ -157,58 +99,64 @@ const VoiceManagement = () => {
       <div className="pt-16 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-deep-black mb-2">
-              Configuration Clara en Temps Réel
+            <h1 className="text-3xl font-bold text-deep-black mb-2 flex items-center justify-center">
+              <Brain className="w-8 h-8 mr-3 text-electric-blue" />
+              Conversation avec Clara
+              {isRecording && <Mic className="w-6 h-6 ml-3 text-red-500 animate-pulse" />}
             </h1>
             <p className="text-graphite-600">
-              Conversez naturellement pour personnaliser votre assistante IA
+              Configuration personnalisée de votre assistante IA
             </p>
           </div>
           
           <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50">
             <CardHeader>
-              <CardTitle className="text-xl text-deep-black flex items-center">
-                <Brain className="w-6 h-6 mr-2 text-electric-blue" />
-                Conversation avec Clara
-                {recording && <Mic className="w-4 h-4 ml-2 text-red-500 animate-pulse" />}
+              <CardTitle className="text-xl text-deep-black flex items-center justify-between">
+                <div className="flex items-center">
+                  <MessageCircle className="w-6 h-6 mr-2 text-electric-blue" />
+                  Onboarding en Temps Réel
+                </div>
+                <Button
+                  onClick={endConversation}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <Square className="w-4 h-4 mr-1" />
+                  Terminer
+                </Button>
               </CardTitle>
             </CardHeader>
             
             <CardContent>
               {/* Zone de conversation */}
               <div className="h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg mb-6 space-y-4">
+                {messages.length === 0 && (
+                  <div className="text-center text-graphite-500 py-8">
+                    <Brain className="w-12 h-12 mx-auto mb-4 text-electric-blue" />
+                    <p>Clara est prête à commencer l'onboarding...</p>
+                    <p className="text-sm">Utilisez le micro ou tapez votre message</p>
+                  </div>
+                )}
+                
                 {messages.map((msg, i) => (
                   <MessageBubble key={i} sender={msg.sender} text={msg.text} />
                 ))}
-                
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-graphite-100 rounded-2xl px-4 py-3">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-graphite-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-graphite-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-graphite-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
               
               {/* Interface de saisie */}
               <div className="space-y-4">
                 {/* Saisie texte */}
                 <form onSubmit={handleSubmit} className="flex gap-3">
-                  <input
-                    type="text"
+                  <Input
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Tapez votre réponse ou utilisez le micro..."
-                    className="flex-1 px-4 py-3 border border-graphite-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
-                    disabled={isLoading}
+                    className="flex-1"
                   />
                   <Button 
                     type="submit" 
-                    disabled={isLoading || !textInput.trim()}
+                    disabled={!textInput.trim()}
                     className="bg-electric-blue hover:bg-blue-600"
                   >
                     <MessageCircle className="w-4 h-4" />
@@ -218,14 +166,14 @@ const VoiceManagement = () => {
                 {/* Contrôle vocal */}
                 <div className="flex justify-center">
                   <Button
-                    onClick={recording ? stopRecording : startRecording}
+                    onClick={isRecording ? stopRecording : startRecording}
                     className={`px-8 py-4 text-lg font-semibold ${
-                      recording 
+                      isRecording 
                         ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
                         : 'bg-gradient-to-r from-purple-600 to-electric-blue hover:from-purple-700 hover:to-blue-700'
                     }`}
                   >
-                    {recording ? (
+                    {isRecording ? (
                       <>
                         <MicOff className="w-5 h-5 mr-2" />
                         Arrêter l'enregistrement
@@ -243,18 +191,18 @@ const VoiceManagement = () => {
               {/* Indicateur de statut */}
               <div className="mt-4 text-center">
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                  recording 
+                  isRecording 
                     ? 'bg-red-100 text-red-800' 
-                    : isLoading 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : 'bg-green-100 text-green-800'
+                    : isConnected 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {recording ? (
-                    <>🎤 Écoute en cours...</>
-                  ) : isLoading ? (
-                    <>🤔 Clara réfléchit...</>
+                  {isRecording ? (
+                    <>🎤 Clara vous écoute...</>
+                  ) : isConnected ? (
+                    <>💬 Prêt à converser avec Clara</>
                   ) : (
-                    <>💬 Prêt à converser</>
+                    <>🔄 Connexion en cours...</>
                   )}
                 </div>
               </div>
