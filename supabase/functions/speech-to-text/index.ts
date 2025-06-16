@@ -10,62 +10,59 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Processing speech-to-text request");
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
     
-    const { audio } = await req.json();
-    
-    if (!audio) {
-      throw new Error('No audio data provided');
+    if (!file) {
+      return new Response(
+        JSON.stringify({ error: 'No file provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Convert base64 to binary
-    const binaryString = atob(audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Create form data for OpenAI Whisper
-    const formData = new FormData();
-    const audioBlob = new Blob([bytes], { type: 'audio/webm' });
-    formData.append('file', audioBlob, 'audio.webm');
-    formData.append('model', 'whisper-1');
+    // Create a new FormData for OpenAI
+    const openaiFormData = new FormData();
+    openaiFormData.append('file', file);
+    openaiFormData.append('model', 'whisper-1');
+    openaiFormData.append('language', 'fr');
+    openaiFormData.append('response_format', 'json');
 
-    // Send to OpenAI
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
       },
-      body: formData,
+      body: openaiFormData,
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log('Transcription successful:', result.text);
+    const data = await response.json();
 
     return new Response(
-      JSON.stringify({ text: result.text }),
+      JSON.stringify({ text: data.text }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in speech-to-text function:', error);
+    console.error('Transcription error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: 'Transcription failed', detail: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

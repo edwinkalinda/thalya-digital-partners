@@ -36,16 +36,16 @@ export function useVoiceRecorder(onResult: (text: string) => void) {
         formData.append('file', blob, 'recording.webm');
 
         try {
-          const response = await fetch('/api/transcribe', {
-            method: 'POST',
+          // Utiliser l'Edge Function Supabase pour la transcription
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data, error } = await supabase.functions.invoke('speech-to-text', {
             body: formData
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.text) {
-              onResult(data.text);
-            }
+          if (!error && data?.text) {
+            onResult(data.text);
+          } else {
+            console.error('Transcription error:', error);
           }
         } catch (error) {
           console.error('Transcription error:', error);

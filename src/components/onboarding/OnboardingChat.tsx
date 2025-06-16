@@ -5,6 +5,7 @@ import { useOnboardingFlow } from './useOnboardingFlow';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export function OnboardingChat() {
   const {
@@ -35,10 +36,26 @@ export function OnboardingChat() {
 
   const playVoicePreview = async () => {
     try {
-      const response = await fetch('/api/preview-voice');
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
+      // Utiliser l'Edge Function ElevenLabs pour la prévisualisation vocale
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: {
+          text: `Bonjour ! Je suis Clara, votre nouvelle assistante vocale IA. 
+                 Je suis maintenant configurée selon vos préférences et prête à aider vos clients. 
+                 Merci d'avoir choisi Thalya pour votre entreprise.`,
+          voiceId: 'pFZP5JQG7iQjIQuC4Bku' // Lily (voix française)
+        }
+      });
+      
+      if (!error && data?.audioData) {
+        // Décoder le base64 en ArrayBuffer
+        const binaryString = atob(data.audioData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+        const url = URL.createObjectURL(audioBlob);
         
         if (!audioRef.current) {
           audioRef.current = new Audio(url);
