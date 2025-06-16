@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -37,6 +37,15 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
   const [error, setError] = useState<string | null>(null);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const { toast } = useToast();
+
+  // Create stable references for complex objects to avoid dependency issues
+  const filtersKey = useMemo(() => {
+    return options.filters ? JSON.stringify(options.filters) : 'no-filters';
+  }, [options.filters]);
+
+  const orderByKey = useMemo(() => {
+    return options.orderBy ? JSON.stringify(options.orderBy) : 'no-order';
+  }, [options.orderBy]);
 
   useEffect(() => {
     let isMounted = true;
@@ -106,10 +115,10 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
     options.table,
     options.select,
     options.limit,
+    filtersKey,
+    orderByKey,
     refetchTrigger,
-    // Create stable string keys for complex objects
-    options.filters ? Object.keys(options.filters).sort().join(',') + ':' + Object.values(options.filters).join(',') : '',
-    options.orderBy ? `${options.orderBy.column}:${options.orderBy.ascending}` : ''
+    toast
   ]);
 
   const refetch = () => {
