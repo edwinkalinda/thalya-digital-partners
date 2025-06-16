@@ -98,7 +98,7 @@ export function useSecureSupabaseQuery<T = any>({
     return () => {
       mounted = false;
     };
-  }, [table, select, limit, refetchCounter, toast]);
+  }, [table, select, limit, refetchCounter]);
 
   const refetch = () => {
     setRefetchCounter(prev => prev + 1);
