@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,75 +38,62 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const { toast } = useToast();
 
-  // Create stable references for complex objects to avoid dependency issues
-  const filtersKey = useMemo(() => {
-    return options.filters ? JSON.stringify(options.filters) : 'no-filters';
-  }, [options.filters]);
-
-  const orderByKey = useMemo(() => {
-    return options.orderBy ? JSON.stringify(options.orderBy) : 'no-order';
-  }, [options.orderBy]);
-
-  useEffect(() => {
+  const executeQuery = useCallback(async () => {
     let isMounted = true;
+    
+    try {
+      setLoading(true);
+      setError(null);
 
-    const executeQuery = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      // Build the query step by step
+      let query = supabase.from(options.table).select(options.select || '*');
 
-        // Build the query step by step
-        let query = supabase.from(options.table).select(options.select || '*');
-
-        // Apply filters
-        if (options.filters) {
-          for (const [key, value] of Object.entries(options.filters)) {
-            if (value !== undefined && value !== null) {
-              query = query.eq(key, value);
-            }
+      // Apply filters
+      if (options.filters) {
+        Object.entries(options.filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.eq(key, value);
           }
-        }
-
-        // Apply ordering
-        if (options.orderBy) {
-          query = query.order(options.orderBy.column, { 
-            ascending: options.orderBy.ascending !== false 
-          });
-        }
-
-        // Apply limit
-        if (options.limit) {
-          query = query.limit(options.limit);
-        }
-
-        const { data: result, error: queryError } = await query;
-
-        if (queryError) {
-          throw queryError;
-        }
-
-        if (isMounted) {
-          setData((result as T[]) || []);
-        }
-      } catch (err) {
-        if (isMounted) {
-          const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-          setError(errorMessage);
-          console.error('Erreur lors de la récupération des données:', err);
-          toast({
-            title: "Erreur de chargement",
-            description: "Impossible de charger les données. Veuillez réessayer.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        });
       }
-    };
 
-    executeQuery();
+      // Apply ordering
+      if (options.orderBy) {
+        query = query.order(options.orderBy.column, { 
+          ascending: options.orderBy.ascending !== false 
+        });
+      }
+
+      // Apply limit
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      const { data: result, error: queryError } = await query;
+
+      if (queryError) {
+        throw queryError;
+      }
+
+      if (isMounted) {
+        setData((result as T[]) || []);
+      }
+    } catch (err) {
+      if (isMounted) {
+        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+        setError(errorMessage);
+        console.error('Erreur lors de la récupération des données:', err);
+        toast({
+          title: "Erreur de chargement",
+          description: "Impossible de charger les données. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }
 
     return () => {
       isMounted = false;
@@ -115,15 +102,18 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
     options.table,
     options.select,
     options.limit,
-    filtersKey,
-    orderByKey,
-    refetchTrigger,
+    JSON.stringify(options.filters || {}),
+    JSON.stringify(options.orderBy || {}),
     toast
   ]);
 
-  const refetch = () => {
+  useEffect(() => {
+    executeQuery();
+  }, [executeQuery, refetchTrigger]);
+
+  const refetch = useCallback(() => {
     setRefetchTrigger(prev => prev + 1);
-  };
+  }, []);
 
   return { data, loading, error, refetch };
 }

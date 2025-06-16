@@ -24,13 +24,13 @@ const CTAButtons = () => {
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
-      case 'Mic': return <Mic className="w-4 h-4" />;
-      case 'Settings': return <Settings className="w-4 h-4" />;
-      case 'Heart': return <Heart className="w-4 h-4" />;
-      case 'UtensilsCrossed': return <UtensilsCrossed className="w-4 h-4" />;
-      case 'Building': return <Building className="w-4 h-4" />;
-      case 'Target': return <Target className="w-4 h-4" />;
-      default: return <User className="w-4 h-4" />;
+      case 'Mic': return <Mic className="w-4 h-4" aria-hidden="true" />;
+      case 'Settings': return <Settings className="w-4 h-4" aria-hidden="true" />;
+      case 'Heart': return <Heart className="w-4 h-4" aria-hidden="true" />;
+      case 'UtensilsCrossed': return <UtensilsCrossed className="w-4 h-4" aria-hidden="true" />;
+      case 'Building': return <Building className="w-4 h-4" aria-hidden="true" />;
+      case 'Target': return <Target className="w-4 h-4" aria-hidden="true" />;
+      default: return <User className="w-4 h-4" aria-hidden="true" />;
     }
   };
 
@@ -39,25 +39,42 @@ const CTAButtons = () => {
       <div className="flex items-center space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex items-center space-x-2">
-              <User className="w-4 h-4" />
+            <Button 
+              variant="outline" 
+              className="flex items-center space-x-2 focus:ring-2 focus:ring-electric-blue focus:ring-offset-2"
+              aria-label={`Menu utilisateur pour ${user.email}`}
+              aria-haspopup="true"
+            >
+              <User className="w-4 h-4" aria-hidden="true" />
               <span>{user.email}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent 
+            align="end" 
+            className="w-56"
+            role="menu"
+            aria-label="Menu utilisateur"
+          >
             {dashboardNavigationItems.map((item) => (
               <DropdownMenuItem
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={location.pathname === item.path ? 'bg-electric-blue/10' : ''}
+                role="menuitem"
+                aria-label={`Naviguer vers ${item.label}`}
               >
                 {getIcon(item.icon)}
                 <span className="ml-2">{item.label}</span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-              <LogOut className="w-4 h-4" />
+            <DropdownMenuItem 
+              onClick={handleSignOut} 
+              className="text-red-600"
+              role="menuitem"
+              aria-label="Se déconnecter de votre compte"
+            >
+              <LogOut className="w-4 h-4" aria-hidden="true" />
               <span className="ml-2">Se déconnecter</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -71,13 +88,15 @@ const CTAButtons = () => {
       <Button 
         variant="outline" 
         onClick={() => navigate('/login')}
-        className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-white"
+        className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-white focus:ring-2 focus:ring-electric-blue focus:ring-offset-2"
+        aria-label="Se connecter à votre compte"
       >
         Se connecter
       </Button>
       <Button 
         onClick={() => navigate('/onboarding')}
-        className="bg-electric-blue text-white hover:bg-blue-600"
+        className="bg-electric-blue text-white hover:bg-blue-600 focus:ring-2 focus:ring-electric-blue focus:ring-offset-2"
+        aria-label="Commencer votre expérience"
       >
         Commencer
       </Button>

@@ -39,16 +39,33 @@ const Navigation = () => {
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent, sectionId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleNavigation(sectionId);
+    }
+  };
+
   return (
-    <nav className="hidden lg:flex items-center space-x-8">
+    <nav 
+      className="hidden lg:flex items-center space-x-8"
+      role="navigation"
+      aria-label="Navigation principale"
+    >
       {navigationItems.map((item) => (
         <button 
           key={item.id}
-          onClick={() => handleNavigation(item.id)} 
-          className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer"
+          onClick={() => handleNavigation(item.id)}
+          onKeyDown={(e) => handleKeyDown(e, item.id)}
+          className="text-graphite-600 hover:text-electric-blue transition-colors relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-electric-blue focus:ring-offset-2 rounded-md px-2 py-1"
+          aria-label={`Naviguer vers la section ${item.label}`}
+          tabIndex={0}
         >
           {item.label}
-          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"></span>
+          <span 
+            className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full group-focus:w-full"
+            aria-hidden="true"
+          ></span>
         </button>
       ))}
     </nav>
