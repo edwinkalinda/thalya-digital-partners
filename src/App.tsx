@@ -13,6 +13,10 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import AIConfig from "./pages/AIConfig";
 import VoiceManagement from "./pages/VoiceManagement";
+import ClinicDashboard from "./pages/ClinicDashboard";
+import RestaurantDashboard from "./pages/RestaurantDashboard";
+import RealEstateDashboard from "./pages/RealEstateDashboard";
+import OutreachDashboard from "./pages/OutreachDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +54,26 @@ const App = () => (
             <Route path="/voice-management" element={
               <ProtectedRoute>
                 <VoiceManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/clinic" element={
+              <ProtectedRoute>
+                <ClinicDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/restaurant" element={
+              <ProtectedRoute>
+                <RestaurantDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/real-estate" element={
+              <ProtectedRoute>
+                <RealEstateDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/outreach" element={
+              <ProtectedRoute>
+                <OutreachDashboard />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

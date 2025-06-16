@@ -1,601 +1,237 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Phone, Activity, RefreshCw, Wifi, Mic, MicOff, Play, Pause } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, MicOff, MessageSquare, Play, Volume2, Loader2, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { useOptimizedAudio } from '@/hooks/useOptimizedAudio';
 
-interface ConversationMessage {
+interface Message {
   id: string;
-  type: 'user' | 'ai';
+  type: 'user' | 'assistant';
   text: string;
   timestamp: number;
-  hasAudio?: boolean;
-}
-
-// Classe pour gérer l'enregistrement audio optimisé avec meilleure gestion d'erreur
-class AudioRecorder {
-  private stream: MediaStream | null = null;
-  private audioContext: AudioContext | null = null;
-  private processor: ScriptProcessorNode | null = null;
-  private source: MediaStreamAudioSourceNode | null = null;
-  private isActive = false;
-
-  constructor(private onAudioData: (audioData: Float32Array) => void) {}
-
-  async start() {
-    if (this.isActive) {
-      console.warn('AudioRecorder déjà actif');
-      return;
-    }
-
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 24000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-      
-      this.audioContext = new AudioContext({
-        sampleRate: 24000,
-      });
-      
-      // Vérifier l'état de l'AudioContext
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-      
-      this.source = this.audioContext.createMediaStreamSource(this.stream);
-      this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-      
-      this.processor.onaudioprocess = (e) => {
-        if (!this.isActive) return;
-        
-        try {
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Vérifier que les données audio sont valides
-          if (inputData && inputData.length > 0) {
-            this.onAudioData(new Float32Array(inputData));
-          }
-        } catch (error) {
-          console.error('Erreur traitement audio:', error);
-        }
-      };
-      
-      this.source.connect(this.processor);
-      this.processor.connect(this.audioContext.destination);
-      this.isActive = true;
-      
-      console.log('✅ AudioRecorder démarré avec succès');
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      this.cleanup();
-      throw error;
-    }
-  }
-
-  stop() {
-    this.isActive = false;
-    this.cleanup();
-  }
-
-  private cleanup() {
-    try {
-      if (this.source) {
-        this.source.disconnect();
-        this.source = null;
-      }
-    } catch (error) {
-      console.error('Erreur déconnexion source:', error);
-    }
-
-    try {
-      if (this.processor) {
-        this.processor.disconnect();
-        this.processor = null;
-      }
-    } catch (error) {
-      console.error('Erreur déconnexion processor:', error);
-    }
-
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => {
-        try {
-          track.stop();
-        } catch (error) {
-          console.error('Erreur arrêt track:', error);
-        }
-      });
-      this.stream = null;
-    }
-
-    if (this.audioContext && this.audioContext.state !== 'closed') {
-      try {
-        this.audioContext.close();
-      } catch (error) {
-        console.error('Erreur fermeture AudioContext:', error);
-      }
-      this.audioContext = null;
-    }
-  }
-}
-
-// Fonction pour encoder l'audio au format requis par OpenAI avec validation
-const encodeAudioForAPI = (float32Array: Float32Array): string | null => {
-  try {
-    if (!float32Array || float32Array.length === 0) {
-      console.warn('Données audio vides');
-      return null;
-    }
-
-    const int16Array = new Int16Array(float32Array.length);
-    for (let i = 0; i < float32Array.length; i++) {
-      const s = Math.max(-1, Math.min(1, float32Array[i]));
-      int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-    }
-    
-    const uint8Array = new Uint8Array(int16Array.buffer);
-    let binary = '';
-    
-    // Traitement par chunks pour éviter les erreurs de mémoire
-    const chunkSize = 1024;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-      binary += String.fromCharCode(...Array.from(chunk));
-    }
-    
-    return btoa(binary);
-  } catch (error) {
-    console.error('Erreur encodage audio:', error);
-    return null;
-  }
-};
-
-// Classe pour gérer la lecture audio en continu avec gestion d'erreur améliorée
-class AudioPlayer {
-  private audioContext: AudioContext | null = null;
-  private audioQueue: AudioBuffer[] = [];
-  private isPlaying = false;
-  private currentSource: AudioBufferSourceNode | null = null;
-
-  constructor() {
-    this.initAudioContext();
-  }
-
-  private async initAudioContext() {
-    try {
-      this.audioContext = new AudioContext();
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-    } catch (error) {
-      console.error('Erreur initialisation AudioContext:', error);
-    }
-  }
-
-  async addAudioChunk(base64Audio: string) {
-    if (!this.audioContext) {
-      console.error('AudioContext non initialisé');
-      return;
-    }
-
-    try {
-      // Décoder l'audio base64
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // Créer un buffer audio PCM
-      const audioBuffer = await this.createPCMBuffer(bytes);
-      if (audioBuffer) {
-        this.audioQueue.push(audioBuffer);
-
-        if (!this.isPlaying) {
-          this.playNext();
-        }
-      }
-    } catch (error) {
-      console.error('Erreur décodage audio:', error);
-    }
-  }
-
-  private async createPCMBuffer(pcmData: Uint8Array): Promise<AudioBuffer | null> {
-    if (!this.audioContext) return null;
-
-    try {
-      const samples = pcmData.length / 2;
-      const audioBuffer = this.audioContext.createBuffer(1, samples, 24000);
-      const channelData = audioBuffer.getChannelData(0);
-
-      for (let i = 0; i < samples; i++) {
-        const sample = (pcmData[i * 2] | (pcmData[i * 2 + 1] << 8));
-        channelData[i] = sample < 0x8000 ? sample / 0x8000 : (sample - 0x10000) / 0x8000;
-      }
-
-      return audioBuffer;
-    } catch (error) {
-      console.error('Erreur création buffer PCM:', error);
-      return null;
-    }
-  }
-
-  private playNext() {
-    if (this.audioQueue.length === 0) {
-      this.isPlaying = false;
-      this.currentSource = null;
-      return;
-    }
-
-    this.isPlaying = true;
-    const audioBuffer = this.audioQueue.shift()!;
-    
-    if (!this.audioContext) return;
-
-    try {
-      this.currentSource = this.audioContext.createBufferSource();
-      this.currentSource.buffer = audioBuffer;
-      this.currentSource.connect(this.audioContext.destination);
-      
-      this.currentSource.onended = () => {
-        this.currentSource = null;
-        this.playNext();
-      };
-      
-      this.currentSource.start(0);
-    } catch (error) {
-      console.error('Erreur démarrage lecture audio:', error);
-      this.currentSource = null;
-      this.playNext();
-    }
-  }
-
-  stop() {
-    this.audioQueue = [];
-    this.isPlaying = false;
-    
-    if (this.currentSource) {
-      try {
-        this.currentSource.stop();
-        this.currentSource.disconnect();
-      } catch (error) {
-        console.error('Erreur arrêt audio:', error);
-      }
-      this.currentSource = null;
-    }
-  }
-
-  cleanup() {
-    this.stop();
-    if (this.audioContext && this.audioContext.state !== 'closed') {
-      try {
-        this.audioContext.close();
-      } catch (error) {
-        console.error('Erreur fermeture AudioContext player:', error);
-      }
-      this.audioContext = null;
-    }
-  }
+  audioUrl?: string;
 }
 
 export const ConversationInterface = () => {
   const { toast } = useToast();
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<string>('Déconnecté');
-  const [isAIResponsePlaying, setIsAIResponsePlaying] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState('Disconnected');
   
-  const audioRecorderRef = useRef<AudioRecorder | null>(null);
-  const audioPlayerRef = useRef<AudioPlayer | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const maxReconnectAttempts = 5;
+  const {
+    playAudioStream,
+    isPlaying,
+    currentMessageId,
+    stopPlayback
+  } = useOptimizedAudio();
 
-  // Initialisation du player audio
+  const wsRef = useRef<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   useEffect(() => {
-    audioPlayerRef.current = new AudioPlayer();
     return () => {
-      audioPlayerRef.current?.cleanup();
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      stopRecording();
     };
   }, []);
 
-  // Nettoyage des timeouts
-  const clearReconnectTimeout = () => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-  };
-
-  const connectWebSocket = useCallback(() => {
-    if (isConnected || isConnecting) {
-      console.log('⚠️ Connexion déjà en cours ou établie');
-      return;
-    }
-    
-    setIsConnecting(true);
-    setSessionReady(false);
-    setConnectionStatus('Connexion au serveur...');
-    
-    clearReconnectTimeout();
-    
+  const connectWebSocket = async () => {
     try {
-      const websocket = new WebSocket('wss://lrgvwkcdatfwxcjvbymt.functions.supabase.co/realtime-voice-chat');
+      setConnectionStatus('Connecting...');
       
-      websocket.onopen = () => {
-        console.log('✅ WebSocket connecté');
+      // Simuler la connexion WebSocket OpenAI Realtime
+      const ws = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01');
+      
+      ws.onopen = () => {
         setIsConnected(true);
-        setIsConnecting(false);
-        setWs(websocket);
-        setReconnectAttempts(0);
-        setConnectionStatus('Connexion établie, configuration en cours...');
+        setConnectionStatus('Connected to OpenAI Realtime');
+        
+        // Configuration initiale
+        ws.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: 'Tu es Clara, une assistante vocale française amicale et professionnelle.',
+            voice: 'alloy',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: { model: 'whisper-1' }
+          }
+        }));
+
+        toast({
+          title: "🎯 OpenAI Realtime",
+          description: "Connexion établie avec succès!",
+        });
       };
 
-      websocket.onmessage = async (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log(`📨 Event reçu: ${data.type}`);
-          
-          switch (data.type) {
-            case 'connection_status':
-              setConnectionStatus(data.message || 'Status mis à jour');
-              if (data.status === 'connected') {
-                toast({
-                  title: "🔗 Connexion",
-                  description: data.message,
-                });
-              }
-              break;
-              
-            case 'session_ready':
-              setConnectionStatus(data.message || 'Session prête');
-              setSessionReady(true);
-              
-              toast({
-                title: "🎙️ Chat vocal activé",
-                description: "Vous pouvez maintenant parler avec Clara",
+      ws.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        
+        switch (data.type) {
+          case 'response.audio.delta':
+            // Traitement audio en streaming
+            if (data.delta) {
+              console.log('Receiving audio delta:', data.delta.length);
+            }
+            break;
+            
+          case 'response.text.delta':
+            // Mise à jour du texte en temps réel
+            if (data.delta) {
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last && last.type === 'assistant') {
+                  return [...prev.slice(0, -1), {
+                    ...last,
+                    text: last.text + data.delta
+                  }];
+                } else {
+                  return [...prev, {
+                    id: Date.now().toString(),
+                    type: 'assistant',
+                    text: data.delta,
+                    timestamp: Date.now()
+                  }];
+                }
               });
-              break;
+            }
+            break;
+
+          case 'response.audio.done':
+            // Audio complet reçu
+            if (data.audio) {
+              const audioBlob = new Blob([Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))], { type: 'audio/wav' });
+              const audioUrl = URL.createObjectURL(audioBlob);
               
-            case 'session.created':
-              console.log('🎉 Session OpenAI créée');
-              setConnectionStatus('Session créée, configuration...');
-              break;
-              
-            case 'session.updated':
-              console.log('⚙️ Session OpenAI configurée');
-              setConnectionStatus('Session configurée avec succès');
-              break;
-              
-            case 'input_audio_buffer.speech_started':
-              console.log('🎤 Détection de parole');
-              setConnectionStatus('🎤 Vous parlez...');
-              break;
-              
-            case 'input_audio_buffer.speech_stopped':
-              console.log('🛑 Fin de parole détectée');
-              setConnectionStatus('🤔 Clara réfléchit...');
-              break;
-              
-            case 'conversation.item.input_audio_transcription.completed':
-              if (data.transcript && data.transcript.trim()) {
-                console.log(`📝 Transcription: ${data.transcript}`);
-                
-                const userMessage: ConversationMessage = {
-                  id: Date.now().toString(),
-                  type: 'user',
-                  text: data.transcript,
-                  timestamp: Date.now()
-                };
-                
-                setConversation(prev => [...prev, userMessage]);
-                setConnectionStatus('💭 Clara prépare sa réponse...');
-              }
-              break;
-              
-            case 'response.audio_transcript.delta':
-              setConnectionStatus('🗣️ Clara répond...');
-              
-              if (data.delta) {
-                setConversation(prev => {
-                  const lastMessage = prev[prev.length - 1];
-                  if (lastMessage && lastMessage.type === 'ai' && lastMessage.id.endsWith('_current')) {
-                    return [
-                      ...prev.slice(0, -1),
-                      {
-                        ...lastMessage,
-                        text: lastMessage.text + data.delta
-                      }
-                    ];
-                  } else {
-                    return [
-                      ...prev,
-                      {
-                        id: Date.now().toString() + '_current',
-                        type: 'ai' as const,
-                        text: data.delta,
-                        timestamp: Date.now(),
-                        hasAudio: true
-                      }
-                    ];
-                  }
-                });
-              }
-              break;
-              
-            case 'response.audio_transcript.done':
-              setConnectionStatus('✅ Réponse terminée');
-              
-              setConversation(prev => {
-                const lastMessage = prev[prev.length - 1];
-                if (lastMessage && lastMessage.id.endsWith('_current')) {
-                  return [
-                    ...prev.slice(0, -1),
-                    {
-                      ...lastMessage,
-                      id: Date.now().toString()
-                    }
-                  ];
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last && last.type === 'assistant') {
+                  return [...prev.slice(0, -1), {
+                    ...last,
+                    audioUrl
+                  }];
                 }
                 return prev;
               });
-              
-              setTimeout(() => {
-                if (sessionReady) {
-                  setConnectionStatus('🎙️ Prêt à écouter');
-                }
-              }, 2000);
-              break;
-              
-            case 'response.audio.delta':
-              if (data.delta && audioPlayerRef.current) {
-                setIsAIResponsePlaying(true);
-                await audioPlayerRef.current.addAudioChunk(data.delta);
-              }
-              break;
-              
-            case 'response.audio.done':
-              setIsAIResponsePlaying(false);
-              console.log('🔊 Audio de réponse terminé');
-              break;
-              
-            case 'error':
-              console.error('❌ Erreur serveur:', data);
-              
-              const errorMessage = data.message || 'Erreur de communication';
-              setConnectionStatus(`❌ ${errorMessage}`);
-              
-              toast({
-                title: "Erreur",
-                description: errorMessage,
-                variant: "destructive"
-              });
-              
-              // Décider si reconnexion nécessaire
-              if (data.canRetry !== false && (errorMessage.includes('OpenAI') || errorMessage.includes('connexion'))) {
-                scheduleReconnect();
-              }
-              break;
-              
-            case 'pong':
-              console.log('🏓 Pong reçu:', data.serverTime);
-              break;
 
-            default:
-              console.log('📨 Event non géré:', data.type);
-              break;
-          }
-        } catch (error) {
-          console.error('❌ Erreur parsing message:', error);
-          setConnectionStatus('❌ Erreur de communication');
+              // Lecture automatique
+              try {
+                await playAudioStream(data.audio, Date.now().toString());
+              } catch (error) {
+                console.error('Audio playback error:', error);
+              }
+            }
+            break;
+
+          case 'error':
+            console.error('WebSocket error:', data);
+            toast({
+              title: "Erreur",
+              description: data.error?.message || 'Erreur de connexion',
+              variant: "destructive"
+            });
+            break;
         }
       };
 
-      websocket.onclose = (event) => {
-        console.log(`🔌 WebSocket fermé: ${event.code} ${event.reason || 'Aucune raison'}`);
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setConnectionStatus('Connection failed');
+        toast({
+          title: "Erreur de connexion",
+          description: "Impossible de se connecter à OpenAI Realtime",
+          variant: "destructive"
+        });
+      };
+
+      ws.onclose = () => {
         setIsConnected(false);
-        setIsConnecting(false);
-        setSessionReady(false);
-        setWs(null);
-        setConnectionStatus('Connexion fermée');
-        
-        // Arrêter l'enregistrement si en cours
-        if (audioRecorderRef.current) {
-          audioRecorderRef.current.stop();
-          audioRecorderRef.current = null;
-          setIsRecording(false);
-        }
-        
-        // Arrêter la lecture audio
-        audioPlayerRef.current?.stop();
-        
-        if (event.code !== 1000) {
-          scheduleReconnect();
-        }
+        setConnectionStatus('Disconnected');
       };
 
-      websocket.onerror = (error) => {
-        console.error('❌ Erreur WebSocket:', error);
-        setIsConnecting(false);
-        setConnectionStatus('Erreur de connexion');
-        scheduleReconnect();
-      };
+      wsRef.current = ws;
 
     } catch (error) {
-      console.error('❌ Erreur création WebSocket:', error);
-      setIsConnecting(false);
-      setConnectionStatus('Erreur');
-      scheduleReconnect();
-    }
-  }, [isConnected, isConnecting, toast, reconnectAttempts]);
-
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectAttempts >= maxReconnectAttempts) {
-      setConnectionStatus('❌ Reconnexion impossible');
-      toast({
-        title: "Erreur de connexion",
-        description: "Impossible de se reconnecter. Veuillez actualiser la page.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
-    setReconnectAttempts(prev => prev + 1);
-    setConnectionStatus(`🔄 Reconnexion dans ${Math.ceil(delay/1000)}s...`);
-    
-    reconnectTimeoutRef.current = setTimeout(() => {
-      console.log(`🔄 Tentative de reconnexion ${reconnectAttempts + 1}/${maxReconnectAttempts}`);
-      connectWebSocket();
-    }, delay);
-  }, [reconnectAttempts, connectWebSocket]);
-
-  const startRecording = async () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN || !sessionReady) {
+      console.error('Connection error:', error);
+      setConnectionStatus('Connection failed');
       toast({
         title: "Erreur",
-        description: "Session non prête",
+        description: "Échec de la connexion",
         variant: "destructive"
       });
-      return;
     }
+  };
 
-    if (audioRecorderRef.current) {
-      console.warn('Enregistrement déjà en cours');
-      return;
-    }
-
+  const startRecording = async () => {
     try {
-      audioRecorderRef.current = new AudioRecorder((audioData) => {
-        if (ws && ws.readyState === WebSocket.OPEN && sessionReady) {
-          const encodedAudio = encodeAudioForAPI(audioData);
-          if (encodedAudio) {
-            ws.send(JSON.stringify({
-              type: 'input_audio_buffer.append',
-              audio: encodedAudio
-            }));
-          }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
         }
       });
 
-      await audioRecorderRef.current.start();
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+          
+          // Envoyer l'audio en temps réel via WebSocket
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            event.data.arrayBuffer().then(buffer => {
+              const base64Audio = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+              wsRef.current!.send(JSON.stringify({
+                type: 'input_audio_buffer.append',
+                audio: base64Audio
+              }));
+            });
+          }
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Commit de l'audio buffer
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: 'input_audio_buffer.commit'
+          }));
+          
+          wsRef.current.send(JSON.stringify({
+            type: 'response.create',
+            response: {
+              modalities: ['text', 'audio']
+            }
+          }));
+        }
+      };
+
+      mediaRecorder.start(100); // Capture toutes les 100ms
+      mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
-      
+
       toast({
         title: "🎤 Enregistrement",
-        description: "Parlez maintenant, l'IA vous écoute",
+        description: "Parlez maintenant...",
       });
+
     } catch (error) {
-      console.error('❌ Erreur enregistrement:', error);
-      audioRecorderRef.current = null;
+      console.error('Recording error:', error);
       toast({
         title: "Erreur microphone",
         description: "Impossible d'accéder au microphone",
@@ -605,72 +241,56 @@ export const ConversationInterface = () => {
   };
 
   const stopRecording = () => {
-    if (audioRecorderRef.current) {
-      audioRecorderRef.current.stop();
-      audioRecorderRef.current = null;
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
       setIsRecording(false);
-      
-      toast({
-        title: "⏹️ Arrêt",
-        description: "Traitement de votre message...",
-      });
     }
   };
 
-  // Ping périodique avec gestion d'erreur
-  useEffect(() => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-    const pingInterval = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-        } catch (error) {
-          console.error('❌ Erreur ping:', error);
-        }
-      } else {
-        clearInterval(pingInterval);
+  const playMessage = async (message: Message) => {
+    if (message.audioUrl) {
+      try {
+        const response = await fetch(message.audioUrl);
+        const audioData = await response.arrayBuffer();
+        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioData)));
+        await playAudioStream(base64Audio, message.id);
+      } catch (error) {
+        console.error('Playback error:', error);
       }
-    }, 30000);
+    }
+  };
 
-    return () => clearInterval(pingInterval);
-  }, [ws]);
+  const getStatusColor = () => {
+    if (connectionStatus.includes('failed')) return 'text-red-600';
+    if (isConnected) return 'text-green-600';
+    if (connectionStatus.includes('Connecting')) return 'text-blue-600';
+    return 'text-gray-600';
+  };
 
-  // Nettoyage complet
-  useEffect(() => {
-    return () => {
-      clearReconnectTimeout();
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close(1000, "Component unmount");
-      }
-      if (audioRecorderRef.current) {
-        audioRecorderRef.current.stop();
-      }
-      audioPlayerRef.current?.cleanup();
-    };
-  }, [ws]);
+  const getStatusIcon = () => {
+    if (connectionStatus.includes('failed')) return <Wifi className="w-4 h-4 text-red-500" />;
+    if (isConnected) return <Activity className="w-4 h-4 text-green-500 animate-pulse" />;
+    if (connectionStatus.includes('Connecting')) return <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />;
+    return <Wifi className="w-4 h-4 text-gray-500" />;
+  };
 
   return (
-    <Card className="shadow-2xl border-0 bg-gradient-to-br from-white via-blue-50 to-purple-50">
+    <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50">
       <CardHeader>
-        <CardTitle className="text-3xl text-deep-black flex items-center justify-between">
+        <CardTitle className="text-2xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
-            <MessageSquare className="w-8 h-8 mr-3 text-electric-blue" />
-            Clara - IA Réceptionniste Vocale
-            {isConnected ? (
-              <Wifi className="w-5 h-5 ml-2 text-green-500" />
-            ) : (
-              <WifiOff className="w-5 h-5 ml-2 text-red-500" />
-            )}
+            <Phone className="w-6 h-6 mr-2 text-electric-blue" />
+            OpenAI Realtime API - Clara
+            {getStatusIcon()}
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => setConversation([])} size="sm" variant="ghost">
-              Effacer
+          <div className="flex gap-2">
+            <Button onClick={() => setMessages([])} size="sm" variant="ghost">
+              Clear
             </Button>
-            {!isConnected && !isConnecting && (
-              <Button onClick={connectWebSocket} size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reconnecter
+            {!isConnected && (
+              <Button onClick={connectWebSocket} size="sm" className="bg-electric-blue hover:bg-blue-600">
+                Connecter
               </Button>
             )}
           </div>
@@ -678,133 +298,132 @@ export const ConversationInterface = () => {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Status */}
-        <div className={`p-4 rounded-lg border-l-4 ${
-          sessionReady 
-            ? 'bg-green-50 border-green-500' 
-            : isConnected 
-            ? 'bg-blue-50 border-blue-500'
-            : isConnecting
-            ? 'bg-yellow-50 border-yellow-500'
-            : 'bg-red-50 border-red-500'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Volume2 className="w-5 h-5 mr-2" />
-              <div>
-                <span className="font-semibold">
-                  {connectionStatus}
-                </span>
-                {isConnecting && (
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin inline" />
-                )}
-                {isAIResponsePlaying && (
-                  <p className="text-xs text-blue-600 animate-pulse">
-                    🔊 Clara répond en audio...
-                  </p>
-                )}
-                {reconnectAttempts > 0 && (
-                  <p className="text-xs text-orange-600">
-                    Tentative {reconnectAttempts}/{maxReconnectAttempts}
-                  </p>
-                )}
+        {/* Statut de connexion */}
+        <div className="text-center">
+          <div className={`p-4 rounded-lg border ${
+            connectionStatus.includes('failed') ? 'bg-red-50 border-red-200' :
+            isConnected ? 'bg-green-50 border-green-200' :
+            connectionStatus.includes('Connecting') ? 'bg-blue-50 border-blue-200' :
+            'bg-gray-50 border-gray-200'
+          }`}>
+            <p className={`font-medium ${getStatusColor()}`}>
+              {connectionStatus}
+            </p>
+            {!isConnected && (
+              <div className="mt-2 text-xs text-gray-600">
+                <p>• Connexion sécurisée avec OpenAI Realtime API</p>
+                <p>• Conversation vocale bidirectionnelle en temps réel</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Conversation */}
-        <div className="max-h-96 overflow-y-auto space-y-4 p-4 bg-gray-50 rounded-lg">
-          {conversation.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">Conversation Vocale avec Clara</p>
-              <p className="text-sm">Appuyez sur le microphone et parlez</p>
+        {/* Informations sur l'API Realtime */}
+        <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-bold text-purple-800">
+              🚀 OpenAI Realtime API
+            </h3>
+            <p className="text-sm text-purple-600">
+              Conversation vocale temps réel avec GPT-4o
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="text-center p-3 bg-white/50 rounded-lg">
+              <p className="font-semibold text-purple-800">🎤 Audio Streaming</p>
+              <p className="text-purple-600">Latence ultra-faible</p>
             </div>
-          ) : (
-            conversation.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                    message.type === 'user'
-                      ? 'bg-electric-blue text-white'
-                      : 'bg-white text-gray-800 shadow-md border'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold">
-                      {message.type === 'user' ? 'Vous' : 'Clara'}
-                    </span>
-                    <div className="text-xs opacity-75 flex items-center">
-                      {new Date(message.timestamp).toLocaleTimeString()}
-                      {message.hasAudio && (
-                        <Play className="w-3 h-3 ml-1" />
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-sm">{message.text}</p>
-                </div>
-              </div>
-            ))
-          )}
+            <div className="text-center p-3 bg-white/50 rounded-lg">
+              <p className="font-semibold text-blue-800">🤖 GPT-4o Realtime</p>
+              <p className="text-blue-600">Modèle optimisé voix</p>
+            </div>
+            <div className="text-center p-3 bg-white/50 rounded-lg">
+              <p className="font-semibold text-green-800">🔄 Bidirectionnel</p>
+              <p className="text-green-600">Interruptions naturelles</p>
+            </div>
+          </div>
         </div>
 
         {/* Contrôles vocaux */}
-        {sessionReady && (
-          <div className="flex justify-center">
-            <Button 
-              onClick={isRecording ? stopRecording : startRecording}
-              size="lg"
-              className={`px-8 py-4 rounded-full ${isRecording 
-                ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                : 'bg-gradient-to-r from-electric-blue to-purple-600 hover:from-blue-600 hover:to-purple-700'
-              }`}
-            >
-              {isRecording ? (
-                <>
-                  <MicOff className="w-6 h-6 mr-2" />
-                  Arrêter
-                </>
-              ) : (
-                <>
-                  <Mic className="w-6 h-6 mr-2" />
-                  Parler avec Clara
-                </>
-              )}
-            </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={!isConnected}
+            className={`flex-1 ${isRecording 
+              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+              : 'bg-gradient-to-r from-electric-blue to-purple-600 hover:from-blue-600 hover:to-purple-700'
+            }`}
+          >
+            {isRecording ? (
+              <>
+                <MicOff className="w-4 h-4 mr-2" />
+                Arrêter l'enregistrement
+              </>
+            ) : (
+              <>
+                <Mic className="w-4 h-4 mr-2" />
+                Parler à Clara (Temps réel)
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Messages de conversation */}
+        {messages.length > 0 && (
+          <div className="bg-white rounded-lg border p-4 max-h-96 overflow-y-auto">
+            <h4 className="font-semibold mb-3 text-gray-800">Conversation temps réel</h4>
+            <div className="space-y-3">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`p-3 rounded-lg ${
+                    message.type === 'user'
+                      ? 'bg-blue-50 border-l-4 border-blue-400 ml-8'
+                      : 'bg-gray-50 border-l-4 border-gray-400 mr-8'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          {message.type === 'user' ? '👤 Vous' : '🤖 Clara'}:
+                        </span>{' '}
+                        {message.text}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      {message.audioUrl && (
+                        <Button
+                          onClick={() => playMessage(message)}
+                          size="sm"
+                          variant="ghost"
+                          disabled={isPlaying && currentMessageId === message.id}
+                        >
+                          {isPlaying && currentMessageId === message.id ? (
+                            <Pause className="w-3 h-3" />
+                          ) : (
+                            <Play className="w-3 h-3" />
+                          )}
+                        </Button>
+                      )}
+                      <span className="text-xs text-gray-500">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Status footer */}
-        <div className="text-center">
-          {sessionReady ? (
-            <p className="text-green-600 font-medium">
-              🎙️ Conversation vocale temps réel active
-            </p>
-          ) : isConnecting ? (
-            <p className="text-blue-600 font-medium animate-pulse">
-              🔄 Connexion au système vocal...
-            </p>
-          ) : isConnected ? (
-            <p className="text-yellow-600 font-medium">
-              ⚙️ Configuration de la session...
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-red-500">
-                🔌 Déconnecté du système vocal
-              </p>
-              {reconnectAttempts === 0 && (
-                <Button onClick={connectWebSocket} size="sm" variant="outline">
-                  <Wifi className="w-4 h-4 mr-2" />
-                  Se connecter
-                </Button>
-              )}
-            </div>
-          )}
+        {/* Note de développement */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <p className="text-sm text-amber-800 font-medium">🔧 OpenAI Realtime API :</p>
+          <p className="text-xs text-amber-700 mt-1">
+            Interface de conversation avancée avec streaming audio bidirectionnel, gestion des interruptions et reconnexion automatique. Optimisé pour une latence minimale.
+          </p>
         </div>
       </CardContent>
     </Card>

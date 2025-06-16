@@ -1,89 +1,86 @@
 
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { LogIn, LogOut, Settings, Phone } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import StarBorder from "@/components/ui/StarBorder";
+import { Button } from "@/components/ui/button";
+import { LogOut, User, Settings, Mic, Building, UtensilsCrossed, Heart, Target } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { dashboardNavigationItems } from "./navigationItems";
 
 const CTAButtons = () => {
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLoginClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/login');
-  };
-
-  const handleDemoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/onboarding');
-  };
-
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Mic': return <Mic className="w-4 h-4" />;
+      case 'Settings': return <Settings className="w-4 h-4" />;
+      case 'Heart': return <Heart className="w-4 h-4" />;
+      case 'UtensilsCrossed': return <UtensilsCrossed className="w-4 h-4" />;
+      case 'Building': return <Building className="w-4 h-4" />;
+      case 'Target': return <Target className="w-4 h-4" />;
+      default: return <User className="w-4 h-4" />;
+    }
+  };
+
   if (user) {
     return (
-      <div className="hidden sm:flex items-center space-x-3 lg:space-x-4">
-        <Button
-          onClick={() => navigate('/dashboard')}
-          variant="outline"
-          className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
-        >
-          <span>Dashboard</span>
-        </Button>
-
-        <Button
-          onClick={() => navigate('/ai-config')}
-          variant="outline"
-          className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
-        >
-          <Settings className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-          <span>Config IA</span>
-        </Button>
-
-        <Button
-          onClick={() => navigate('/voice-management')}
-          variant="outline"
-          className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
-        >
-          <Phone className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-          <span>Vocal</span>
-        </Button>
-
-        <Button
-          onClick={handleLogout}
-          variant="outline"
-          className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
-        >
-          <LogOut className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-          <span>Déconnexion</span>
-        </Button>
+      <div className="flex items-center space-x-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <span>{user.email}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {dashboardNavigationItems.map((item) => (
+              <DropdownMenuItem
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={location.pathname === item.path ? 'bg-electric-blue/10' : ''}
+              >
+                {getIcon(item.icon)}
+                <span className="ml-2">{item.label}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+              <LogOut className="w-4 h-4" />
+              <span className="ml-2">Se déconnecter</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     );
   }
 
   return (
-    <div className="hidden sm:flex items-center space-x-3 lg:space-x-4">
-      <Button
-        onClick={handleLoginClick}
-        variant="outline"
-        className="group relative inline-flex items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-2.5 text-sm font-medium text-graphite-700 bg-pure-white border border-graphite-300 rounded-lg hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue transition-all duration-300 hover:shadow-md hover:shadow-electric-blue/10"
+    <div className="flex items-center space-x-4">
+      <Button 
+        variant="outline" 
+        onClick={() => navigate('/login')}
+        className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-white"
       >
-        <LogIn className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
-        <span>Connexion</span>
-        
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-electric-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        Se connecter
       </Button>
-
-      <div className="scale-90 lg:scale-100">
-        <StarBorder color="#0066FF" speed="4s" className="transition-all duration-300 hover:scale-105 cursor-pointer" onClick={handleDemoClick}>
-          <span className="text-sm px-2 lg:px-0">Demander une démo</span>
-        </StarBorder>
-      </div>
+      <Button 
+        onClick={() => navigate('/onboarding')}
+        className="bg-electric-blue text-white hover:bg-blue-600"
+      >
+        Commencer
+      </Button>
     </div>
   );
 };
