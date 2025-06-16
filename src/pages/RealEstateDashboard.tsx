@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Home, Calendar, Phone, MapPin, FileText, Activity } from "lucide-react";
+import { Home, Users, TrendingUp, Activity } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,17 +13,17 @@ interface RealEstateLead {
   property_type?: string;
   budget_range?: string;
   preferred_area?: string;
-  status: string;
   notes?: string;
+  status?: string;
   created_at: string;
 }
 
 const RealEstateDashboard = () => {
   const [leads, setLeads] = useState<RealEstateLead[]>([]);
   const [stats, setStats] = useState({
-    todayLeads: 0,
-    totalProperties: 0,
-    pendingLeads: 0
+    totalLeads: 0,
+    newLeads: 0,
+    activeLeads: 0
   });
 
   useEffect(() => {
@@ -45,29 +44,24 @@ const RealEstateDashboard = () => {
   };
 
   const fetchStats = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const { data: todayData } = await supabase
-      .from('real_estate_leads')
-      .select('id')
-      .gte('created_at', today)
-      .lt('created_at', today + 'T23:59:59');
-
     const { data: totalData } = await supabase
       .from('real_estate_leads')
-      .select('property_type');
+      .select('id');
 
-    const { data: pendingData } = await supabase
+    const { data: newData } = await supabase
       .from('real_estate_leads')
       .select('id')
       .eq('status', 'new');
 
-    const uniqueProperties = new Set(totalData?.map(item => item.property_type).filter(Boolean)).size;
+    const { data: activeData } = await supabase
+      .from('real_estate_leads')
+      .select('id')
+      .neq('status', 'closed');
 
     setStats({
-      todayLeads: todayData?.length || 0,
-      totalProperties: uniqueProperties || 0,
-      pendingLeads: pendingData?.length || 0
+      totalLeads: totalData?.length || 0,
+      newLeads: newData?.length || 0,
+      activeLeads: activeData?.length || 0
     });
   };
 
@@ -83,7 +77,7 @@ const RealEstateDashboard = () => {
               Tableau de bord Immobilier
             </h1>
             <p className="text-xl text-graphite-600">
-              Gestion des prospects et propriétés
+              Gestion des prospects et visites
             </p>
           </div>
 
@@ -92,39 +86,39 @@ const RealEstateDashboard = () => {
             <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-green-800 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Aujourd'hui
+                  <Home className="w-5 h-5 mr-2" />
+                  Total Prospects
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-green-600">{stats.todayLeads}</p>
-                <p className="text-sm text-green-700">Nouveaux prospects</p>
+                <p className="text-3xl font-bold text-green-600">{stats.totalLeads}</p>
+                <p className="text-sm text-green-700">Prospects enregistrés</p>
               </CardContent>
             </Card>
 
             <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-blue-800 flex items-center">
-                  <Home className="w-5 h-5 mr-2" />
-                  Types
+                  <Users className="w-5 h-5 mr-2" />
+                  Nouveaux
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-blue-600">{stats.totalProperties}</p>
-                <p className="text-sm text-blue-700">Types de biens</p>
+                <p className="text-3xl font-bold text-blue-600">{stats.newLeads}</p>
+                <p className="text-sm text-blue-700">Nouveaux prospects</p>
               </CardContent>
             </Card>
 
             <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-orange-800 flex items-center">
-                  <FileText className="w-5 h-5 mr-2" />
-                  En attente
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Actifs
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-orange-600">{stats.pendingLeads}</p>
-                <p className="text-sm text-orange-700">Prospects à traiter</p>
+                <p className="text-3xl font-bold text-orange-600">{stats.activeLeads}</p>
+                <p className="text-sm text-orange-700">Prospects actifs</p>
               </CardContent>
             </Card>
           </div>
@@ -147,22 +141,18 @@ const RealEstateDashboard = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-deep-black">{lead.client_name}</p>
-                        <p className="text-sm text-graphite-600 flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          {lead.preferred_area || 'Zone non spécifiée'}
-                        </p>
-                        <p className="text-sm text-graphite-600 flex items-center">
-                          <Phone className="w-4 h-4 mr-1" />
-                          {lead.phone_number}
-                        </p>
+                        <p className="text-sm text-graphite-600">{lead.property_type || 'Type non spécifié'}</p>
+                        {lead.budget_range && (
+                          <p className="text-xs text-graphite-500">Budget: {lead.budget_range}</p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-deep-black">
                         {new Date(lead.created_at).toLocaleDateString('fr-FR')}
                       </p>
-                      <p className="text-sm text-graphite-600">
-                        {lead.property_type || 'Type non spécifié'}
+                      <p className="text-sm text-graphite-600 capitalize">
+                        {lead.status || 'nouveau'}
                       </p>
                     </div>
                   </div>

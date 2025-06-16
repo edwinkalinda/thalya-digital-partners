@@ -17,6 +17,8 @@ import ClinicDashboard from "./pages/ClinicDashboard";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import RealEstateDashboard from "./pages/RealEstateDashboard";
 import OutreachDashboard from "./pages/OutreachDashboard";
+import LiveReservations from "./pages/LiveReservations";
+import RealEstateVisits from "./pages/RealEstateVisits";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +76,16 @@ const App = () => (
             <Route path="/outreach" element={
               <ProtectedRoute>
                 <OutreachDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/live-reservations" element={
+              <ProtectedRoute>
+                <LiveReservations />
+              </ProtectedRoute>
+            } />
+            <Route path="/real-estate-visits" element={
+              <ProtectedRoute>
+                <RealEstateVisits />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
