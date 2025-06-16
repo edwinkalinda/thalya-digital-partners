@@ -24,57 +24,56 @@ const CTAButtons = () => {
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
-      case 'Mic': return <Mic className="w-4 h-4" aria-hidden="true" />;
-      case 'Settings': return <Settings className="w-4 h-4" aria-hidden="true" />;
-      case 'Heart': return <Heart className="w-4 h-4" aria-hidden="true" />;
-      case 'UtensilsCrossed': return <UtensilsCrossed className="w-4 h-4" aria-hidden="true" />;
-      case 'Building': return <Building className="w-4 h-4" aria-hidden="true" />;
-      case 'Target': return <Target className="w-4 h-4" aria-hidden="true" />;
-      default: return <User className="w-4 h-4" aria-hidden="true" />;
+      case 'Mic': return <Mic className="w-4 h-4" />;
+      case 'Settings': return <Settings className="w-4 h-4" />;
+      case 'Heart': return <Heart className="w-4 h-4" />;
+      case 'UtensilsCrossed': return <UtensilsCrossed className="w-4 h-4" />;
+      case 'Building': return <Building className="w-4 h-4" />;
+      case 'Target': return <Target className="w-4 h-4" />;
+      default: return <User className="w-4 h-4" />;
     }
   };
 
   if (user) {
     return (
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
               variant="outline" 
-              className="flex items-center space-x-2 focus:ring-2 focus:ring-electric-blue focus:ring-offset-2"
-              aria-label={`Menu utilisateur pour ${user.email}`}
-              aria-haspopup="true"
+              size="sm"
+              className="flex items-center space-x-2 bg-white border-graphite-300 hover:border-electric-blue hover:bg-electric-blue/5 transition-all duration-200"
+              aria-label={`Menu utilisateur - ${user.email}`}
             >
-              <User className="w-4 h-4" aria-hidden="true" />
-              <span>{user.email}</span>
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline max-w-24 truncate">
+                {user.user_metadata?.first_name || user.email?.split('@')[0]}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="end" 
-            className="w-56"
-            role="menu"
-            aria-label="Menu utilisateur"
+            className="w-56 bg-white border-graphite-200 shadow-lg"
+            sideOffset={8}
           >
             {dashboardNavigationItems.map((item) => (
               <DropdownMenuItem
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={location.pathname === item.path ? 'bg-electric-blue/10' : ''}
-                role="menuitem"
-                aria-label={`Naviguer vers ${item.label}`}
+                className={`cursor-pointer hover:bg-electric-blue/5 focus:bg-electric-blue/10 ${
+                  location.pathname === item.path ? 'bg-electric-blue/10 text-electric-blue' : ''
+                }`}
               >
                 {getIcon(item.icon)}
                 <span className="ml-2">{item.label}</span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-graphite-200" />
             <DropdownMenuItem 
               onClick={handleSignOut} 
-              className="text-red-600"
-              role="menuitem"
-              aria-label="Se déconnecter de votre compte"
+              className="text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer"
             >
-              <LogOut className="w-4 h-4" aria-hidden="true" />
+              <LogOut className="w-4 h-4" />
               <span className="ml-2">Se déconnecter</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -84,19 +83,19 @@ const CTAButtons = () => {
   }
 
   return (
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center space-x-3">
       <Button 
         variant="outline" 
+        size="sm"
         onClick={() => navigate('/login')}
-        className="border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-white focus:ring-2 focus:ring-electric-blue focus:ring-offset-2"
-        aria-label="Se connecter à votre compte"
+        className="border-graphite-300 text-graphite-700 hover:border-electric-blue hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200"
       >
         Se connecter
       </Button>
       <Button 
+        size="sm"
         onClick={() => navigate('/onboarding')}
-        className="bg-electric-blue text-white hover:bg-blue-600 focus:ring-2 focus:ring-electric-blue focus:ring-offset-2"
-        aria-label="Commencer votre expérience"
+        className="bg-gradient-to-r from-electric-blue to-emerald-500 text-white hover:from-blue-600 hover:to-emerald-600 shadow-md hover:shadow-lg transition-all duration-200"
       >
         Commencer
       </Button>

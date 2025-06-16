@@ -7,12 +7,10 @@ import { Brain, Activity, RefreshCw, Wifi } from "lucide-react";
 
 import { useWebSocketConnection } from '@/hooks/useWebSocketConnection';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
-import { GeminiTestSection } from './GeminiTestSection';
 import { ConnectionStatus } from './ConnectionStatus';
 import { MessagesList } from './MessagesList';
 import { PerformanceStats } from './PerformanceStats';
 import { VoiceControls } from './VoiceControls';
-import { GeminiTest } from '@/types/voice';
 
 export const RealtimeVoiceChat = () => {
   const { toast } = useToast();
@@ -40,40 +38,6 @@ export const RealtimeVoiceChat = () => {
     cleanup: cleanupAudio
   } = useAudioRecording(ws, isConnected);
 
-  // Fonction pour les tests rapides Gemini
-  const runGeminiTest = useCallback((test: GeminiTest) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      toast({
-        title: "❌ Erreur",
-        description: "Connexion fermée - connectez-vous d'abord",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    console.log(`🧪 Test Gemini: ${test.name}`);
-    
-    ws.send(JSON.stringify({
-      type: 'text_message',
-      message: test.message,
-      test_mode: true
-    }));
-    
-    const testMessage = {
-      id: Date.now().toString(),
-      type: 'user' as const,
-      text: `[TEST ${test.name}] ${test.message}`,
-      timestamp: Date.now()
-    };
-    
-    sendTextMessage(`[TEST ${test.name}] ${test.message}`);
-    
-    toast({
-      title: `🧪 ${test.name}`,
-      description: test.description,
-    });
-  }, [ws, toast, sendTextMessage]);
-
   useEffect(() => {
     connectWebSocket();
     
@@ -89,14 +53,14 @@ export const RealtimeVoiceChat = () => {
         <CardTitle className="text-2xl text-deep-black flex items-center justify-between">
           <div className="flex items-center">
             <Brain className="w-6 h-6 mr-2 text-electric-blue" />
-            Chat Vocal Google Gemini Pro
+            Chat Vocal Thalya
             {isConnected && <Activity className="w-4 h-4 ml-2 text-green-500 animate-pulse" />}
             {isConnecting && <RefreshCw className="w-4 h-4 ml-2 text-blue-500 animate-spin" />}
             {!isConnected && !isConnecting && <Wifi className="w-4 h-4 ml-2 text-red-500" />}
           </div>
           <div className="flex gap-2">
             <Button onClick={clearMessages} size="sm" variant="ghost">
-              Clear
+              Effacer
             </Button>
             {isConnected && (
               <Button onClick={disconnect} size="sm" variant="outline">
@@ -108,12 +72,6 @@ export const RealtimeVoiceChat = () => {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Section de tests Gemini */}
-        <GeminiTestSection 
-          isConnected={isConnected}
-          onRunTest={runGeminiTest}
-        />
-
         {/* Statistiques de performance */}
         <PerformanceStats latencyStats={latencyStats} />
 

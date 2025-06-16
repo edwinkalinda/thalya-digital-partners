@@ -19,7 +19,7 @@ type TableName =
 interface QueryOptions {
   table: TableName;
   select?: string;
-  filters?: Record<string, any>;
+  filters?: { [key: string]: any };
   orderBy?: { column: string; ascending?: boolean };
   limit?: number;
 }
@@ -35,17 +35,13 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
   const { toast } = useToast();
 
   const executeQuery = useCallback(async () => {
-    let isMounted = true;
-    
     try {
       setLoading(true);
       setError(null);
 
-      // Build the query step by step
       let query = supabase.from(options.table).select(options.select || '*');
 
       // Apply filters
@@ -75,45 +71,28 @@ export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryRes
         throw queryError;
       }
 
-      if (isMounted) {
-        setData((result as T[]) || []);
-      }
+      setData((result as T[]) || []);
     } catch (err) {
-      if (isMounted) {
-        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        setError(errorMessage);
-        console.error('Erreur lors de la récupération des données:', err);
-        toast({
-          title: "Erreur de chargement",
-          description: "Impossible de charger les données. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(errorMessage);
+      console.error('Erreur lors de la récupération des données:', err);
+      toast({
+        title: "Erreur de chargement",
+        description: "Impossible de charger les données. Veuillez réessayer.",
+        variant: "destructive",
+      });
     } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    options.table,
-    options.select,
-    options.limit,
-    JSON.stringify(options.filters || {}),
-    JSON.stringify(options.orderBy || {}),
-    toast
-  ]);
+  }, [options.table, options.select, options.limit, toast]);
 
   useEffect(() => {
     executeQuery();
-  }, [executeQuery, refetchTrigger]);
+  }, [executeQuery]);
 
   const refetch = useCallback(() => {
-    setRefetchTrigger(prev => prev + 1);
-  }, []);
+    executeQuery();
+  }, [executeQuery]);
 
   return { data, loading, error, refetch };
 }
