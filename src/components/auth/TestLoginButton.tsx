@@ -10,30 +10,47 @@ export function TestLoginButton() {
   const handleTestLogin = async () => {
     try {
       // Essayer d'abord de se connecter
-      await signIn('test@example.com', 'password123');
-    } catch (error: any) {
-      if (error.message?.includes('Invalid login credentials')) {
+      const { error: signInError } = await signIn('test@example.com', 'password123');
+      
+      if (!signInError) {
+        toast({
+          title: "Connexion réussie",
+          description: "Vous êtes maintenant connecté avec le compte test.",
+        });
+        return;
+      }
+
+      if (signInError.message?.includes('Invalid login credentials')) {
         try {
           // Si les identifiants sont invalides, créer le compte test
-          await signUp('test@example.com', 'password123', 'Test', 'User');
-          toast({
-            title: "Compte test créé",
-            description: "Un compte test a été créé. Vérifiez votre email pour confirmer.",
-          });
+          const { error: signUpError } = await signUp('test@example.com', 'password123', 'Test', 'User');
+          
+          if (!signUpError) {
+            toast({
+              title: "Compte test créé",
+              description: "Un compte test a été créé. Vérifiez votre email pour confirmer.",
+            });
+          } else {
+            throw signUpError;
+          }
         } catch (signUpError: any) {
+          console.error('Sign up error:', signUpError);
           toast({
-            title: "Erreur",
-            description: "Impossible de créer le compte test. Veuillez créer un compte manuellement.",
+            title: "Erreur lors de la création",
+            description: signUpError.message || "Impossible de créer le compte test.",
             variant: "destructive"
           });
         }
       } else {
-        toast({
-          title: "Erreur de connexion",
-          description: error.message,
-          variant: "destructive"
-        });
+        throw signInError;
       }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast({
+        title: "Erreur de connexion",
+        description: error.message || "Une erreur inattendue s'est produite.",
+        variant: "destructive"
+      });
     }
   };
 
