@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,14 +36,6 @@ export function useSecureSupabaseQuery<T = any>({
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const showErrorToast = useCallback(() => {
-    toast({
-      title: "Erreur de chargement",
-      description: "Impossible de charger les données. Veuillez réessayer.",
-      variant: "destructive",
-    });
-  }, [toast]);
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -80,15 +71,19 @@ export function useSecureSupabaseQuery<T = any>({
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
       setError(errorMessage);
       console.error('Erreur lors de la récupération des données:', err);
-      showErrorToast();
+      toast({
+        title: "Erreur de chargement",
+        description: "Impossible de charger les données. Veuillez réessayer.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [table, select, filters, orderBy, limit, showErrorToast]);
+  }, [table, select, limit, toast]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [table, select, limit]);
 
   const refetch = useCallback(() => {
     fetchData();
@@ -96,4 +91,3 @@ export function useSecureSupabaseQuery<T = any>({
 
   return { data, loading, error, refetch };
 }
-
