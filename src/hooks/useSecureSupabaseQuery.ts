@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -83,7 +84,7 @@ export function useSecureSupabaseQuery<T = any>({
     } finally {
       setLoading(false);
     }
-  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), limit, showErrorToast]);
+  }, [table, select, filters, orderBy, limit, showErrorToast]);
 
   useEffect(() => {
     fetchData();
@@ -95,3 +96,4 @@ export function useSecureSupabaseQuery<T = any>({
 
   return { data, loading, error, refetch };
 }
+
