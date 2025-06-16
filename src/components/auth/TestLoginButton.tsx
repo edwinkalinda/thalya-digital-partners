@@ -1,12 +1,40 @@
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export function TestLoginButton() {
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
+  const { toast } = useToast();
 
   const handleTestLogin = async () => {
-    await signIn('test@example.com', 'password123');
+    try {
+      // Essayer d'abord de se connecter
+      await signIn('test@example.com', 'password123');
+    } catch (error: any) {
+      if (error.message?.includes('Invalid login credentials')) {
+        try {
+          // Si les identifiants sont invalides, créer le compte test
+          await signUp('test@example.com', 'password123');
+          toast({
+            title: "Compte test créé",
+            description: "Un compte test a été créé. Vérifiez votre email pour confirmer.",
+          });
+        } catch (signUpError: any) {
+          toast({
+            title: "Erreur",
+            description: "Impossible de créer le compte test. Veuillez créer un compte manuellement.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Erreur de connexion",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   return (
@@ -21,6 +49,9 @@ export function TestLoginButton() {
       >
         Connexion test
       </Button>
+      <p className="text-xs text-center text-graphite-400 mt-2">
+        Créera un compte test si nécessaire
+      </p>
     </div>
   );
 }
