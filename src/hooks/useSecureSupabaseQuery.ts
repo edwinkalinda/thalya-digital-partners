@@ -16,7 +16,7 @@ type TableName =
   | 'restaurant_reservations'
   | 'thalya_connect_configs';
 
-interface UseSecureSupabaseQueryOptions {
+interface QueryOptions {
   table: TableName;
   select?: string;
   filters?: Record<string, any>;
@@ -24,59 +24,68 @@ interface UseSecureSupabaseQueryOptions {
   limit?: number;
 }
 
-export function useSecureSupabaseQuery<T = any>({
-  table,
-  select = '*',
-  filters = {},
-  orderBy,
-  limit
-}: UseSecureSupabaseQueryOptions) {
+interface QueryResult<T> {
+  data: T[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+export function useSecureSupabaseQuery<T = any>(options: QueryOptions): QueryResult<T> {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refetchCounter, setRefetchCounter] = useState(0);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
   const { toast } = useToast();
 
-  useEffect(() => {
-    let mounted = true;
+  // Extract options to avoid dependency issues
+  const tableName = options.table;
+  const selectClause = options.select || '*';
+  const queryFilters = options.filters || {};
+  const orderConfig = options.orderBy;
+  const limitValue = options.limit;
 
-    const fetchData = async () => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const executeQuery = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        let query = supabase.from(table).select(select);
+        // Build the query step by step
+        let query = supabase.from(tableName).select(selectClause);
 
-        // Appliquer les filtres de manière sécurisée
-        if (filters) {
-          Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              query = query.eq(key, value);
-            }
+        // Apply filters
+        Object.entries(queryFilters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            query = query.eq(key, value);
+          }
+        });
+
+        // Apply ordering
+        if (orderConfig) {
+          query = query.order(orderConfig.column, { 
+            ascending: orderConfig.ascending !== false 
           });
         }
 
-        // Appliquer le tri si spécifié
-        if (orderBy) {
-          query = query.order(orderBy.column, { ascending: orderBy.ascending ?? false });
+        // Apply limit
+        if (limitValue) {
+          query = query.limit(limitValue);
         }
 
-        // Appliquer la limite si spécifiée
-        if (limit) {
-          query = query.limit(limit);
+        const { data: result, error: queryError } = await query;
+
+        if (queryError) {
+          throw queryError;
         }
 
-        const { data: result, error: fetchError } = await query;
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        if (mounted) {
+        if (isMounted) {
           setData((result as T[]) || []);
         }
       } catch (err) {
-        if (mounted) {
+        if (isMounted) {
           const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
           setError(errorMessage);
           console.error('Erreur lors de la récupération des données:', err);
@@ -87,21 +96,21 @@ export function useSecureSupabaseQuery<T = any>({
           });
         }
       } finally {
-        if (mounted) {
+        if (isMounted) {
           setLoading(false);
         }
       }
     };
 
-    fetchData();
+    executeQuery();
 
     return () => {
-      mounted = false;
+      isMounted = false;
     };
-  }, [table, select, limit, refetchCounter]);
+  }, [tableName, selectClause, JSON.stringify(queryFilters), JSON.stringify(orderConfig), limitValue, refetchTrigger]);
 
   const refetch = () => {
-    setRefetchCounter(prev => prev + 1);
+    setRefetchTrigger(prev => prev + 1);
   };
 
   return { data, loading, error, refetch };
