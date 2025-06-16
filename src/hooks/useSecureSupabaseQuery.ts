@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,68 +34,75 @@ export function useSecureSupabaseQuery<T = any>({
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refetchCounter, setRefetchCounter] = useState(0);
   const { toast } = useToast();
-  
-  // Use refs to store the current values without causing dependency issues
-  const optionsRef = useRef({ table, select, filters, orderBy, limit });
-  optionsRef.current = { table, select, filters, orderBy, limit };
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { table: currentTable, select: currentSelect, filters: currentFilters, orderBy: currentOrderBy, limit: currentLimit } = optionsRef.current;
-
-      let query = supabase.from(currentTable).select(currentSelect);
-
-      // Appliquer les filtres de manière sécurisée
-      if (currentFilters) {
-        Object.entries(currentFilters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            query = query.eq(key, value);
-          }
-        });
-      }
-
-      // Appliquer le tri si spécifié
-      if (currentOrderBy) {
-        query = query.order(currentOrderBy.column, { ascending: currentOrderBy.ascending ?? false });
-      }
-
-      // Appliquer la limite si spécifiée
-      if (currentLimit) {
-        query = query.limit(currentLimit);
-      }
-
-      const { data: result, error: fetchError } = await query;
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      setData((result as T[]) || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      setError(errorMessage);
-      console.error('Erreur lors de la récupération des données:', err);
-      toast({
-        title: "Erreur de chargement",
-        description: "Impossible de charger les données. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData, table, select, JSON.stringify(filters), JSON.stringify(orderBy), limit]);
+    let mounted = true;
 
-  const refetch = useCallback(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let query = supabase.from(table).select(select);
+
+        // Appliquer les filtres de manière sécurisée
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              query = query.eq(key, value);
+            }
+          });
+        }
+
+        // Appliquer le tri si spécifié
+        if (orderBy) {
+          query = query.order(orderBy.column, { ascending: orderBy.ascending ?? false });
+        }
+
+        // Appliquer la limite si spécifiée
+        if (limit) {
+          query = query.limit(limit);
+        }
+
+        const { data: result, error: fetchError } = await query;
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (mounted) {
+          setData((result as T[]) || []);
+        }
+      } catch (err) {
+        if (mounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+          setError(errorMessage);
+          console.error('Erreur lors de la récupération des données:', err);
+          toast({
+            title: "Erreur de chargement",
+            description: "Impossible de charger les données. Veuillez réessayer.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchData();
-  }, [fetchData]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [table, select, limit, refetchCounter, toast]);
+
+  const refetch = () => {
+    setRefetchCounter(prev => prev + 1);
+  };
 
   return { data, loading, error, refetch };
 }
