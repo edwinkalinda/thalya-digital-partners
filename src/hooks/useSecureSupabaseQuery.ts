@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,7 @@ type TableName =
 interface BasicQueryOptions {
   table: TableName;
   select?: string;
+  orderBy?: { column: string; ascending?: boolean };
   limit?: number;
 }
 
@@ -41,6 +43,12 @@ export function useSecureSupabaseQuery<T = any>(options: BasicQueryOptions): Que
       setError(null);
 
       let query = supabase.from(options.table).select(options.select || '*');
+
+      if (options.orderBy) {
+        query = query.order(options.orderBy.column, { 
+          ascending: options.orderBy.ascending !== false 
+        });
+      }
 
       if (options.limit) {
         query = query.limit(options.limit);
@@ -69,7 +77,7 @@ export function useSecureSupabaseQuery<T = any>(options: BasicQueryOptions): Que
 
   useEffect(() => {
     fetchData();
-  }, [options.table, options.select, options.limit]);
+  }, [options.table, options.select, options.limit, JSON.stringify(options.orderBy)]);
 
   const refetch = () => {
     fetchData();
@@ -77,3 +85,4 @@ export function useSecureSupabaseQuery<T = any>(options: BasicQueryOptions): Que
 
   return { data, loading, error, refetch };
 }
+
