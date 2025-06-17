@@ -22,6 +22,7 @@ import Signup from "./pages/Signup";
 import WaitingList from "./pages/WaitingList";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import VoiceConfiguration from "./pages/VoiceConfiguration";
 
 const queryClient = new QueryClient();
 
