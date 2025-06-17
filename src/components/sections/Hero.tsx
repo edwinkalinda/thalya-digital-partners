@@ -1,10 +1,72 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Phone, Calendar, MessageSquare, Shield, Zap, Users, Utensils, Building, Stethoscope, User, Home, Sparkles } from 'lucide-react';
+import { ArrowRight, Calendar, Shield, Zap, Users, Utensils, Building, Stethoscope, User, Home, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import VoiceOrb from '@/components/ui/VoiceOrb';
 import { Badge } from '@/components/ui/badge';
+
+// Integration icons components
+const IntegrationIcon = ({ name }: { name: string }) => {
+  const getIcon = () => {
+    switch (name) {
+      case 'Calendly':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#006BFF"/>
+            <path d="M7 11h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z" fill="white"/>
+            <path d="M5 6h14v2H5V6z" fill="white"/>
+          </svg>
+        );
+      case 'Google Calendar':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#4285F4"/>
+            <path d="M7 9h10v2H7V9zm0 4h7v2H7v-2z" fill="white"/>
+            <path d="M6 5h12v3H6V5z" fill="white"/>
+          </svg>
+        );
+      case 'Stripe':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#635BFF"/>
+            <path d="M8.5 10.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5v3c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5v-3zm4 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5v3c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5v-3z" fill="white"/>
+          </svg>
+        );
+      case 'Notion':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#000000"/>
+            <path d="M6 6h12v2H6V6zm0 4h12v2H6v-2zm0 4h8v2H6v-2z" fill="white"/>
+          </svg>
+        );
+      case 'HubSpot':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#FF7A59"/>
+            <circle cx="12" cy="12" r="3" fill="white"/>
+            <path d="M12 6v3M12 15v3M6 12h3M15 12h3" stroke="white" strokeWidth="2"/>
+          </svg>
+        );
+      case 'Salesforce':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#00A1E0"/>
+            <path d="M8 8h8v2H8V8zm0 4h6v2H8v-2zm0 4h4v2H8v-2z" fill="white"/>
+          </svg>
+        );
+      default:
+        return <Calendar className="w-4 h-4 text-graphite-500" />;
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 bg-white border border-graphite-200 rounded-lg hover:shadow-sm transition-all duration-200">
+      {getIcon()}
+      <span className="text-xs font-medium text-graphite-700">{name}</span>
+    </div>
+  );
+};
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -42,12 +104,12 @@ const Hero = () => {
             IA conversationnelle temps réel
           </Badge>
           
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-deep-black mb-4 leading-tight animate-slide-up">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-deep-black mb-4 leading-tight animate-slide-up">
             L'IA qui transforme
             <span className="block text-electric-blue">vos interactions clients</span>
           </h1>
           
-          <p className="text-base md:text-lg text-graphite-600 mb-6 max-w-2xl mx-auto leading-relaxed animate-fade-in animation-delay-1000">
+          <p className="text-sm md:text-base text-graphite-600 mb-6 max-w-2xl mx-auto leading-relaxed animate-fade-in animation-delay-1000">
             Automatisez réservations et rendez-vous avec une IA vocale ultra-réactive. 
             Intégration native avec vos outils existants.
           </p>
@@ -73,8 +135,8 @@ const Hero = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-fade-in animation-delay-1000">
             {stats.map((stat, index) => (
               <div key={index} className="text-center hover-scale">
-                <div className="text-xl font-bold text-deep-black">{stat.value}</div>
-                <div className="text-sm text-graphite-500">{stat.label}</div>
+                <div className="text-lg font-bold text-deep-black">{stat.value}</div>
+                <div className="text-xs text-graphite-500">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -82,7 +144,7 @@ const Hero = () => {
 
         {/* Secteurs supportés avec animations */}
         <div className="max-w-5xl mx-auto mb-12 animate-fade-in">
-          <h2 className="text-lg font-semibold text-deep-black text-center mb-6">
+          <h2 className="text-base font-semibold text-deep-black text-center mb-6">
             Secteurs supportés
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -90,7 +152,7 @@ const Hero = () => {
               const IconComponent = vertical.icon;
               return (
                 <Card key={index} className="p-4 text-center hover:shadow-md transition-all duration-300 border-graphite-200 hover-scale">
-                  <div className="w-6 h-6 mx-auto mb-2 text-graphite-600">
+                  <div className="w-5 h-5 mx-auto mb-2 text-graphite-600">
                     <IconComponent className="w-full h-full" />
                   </div>
                   <div className="text-xs text-graphite-600">{vertical.name}</div>
@@ -102,21 +164,15 @@ const Hero = () => {
 
         {/* Intégrations avec animations */}
         <div className="max-w-4xl mx-auto mb-12 animate-fade-in animation-delay-1000">
-          <h2 className="text-lg font-semibold text-deep-black text-center mb-3">
+          <h2 className="text-base font-semibold text-deep-black text-center mb-3">
             Intégrations natives
           </h2>
-          <p className="text-sm text-graphite-600 text-center mb-6">
+          <p className="text-xs text-graphite-600 text-center mb-6">
             Connectez Thalya à vos outils existants en quelques clics
           </p>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 justify-items-center">
             {integrations.map((integration, index) => (
-              <Badge 
-                key={index} 
-                variant="secondary" 
-                className="px-3 py-1 text-xs bg-graphite-100 text-graphite-700 hover-scale"
-              >
-                {integration}
-              </Badge>
+              <IntegrationIcon key={index} name={integration} />
             ))}
           </div>
         </div>
@@ -127,8 +183,8 @@ const Hero = () => {
             <div className="w-10 h-10 bg-electric-blue/10 rounded-lg flex items-center justify-center mb-4">
               <Zap className="w-5 h-5 text-electric-blue" />
             </div>
-            <h3 className="text-base font-semibold text-deep-black mb-3">Ultra-réactif</h3>
-            <p className="text-sm text-graphite-600">
+            <h3 className="text-sm font-semibold text-deep-black mb-3">Ultra-réactif</h3>
+            <p className="text-xs text-graphite-600">
               Latence inférieure à 200ms avec GPT-4o et synthèse vocale temps réel
             </p>
           </Card>
@@ -137,8 +193,8 @@ const Hero = () => {
             <div className="w-10 h-10 bg-electric-blue/10 rounded-lg flex items-center justify-center mb-4">
               <Shield className="w-5 h-5 text-electric-blue" />
             </div>
-            <h3 className="text-base font-semibold text-deep-black mb-3">Sécurisé</h3>
-            <p className="text-sm text-graphite-600">
+            <h3 className="text-sm font-semibold text-deep-black mb-3">Sécurisé</h3>
+            <p className="text-xs text-graphite-600">
               Conformité RGPD et chiffrement bout en bout
             </p>
           </Card>
@@ -147,8 +203,8 @@ const Hero = () => {
             <div className="w-10 h-10 bg-electric-blue/10 rounded-lg flex items-center justify-center mb-4">
               <Users className="w-5 h-5 text-electric-blue" />
             </div>
-            <h3 className="text-base font-semibold text-deep-black mb-3">Personnalisé</h3>
-            <p className="text-sm text-graphite-600">
+            <h3 className="text-sm font-semibold text-deep-black mb-3">Personnalisé</h3>
+            <p className="text-xs text-graphite-600">
               IA adaptée à votre secteur et vos besoins spécifiques
             </p>
           </Card>
