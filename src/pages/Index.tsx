@@ -2,6 +2,7 @@
 import Header from '../components/layout/Header';
 import AnimatedBackground from '../components/ui/AnimatedBackground';
 import Hero from '../components/sections/Hero';
+import VoiceOnboardingSection from '../components/sections/VoiceOnboardingSection';
 import AIHub from '../components/sections/AIHub';
 import ThalyaDifference from '../components/sections/ThalyaDifference';
 import Philosophy from '../components/sections/Philosophy';
@@ -13,6 +14,7 @@ const Index = () => {
       <AnimatedBackground />
       <Header />
       <Hero />
+      <VoiceOnboardingSection />
       <AIHub />
       <div id="thalya-difference">
         <ThalyaDifference />

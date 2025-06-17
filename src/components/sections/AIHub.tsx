@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TextRotate from "@/components/ui/TextRotate";
 import TextCycler from "@/components/ui/TextCycler";
-import { Phone, Package, TrendingUp } from "lucide-react";
+import { Phone, Package, TrendingUp, Mic, Settings, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const AIHub = () => {
@@ -17,11 +17,13 @@ const AIHub = () => {
   ];
 
   const handleConfigureReceptionist = () => {
-    navigate('/onboarding');
+    const element = document.getElementById('voice-onboarding');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleDiscoverRoadmap = () => {
-    // Pour l'instant, on scroll vers la section final-cta
     const element = document.getElementById('final-cta');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -77,24 +79,31 @@ const AIHub = () => {
               </div>
               
               <h3 className="text-4xl lg:text-5xl font-black mb-6 text-graphite-900 leading-tight">
-                <TextRotate text="IA Réceptionniste" />
+                <TextRotate text="IA Réceptionniste Vocale" />
               </h3>
               
-              <p className="text-graphite-600 text-xl leading-relaxed mb-10 font-light">
+              <p className="text-graphite-600 text-xl leading-relaxed mb-8 font-light">
                 Gère vos appels entrants 24/7 avec une voix naturelle et une personnalité 
-                qui reflète parfaitement votre marque. Jamais d'appel manqué, toujours une 
-                première impression exceptionnelle.
+                qui reflète parfaitement votre marque. Configuration vocale en temps réel.
               </p>
-              
-              {/* Enhanced avatar */}
-              <div className="mb-10 flex justify-center">
-                <div className="relative">
-                  <div className="w-32 h-32 bg-gradient-to-br from-electric-blue via-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg">
-                    <div className="w-24 h-24 bg-pure-white/90 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                      <div className="text-electric-blue text-2xl font-black">AI</div>
-                    </div>
-                  </div>
-                  <div className="absolute -inset-4 bg-gradient-to-r from-electric-blue/20 to-purple-600/20 rounded-3xl blur-lg animate-pulse opacity-75"></div>
+
+              {/* Features list */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="flex items-center space-x-3">
+                  <Mic className="w-5 h-5 text-electric-blue" />
+                  <span className="text-sm text-graphite-600">Configuration vocale</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Settings className="w-5 h-5 text-electric-blue" />
+                  <span className="text-sm text-graphite-600">Personnalité adaptable</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Phone className="w-5 h-5 text-electric-blue" />
+                  <span className="text-sm text-graphite-600">Appels 24/7</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Sparkles className="w-5 h-5 text-electric-blue" />
+                  <span className="text-sm text-graphite-600">IA en temps réel</span>
                 </div>
               </div>
               
@@ -102,7 +111,8 @@ const AIHub = () => {
                 className="bg-gradient-to-r from-electric-blue to-blue-600 hover:from-blue-600 hover:to-blue-700 text-pure-white w-full py-4 text-lg font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
                 onClick={handleConfigureReceptionist}
               >
-                Configurer maintenant
+                <Mic className="w-5 h-5 mr-3" />
+                Essayer la démo vocale
                 <div className="ml-2 w-2 h-2 bg-pure-white rounded-full animate-pulse"></div>
               </Button>
             </div>
