@@ -35,6 +35,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/voice-configuration" element={<VoiceConfiguration />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/voice-management" element={<VoiceManagement />} />
               <Route path="/ai-config" element={<AIConfig />} />
