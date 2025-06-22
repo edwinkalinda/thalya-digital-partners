@@ -1,12 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Volume2, User, Building, ArrowRight } from 'lucide-react';
 import VoiceOrb from '@/components/ui/VoiceOrb';
 import { useOpenAIRealtimeChat } from '@/hooks/useOpenAIRealtimeChat';
-import { useNavigate } from 'react-router-dom';
 
 interface ConfiguredAI {
   name: string;
@@ -17,7 +13,6 @@ interface ConfiguredAI {
 
 export function VoiceOnboardingDemo() {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<'welcome' | 'configuring' | 'testing' | 'completed'>('welcome');
   const [configuredAI, setConfiguredAI] = useState<ConfiguredAI | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -48,7 +43,7 @@ export function VoiceOnboardingDemo() {
 
   // Extract AI configuration from conversation
   useEffect(() => {
-    if (messages.length >= 6) { // After sufficient conversation
+    if (messages.length >= 6) {
       const lastMessages = messages.slice(-6);
       const hasName = lastMessages.some(m => m.text.toLowerCase().includes('nom') || m.text.toLowerCase().includes('appeler'));
       const hasBusiness = lastMessages.some(m => 
@@ -58,7 +53,6 @@ export function VoiceOnboardingDemo() {
       );
       
       if (hasName && hasBusiness && !configuredAI) {
-        // Extract configuration (simplified for demo)
         const nameMatch = lastMessages.find(m => m.sender === 'user' && m.text.match(/\b[A-Z][a-z]+\b/));
         const businessMatch = lastMessages.find(m => m.sender === 'user' && 
           (m.text.includes('restaurant') || m.text.includes('hôtel') || m.text.includes('clinique'))
@@ -75,7 +69,7 @@ export function VoiceOnboardingDemo() {
         setCurrentStep('testing');
         toast({
           title: "🎉 Configuration terminée !",
-          description: "Votre IA est maintenant configurée. Vous pouvez la tester.",
+          description: "Votre IA est maintenant configurée.",
         });
       }
     }
@@ -113,178 +107,56 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
     }
   };
 
-  const proceedToSignup = () => {
-    if (configuredAI) {
-      // Store configuration in localStorage for signup process
-      localStorage.setItem('thalya_configured_ai', JSON.stringify(configuredAI));
-      navigate('/signup');
+  // Determine orb properties based on current step
+  const getOrbProps = () => {
+    switch (currentStep) {
+      case 'welcome':
+        return {
+          hue: 220,
+          hoverIntensity: 0.3,
+          forceHoverState: true,
+          isListening: false,
+          isSpeaking: false,
+          audioLevel: 0
+        };
+      case 'configuring':
+        return {
+          hue: 220,
+          hoverIntensity: 0.4,
+          forceHoverState: false,
+          isListening: isRecording,
+          isSpeaking: false,
+          audioLevel: audioLevel
+        };
+      case 'testing':
+        return {
+          hue: 120,
+          hoverIntensity: 0.3,
+          forceHoverState: true,
+          isListening: false,
+          isSpeaking: false,
+          audioLevel: 0
+        };
+      default:
+        return {
+          hue: 220,
+          hoverIntensity: 0.3,
+          forceHoverState: true,
+          isListening: false,
+          isSpeaking: false,
+          audioLevel: 0
+        };
     }
   };
 
-  if (currentStep === 'welcome') {
-    return (
-      <div className="text-center space-y-8">
-        <div 
-          className="w-64 h-64 mx-auto cursor-pointer transition-transform hover:scale-105"
-          onClick={handleOrbClick}
-        >
-          <VoiceOrb 
-            hue={220} 
-            hoverIntensity={0.3}
-            forceHoverState={true}
-          />
-        </div>
-        
-        <div className="space-y-6">
-          <h2 className="text-4xl font-bold text-deep-black">
-            Rencontrez Thalya
-          </h2>
-          <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-            Cliquez sur la forme pour configurer votre assistante IA personnalisée en conversant naturellement avec elle. 
-            Donnez-lui un nom, définissez sa personnalité et testez-la immédiatement.
-          </p>
-        </div>
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div 
+        className="w-64 h-64 cursor-pointer transition-transform hover:scale-105"
+        onClick={handleOrbClick}
+      >
+        <VoiceOrb {...getOrbProps()} />
       </div>
-    );
-  }
-
-  if (currentStep === 'configuring') {
-    return (
-      <div className="space-y-8">
-        <div className="text-center">
-          <div 
-            className="w-48 h-48 mx-auto mb-6 cursor-pointer"
-            onClick={handleOrbClick}
-          >
-            <VoiceOrb 
-              hue={220} 
-              hoverIntensity={0.4}
-              isListening={isRecording}
-              isSpeaking={false}
-              audioLevel={audioLevel}
-            />
-          </div>
-          
-          <h2 className="text-3xl font-bold text-deep-black mb-4">
-            Configuration en cours...
-          </h2>
-          
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-            <span className="text-graphite-600">
-              {isConnecting ? 'Connexion...' : isConnected ? 'Connecté à Thalya' : 'En attente'}
-            </span>
-          </div>
-        </div>
-
-        <Card className="p-6 max-w-2xl mx-auto">
-          <div className="h-64 overflow-y-auto space-y-4 mb-6">
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs px-4 py-2 rounded-lg ${
-                  msg.sender === 'user' 
-                    ? 'bg-electric-blue text-white' 
-                    : 'bg-graphite-100 text-deep-black'
-                }`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <p className="text-sm text-graphite-600 mb-4">
-              {isRecording 
-                ? 'Cliquez sur la forme pour arrêter l\'enregistrement' 
-                : 'Cliquez sur la forme pour parler'
-              }
-            </p>
-            <Button
-              onClick={endConversation}
-              variant="outline"
-              size="sm"
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              Terminer la configuration
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (currentStep === 'testing' && configuredAI) {
-    return (
-      <div className="text-center space-y-8">
-        <div 
-          className="w-48 h-48 mx-auto cursor-pointer transition-transform hover:scale-105"
-          onClick={handleOrbClick}
-        >
-          <VoiceOrb 
-            hue={120} 
-            hoverIntensity={0.3}
-            forceHoverState={true}
-          />
-        </div>
-        
-        <div className="space-y-6">
-          <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            Configuration terminée
-          </div>
-          
-          <h2 className="text-4xl font-bold text-deep-black">
-            Voici {configuredAI.name} !
-          </h2>
-          
-          <div className="bg-white rounded-xl p-6 max-w-md mx-auto border border-graphite-200">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <User className="w-5 h-5 text-electric-blue" />
-                <div className="text-left">
-                  <div className="font-semibold">Nom</div>
-                  <div className="text-graphite-600">{configuredAI.name}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <Building className="w-5 h-5 text-electric-blue" />
-                <div className="text-left">
-                  <div className="font-semibold">Spécialisée pour</div>
-                  <div className="text-graphite-600">{configuredAI.businessType}</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <Volume2 className="w-5 h-5 text-electric-blue" />
-                <div className="text-left">
-                  <div className="font-semibold">Personnalité</div>
-                  <div className="text-graphite-600">{configuredAI.personality}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-graphite-600">
-              Cliquez sur la forme pour tester {configuredAI.name}
-            </p>
-            
-            <div className="text-graphite-500 text-sm">ou</div>
-            
-            <Button 
-              onClick={proceedToSignup}
-              className="bg-electric-blue hover:bg-blue-600 px-8 py-4 text-lg rounded-xl"
-              size="lg"
-            >
-              Je veux utiliser {configuredAI.name} pour mon {configuredAI.businessType}
-              <ArrowRight className="w-5 h-5 ml-3" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
