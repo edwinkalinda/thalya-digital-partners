@@ -81,30 +81,36 @@ export function VoiceOnboardingDemo() {
     }
   }, [messages, configuredAI, toast]);
 
-  const startVoiceConfiguration = async () => {
-    setCurrentStep('configuring');
-    try {
-      await startConversation();
-      setTimeout(() => {
-        sendTextMessage(`Bonjour ! Je suis l'IA Chef d'Orchestre de Thalya. Je vais vous aider à configurer votre assistante IA personnalisée. 
+  const handleOrbClick = async () => {
+    if (currentStep === 'welcome') {
+      setCurrentStep('configuring');
+      try {
+        await startConversation();
+        setTimeout(() => {
+          sendTextMessage(`Bonjour ! Je suis l'IA Chef d'Orchestre de Thalya. Je vais vous aider à configurer votre assistante IA personnalisée. 
 
 Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante IA ?`);
-      }, 2000);
-    } catch (error) {
+        }, 2000);
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de démarrer la configuration vocale",
+          variant: "destructive"
+        });
+        setCurrentStep('welcome');
+      }
+    } else if (currentStep === 'configuring') {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    } else if (currentStep === 'testing') {
       toast({
-        title: "Erreur",
-        description: "Impossible de démarrer la configuration vocale",
-        variant: "destructive"
+        title: `🎙️ Test de ${configuredAI?.name}`,
+        description: "Votre IA configurée est maintenant en ligne pour un test",
       });
-      setCurrentStep('welcome');
     }
-  };
-
-  const testConfiguredAI = () => {
-    toast({
-      title: `🎙️ Test de ${configuredAI?.name}`,
-      description: "Votre IA configurée est maintenant en ligne pour un test",
-    });
   };
 
   const proceedToSignup = () => {
@@ -118,7 +124,10 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
   if (currentStep === 'welcome') {
     return (
       <div className="text-center space-y-8">
-        <div className="w-64 h-64 mx-auto">
+        <div 
+          className="w-64 h-64 mx-auto cursor-pointer transition-transform hover:scale-105"
+          onClick={handleOrbClick}
+        >
           <VoiceOrb 
             hue={220} 
             hoverIntensity={0.3}
@@ -131,18 +140,9 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
             Rencontrez Thalya
           </h2>
           <p className="text-xl text-graphite-600 max-w-2xl mx-auto">
-            Configurez votre assistante IA personnalisée en conversant naturellement avec elle. 
+            Cliquez sur la forme pour configurer votre assistante IA personnalisée en conversant naturellement avec elle. 
             Donnez-lui un nom, définissez sa personnalité et testez-la immédiatement.
           </p>
-          
-          <Button 
-            onClick={startVoiceConfiguration}
-            className="bg-electric-blue hover:bg-blue-600 px-8 py-4 text-lg rounded-xl"
-            size="lg"
-          >
-            <Mic className="w-5 h-5 mr-3" />
-            Commencer la configuration vocale
-          </Button>
         </div>
       </div>
     );
@@ -152,7 +152,10 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <div className="w-48 h-48 mx-auto mb-6">
+          <div 
+            className="w-48 h-48 mx-auto mb-6 cursor-pointer"
+            onClick={handleOrbClick}
+          >
             <VoiceOrb 
               hue={220} 
               hoverIntensity={0.4}
@@ -189,26 +192,20 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
             ))}
           </div>
 
-          <div className="flex justify-center">
+          <div className="text-center">
+            <p className="text-sm text-graphite-600 mb-4">
+              {isRecording 
+                ? 'Cliquez sur la forme pour arrêter l\'enregistrement' 
+                : 'Cliquez sur la forme pour parler'
+              }
+            </p>
             <Button
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`px-8 py-4 rounded-full text-lg ${
-                isRecording 
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                  : 'bg-electric-blue hover:bg-blue-600'
-              }`}
+              onClick={endConversation}
+              variant="outline"
+              size="sm"
+              className="text-red-600 border-red-200 hover:bg-red-50"
             >
-              {isRecording ? (
-                <>
-                  <MicOff className="w-5 h-5 mr-3" />
-                  Arrêter
-                </>
-              ) : (
-                <>
-                  <Mic className="w-5 h-5 mr-3" />
-                  Parler
-                </>
-              )}
+              Terminer la configuration
             </Button>
           </div>
         </Card>
@@ -219,7 +216,10 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
   if (currentStep === 'testing' && configuredAI) {
     return (
       <div className="text-center space-y-8">
-        <div className="w-48 h-48 mx-auto">
+        <div 
+          className="w-48 h-48 mx-auto cursor-pointer transition-transform hover:scale-105"
+          onClick={handleOrbClick}
+        >
           <VoiceOrb 
             hue={120} 
             hoverIntensity={0.3}
@@ -266,14 +266,9 @@ Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante 
           </div>
 
           <div className="space-y-4">
-            <Button 
-              onClick={testConfiguredAI}
-              variant="outline"
-              className="px-6 py-3 rounded-xl border-electric-blue text-electric-blue hover:bg-electric-blue hover:text-white"
-            >
-              <Mic className="w-5 h-5 mr-2" />
-              Tester {configuredAI.name}
-            </Button>
+            <p className="text-graphite-600">
+              Cliquez sur la forme pour tester {configuredAI.name}
+            </p>
             
             <div className="text-graphite-500 text-sm">ou</div>
             
