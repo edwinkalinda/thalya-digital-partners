@@ -1,44 +1,30 @@
 
-import { useNavigate } from 'react-router-dom';
-import VoiceOrb from '@/components/ui/VoiceOrb';
+import { VoiceOnboardingDemo } from '@/components/onboarding/VoiceOnboardingDemo';
 
 const VoiceOnboardingSection = () => {
-  const navigate = useNavigate();
-
-  const handleOrbClick = () => {
-    navigate('/voice-configuration');
-  };
-
   return (
-    <section id="voice-onboarding" className="py-24 px-6 lg:px-8 bg-pure-white">
-      <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-deep-black animate-fade-in">
-          Configurez votre IA
-        </h2>
-        
-        <p className="text-base text-graphite-600 max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in animation-delay-1000">
-          Créez votre assistante IA personnalisée en conversant naturellement avec elle
-        </p>
-
-        <div className="mb-8 animate-scale-in animation-delay-2000">
-          <div 
-            className="w-48 h-48 mx-auto cursor-pointer group relative hover-scale"
-            onClick={handleOrbClick}
-          >
-            <VoiceOrb 
-              hue={220} 
-              hoverIntensity={0.3}
-              forceHoverState={false}
-              rotateOnHover={true}
-            />
-            
-            <div className="absolute inset-0 rounded-full border border-electric-blue/20 animate-ping"></div>
-            <div className="absolute inset-4 rounded-full border border-electric-blue/10 animate-ping animation-delay-1000"></div>
+    <section id="voice-onboarding" className="py-32 px-6 lg:px-8 bg-gradient-to-b from-pure-white to-graphite-50">
+      <div className="max-w-8xl mx-auto">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center px-4 py-2 bg-electric-blue/10 rounded-full mb-8">
+            <span className="text-sm font-semibold text-electric-blue tracking-wide uppercase">
+              Démo Interactive
+            </span>
           </div>
           
-          <p className="text-sm text-graphite-500 mt-4 animate-fade-in animation-delay-2000">
-            Cliquez pour commencer
+          <h2 className="text-5xl sm:text-6xl md:text-7xl font-black mb-8 leading-[0.9] tracking-tight text-graphite-900">
+            Configurez votre IA
+            <span className="block text-gradient">en temps réel</span>
+          </h2>
+          
+          <p className="text-xl sm:text-2xl text-graphite-600 max-w-4xl mx-auto leading-relaxed font-light">
+            Expérimentez la puissance de l'onboarding vocal. Créez et testez votre assistante IA 
+            personnalisée en quelques minutes seulement.
           </p>
+        </div>
+
+        <div className="max-w-5xl mx-auto">
+          <VoiceOnboardingDemo />
         </div>
       </div>
     </section>

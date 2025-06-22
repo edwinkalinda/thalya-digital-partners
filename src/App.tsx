@@ -22,7 +22,6 @@ import Signup from "./pages/Signup";
 import WaitingList from "./pages/WaitingList";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import VoiceConfiguration from "./pages/VoiceConfiguration";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +35,6 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/voice-configuration" element={<VoiceConfiguration />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/voice-management" element={<VoiceManagement />} />
               <Route path="/ai-config" element={<AIConfig />} />
