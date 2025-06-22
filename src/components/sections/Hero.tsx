@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Play, ArrowRight, CheckCircle } from "lucide-react";
@@ -77,7 +76,7 @@ const Hero = () => {
             <TextCycler
               texts={specializations}
               className="text-2xl sm:text-3xl text-electric-blue font-bold"
-              interval={2500}
+              interval={1200}
               splitBy="characters"
               staggerDuration={30}
             />
