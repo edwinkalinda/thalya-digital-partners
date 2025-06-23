@@ -4,7 +4,7 @@ import { LucideIcon } from "lucide-react";
 
 interface StatsCardProps {
   title: string;
-  value: number;
+  value: number | string;
   description: string;
   icon: LucideIcon;
   gradient: string;
