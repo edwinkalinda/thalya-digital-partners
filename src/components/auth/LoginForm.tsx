@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 
 interface LoginFormProps {
   onSubmit: (data: { email: string; password: string; rememberMe: boolean }) => Promise<void>;
@@ -21,25 +21,25 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+        <div className="p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
           {error}
         </div>
       )}
       
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium text-gray-700">
-          Email
+        <label htmlFor="email" className="text-sm font-semibold text-slate-700">
+          Adresse email
         </label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
+            className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 bg-white"
             placeholder="votre@email.com"
             required
           />
@@ -47,42 +47,42 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="text-sm font-semibold text-slate-700">
           Mot de passe
         </label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-electric-blue focus:border-electric-blue"
+            className="w-full pl-12 pr-14 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300 bg-white"
             placeholder="••••••••"
             required
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
           >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <label className="flex items-center">
+        <label className="flex items-center cursor-pointer">
           <input
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-4 h-4 text-electric-blue border-gray-300 rounded focus:ring-electric-blue"
+            className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary focus:ring-2"
           />
-          <span className="ml-2 text-sm text-gray-600">Se souvenir de moi</span>
+          <span className="ml-3 text-sm text-slate-600 font-medium">Se souvenir de moi</span>
         </label>
         
-        <a href="#" className="text-sm text-electric-blue hover:text-blue-600">
+        <a href="#" className="text-sm text-primary hover:text-primary/80 font-medium">
           Mot de passe oublié ?
         </a>
       </div>
@@ -90,9 +90,17 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
       <Button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-electric-blue hover:bg-blue-600 py-3"
+        className="w-full h-14 text-base font-bold"
+        variant="premium"
       >
-        {isLoading ? 'Connexion...' : 'Se connecter'}
+        {isLoading ? (
+          'Connexion en cours...'
+        ) : (
+          <>
+            Se connecter
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </>
+        )}
       </Button>
     </form>
   );
