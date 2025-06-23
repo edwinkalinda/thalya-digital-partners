@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Play, ArrowRight, CheckCircle, Bot, Zap, Users, Sparkles, MessageSquare, TrendingUp } from "lucide-react";
+import VoiceOrb from "@/components/ui/VoiceOrb";
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -35,19 +36,32 @@ const Hero = () => {
         {/* Badge premium IA */}
         <div className="inline-flex items-center px-6 py-3 mb-8 bg-white/90 backdrop-blur-xl rounded-full border-2 border-primary/20 shadow-ai-lg hover-lift">
           <Bot className="w-5 h-5 text-primary mr-3" />
-          <span className="text-sm font-bold text-slate-800">Intelligence Artificielle Conversationnelle</span>
+          <span className="text-sm font-bold text-gray-800">Intelligence Artificielle Conversationnelle</span>
           <div className="ml-3 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
         </div>
 
+        {/* Orb d'IA central */}
+        <div className="flex justify-center mb-8">
+          <div className="w-48 h-48 flex items-center justify-center">
+            <VoiceOrb 
+              size="large"
+              hue={220}
+              isActive={true}
+              forceHoverState={true}
+              className="w-full h-full"
+            />
+          </div>
+        </div>
+
         {/* Titre principal IA */}
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-8 text-slate-900 leading-tight">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-8 text-gray-900 leading-tight">
           Votre IA d'entreprise
           <br />
           <span className="text-gradient">disponible 24h/24</span>
         </h1>
         
         {/* Sous-titre professionnel */}
-        <p className="text-xl md:text-2xl text-slate-600 max-w-4xl mx-auto mb-12 leading-relaxed font-medium">
+        <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto mb-12 leading-relaxed font-medium">
           Clara transforme vos interactions clients grâce à l'IA conversationnelle. 
           Réservations, rendez-vous, support client - tout automatisé avec l'intelligence de votre marque.
         </p>
@@ -81,32 +95,32 @@ const Hero = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto mb-16">
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-8 shadow-ai-lg hover-lift gradient-border">
             <div className="text-4xl font-black text-primary mb-2">3 min</div>
-            <div className="text-slate-600 text-base font-semibold">Déploiement complet</div>
+            <div className="text-gray-700 text-base font-semibold">Déploiement complet</div>
             <Zap className="w-6 h-6 text-primary/60 mx-auto mt-3" />
           </div>
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-8 shadow-ai-lg hover-lift gradient-border">
             <div className="text-4xl font-black text-indigo-600 mb-2">24/7</div>
-            <div className="text-slate-600 text-base font-semibold">Disponibilité garantie</div>
+            <div className="text-gray-700 text-base font-semibold">Disponibilité garantie</div>
             <Bot className="w-6 h-6 text-indigo-600/60 mx-auto mt-3" />
           </div>
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-8 shadow-ai-lg hover-lift gradient-border">
             <div className="text-4xl font-black text-emerald-600 mb-2">+85%</div>
-            <div className="text-slate-600 text-base font-semibold">Conversion clients</div>
+            <div className="text-gray-700 text-base font-semibold">Conversion clients</div>
             <TrendingUp className="w-6 h-6 text-emerald-600/60 mx-auto mt-3" />
           </div>
         </div>
 
         {/* Trust indicators premium */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto mb-12">
-          <div className="flex items-center justify-center space-x-3 text-slate-700">
+          <div className="flex items-center justify-center space-x-3 text-gray-800">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <span className="text-sm font-bold">Sécurité entreprise</span>
           </div>
-          <div className="flex items-center justify-center space-x-3 text-slate-700">
+          <div className="flex items-center justify-center space-x-3 text-gray-800">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <span className="text-sm font-bold">RGPD & ISO 27001</span>
           </div>
-          <div className="flex items-center justify-center space-x-3 text-slate-700">
+          <div className="flex items-center justify-center space-x-3 text-gray-800">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <span className="text-sm font-bold">Support dédié</span>
           </div>
@@ -115,16 +129,16 @@ const Hero = () => {
         {/* Social proof entreprise */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <Users className="w-5 h-5 text-slate-500" />
-            <p className="text-slate-600 text-base font-bold">
+            <Users className="w-5 h-5 text-gray-600" />
+            <p className="text-gray-700 text-base font-bold">
               Plus de 2000+ entreprises nous font confiance
             </p>
           </div>
           <div className="flex justify-center items-center space-x-8 opacity-60">
-            <div className="text-xs font-bold text-slate-500 px-4 py-2 bg-slate-100 rounded-lg">RESTAURANTS</div>
-            <div className="text-xs font-bold text-slate-500 px-4 py-2 bg-slate-100 rounded-lg">CLINIQUES</div>
-            <div className="text-xs font-bold text-slate-500 px-4 py-2 bg-slate-100 rounded-lg">HÔTELS</div>
-            <div className="text-xs font-bold text-slate-500 px-4 py-2 bg-slate-100 rounded-lg">DENTISTES</div>
+            <div className="text-xs font-bold text-gray-600 px-4 py-2 bg-gray-100 rounded-lg">RESTAURANTS</div>
+            <div className="text-xs font-bold text-gray-600 px-4 py-2 bg-gray-100 rounded-lg">CLINIQUES</div>
+            <div className="text-xs font-bold text-gray-600 px-4 py-2 bg-gray-100 rounded-lg">HÔTELS</div>
+            <div className="text-xs font-bold text-gray-600 px-4 py-2 bg-gray-100 rounded-lg">DENTISTES</div>
           </div>
         </div>
       </div>

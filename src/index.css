@@ -7,17 +7,17 @@
 @layer base {
   :root {
     --background: 248 250 252;
-    --foreground: 15 23 42;
+    --foreground: 31 41 55; /* Gris foncé au lieu de slate */
     --card: 255 255 255;
-    --card-foreground: 15 23 42;
+    --card-foreground: 31 41 55;
     --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
+    --popover-foreground: 31 41 55;
     --primary: 37 99 235;
     --primary-foreground: 255 255 255;
     --secondary: 241 245 249;
-    --secondary-foreground: 15 23 42;
+    --secondary-foreground: 31 41 55;
     --muted: 248 250 252;
-    --muted-foreground: 100 116 139;
+    --muted-foreground: 75 85 99; /* Gris moyen */
     --accent: 99 102 241;
     --accent-foreground: 255 255 255;
     --destructive: 239 68 68;
@@ -62,10 +62,20 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'cv11', 'cv04', 'cv09', 'ss04';
+    color: rgb(31 41 55); /* Force une couleur de texte gris foncé */
   }
 
   html {
     scroll-behavior: smooth;
+  }
+
+  /* Styles globaux pour une cohérence visuelle */
+  h1, h2, h3, h4, h5, h6 {
+    color: rgb(17 24 39); /* Noir/gris très foncé pour les titres */
+  }
+
+  p, span, div {
+    color: rgb(55 65 81); /* Gris foncé pour le texte */
   }
 }
 
@@ -121,5 +131,18 @@
     border-radius: inherit;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
+  }
+
+  /* Utilitaires pour le texte */
+  .text-dark {
+    color: rgb(17 24 39) !important;
+  }
+
+  .text-medium {
+    color: rgb(55 65 81) !important;
+  }
+
+  .text-muted {
+    color: rgb(107 114 128) !important;
   }
 }
