@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { VoiceOrb } from '@/components/ui/VoiceOrb';
+import VoiceOrb from '@/components/ui/VoiceOrb';
 import { useNavigate } from 'react-router-dom';
 import { useAIConfiguration } from '@/hooks/useAIConfiguration';
 

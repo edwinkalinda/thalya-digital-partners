@@ -1,5 +1,5 @@
 
-import { VoiceOnboardingDemo } from '@/components/onboarding/VoiceOnboardingDemo';
+import VoiceOnboardingDemo from '@/components/onboarding/VoiceOnboardingDemo';
 import Header from '@/components/layout/Header';
 
 const Onboarding = () => {

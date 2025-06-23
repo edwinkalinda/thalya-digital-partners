@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { VoiceOnboardingDemo } from '@/components/onboarding/VoiceOnboardingDemo';
+import VoiceOnboardingDemo from '@/components/onboarding/VoiceOnboardingDemo';
 import { Play, CheckCircle, Zap } from "lucide-react";
 
 const VoiceOnboardingSection = () => {

@@ -1,5 +1,5 @@
 
-import { VoiceOnboardingDemo } from './VoiceOnboardingDemo';
+import VoiceOnboardingDemo from './VoiceOnboardingDemo';
 
 export function OnboardingChat() {
   return (

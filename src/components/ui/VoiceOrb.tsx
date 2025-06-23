@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { Renderer, Program, Mesh, Triangle, Vec3 } from "ogl";
 import "./Orb.css";
@@ -11,6 +10,9 @@ interface VoiceOrbProps {
   isListening?: boolean;
   isSpeaking?: boolean;
   audioLevel?: number;
+  isActive?: boolean;
+  size?: 'small' | 'medium' | 'large';
+  className?: string;
 }
 
 export default function VoiceOrb({
@@ -21,6 +23,9 @@ export default function VoiceOrb({
   isListening = false,
   isSpeaking = false,
   audioLevel = 0,
+  isActive = false,
+  size = 'medium',
+  className = '',
 }: VoiceOrbProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
   const [intensity, setIntensity] = useState(0);
@@ -318,5 +323,21 @@ export default function VoiceOrb({
     };
   }, [hue, hoverIntensity, rotateOnHover, forceHoverState, intensity, isListening, isSpeaking]);
 
-  return <div ref={ctnDom} className="orb-container" />;
+  const getSizeClass = () => {
+    switch (size) {
+      case 'small': return 'w-16 h-16';
+      case 'large': return 'w-32 h-32';
+      default: return 'w-24 h-24';
+    }
+  };
+
+  return (
+    <div 
+      ref={ctnDom} 
+      className={`orb-container ${getSizeClass()} ${className}`} 
+    />
+  );
 }
+
+// Export nommé pour compatibilité
+export { VoiceOrb };
