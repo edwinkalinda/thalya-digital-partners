@@ -10,26 +10,6 @@ import { Brain, Plus, Settings, Trash2, Copy, Building } from 'lucide-react';
 import { BusinessManager } from './BusinessManager';
 import { AIConfig, Business } from '@/types/ai-config';
 
-interface AIConfig {
-  id: string;
-  name: string;
-  businessId: string;
-  businessName: string;
-  businessType: string;
-  personality: string;
-  tone: string;
-  language: string;
-  promptTemplate: string;
-  voiceSettings: {
-    speed: string;
-    pitch: string;
-    stability: string;
-  };
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export const MultiAIManager = () => {
   const { toast } = useToast();
   const [aiConfigs, setAiConfigs] = useState<AIConfig[]>([]);
