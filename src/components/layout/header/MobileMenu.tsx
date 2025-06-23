@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { LogIn, Menu, X, Sparkles, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import {
@@ -10,11 +11,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { navigationItems } from "./navigationItems";
+import { navigationItems, adminNavigationItems } from "./navigationItems";
 
 const MobileMenu = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const isHomePage = location.pathname === '/';
   const [isOpen, setIsOpen] = useState(false);
 
@@ -46,6 +48,11 @@ const MobileMenu = () => {
     } else {
       scrollToElement(sectionId);
     }
+  };
+
+  const handleAdminNavigation = (path: string) => {
+    setIsOpen(false);
+    navigate(path);
   };
 
   const handleLoginClick = () => {
@@ -93,53 +100,77 @@ const MobileMenu = () => {
                 <div className="w-4 h-0.5 bg-electric-blue rounded-full"></div>
                 Navigation
               </h3>
-              {navigationItems.map((item, index) => (
-                <Button
-                  key={item.id}
-                  onClick={() => handleNavigation(item.id)}
-                  variant="ghost"
-                  className="justify-start text-left py-4 px-4 text-graphite-700 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300 rounded-xl group relative overflow-hidden"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-electric-blue/5 to-emerald-500/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
-                  <span className="relative z-10 font-medium">{item.label}</span>
-                  <ArrowRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity relative z-10" />
-                </Button>
-              ))}
+              {user ? (
+                // Admin navigation for authenticated users
+                adminNavigationItems.map((item, index) => (
+                  <Button
+                    key={item.id}
+                    onClick={() => handleAdminNavigation(item.path)}
+                    variant="ghost"
+                    className={`justify-start text-left py-4 px-4 text-graphite-700 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300 rounded-xl group relative overflow-hidden ${
+                      location.pathname === item.path ? 'bg-electric-blue/10 text-electric-blue' : ''
+                    }`}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-electric-blue/5 to-emerald-500/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
+                    <span className="relative z-10 font-medium">{item.label}</span>
+                    <ArrowRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity relative z-10" />
+                  </Button>
+                ))
+              ) : (
+                // Homepage sections for non-authenticated users
+                navigationItems.map((item, index) => (
+                  <Button
+                    key={item.id}
+                    onClick={() => handleNavigation(item.id)}
+                    variant="ghost"
+                    className="justify-start text-left py-4 px-4 text-graphite-700 hover:bg-electric-blue/10 hover:text-electric-blue transition-all duration-300 rounded-xl group relative overflow-hidden"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-electric-blue/5 to-emerald-500/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
+                    <span className="relative z-10 font-medium">{item.label}</span>
+                    <ArrowRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity relative z-10" />
+                  </Button>
+                ))
+              )}
             </nav>
             
-            <div className="flex flex-col space-y-4 pt-6 border-t border-electric-blue/20">
-              <h3 className="text-xs font-bold text-electric-blue uppercase tracking-wider flex items-center gap-2">
-                <div className="w-4 h-0.5 bg-electric-blue rounded-full"></div>
-                Actions
-              </h3>
-              
-              <Button
-                onClick={handleLoginClick}
-                variant="outline"
-                className="justify-start border-2 border-graphite-300 text-graphite-700 hover:border-electric-blue hover:text-electric-blue hover:bg-electric-blue/5 py-3 px-4 rounded-xl transition-all duration-300 group"
-              >
-                <LogIn className="h-5 w-5 mr-3 transition-transform group-hover:scale-110" />
-                <span className="font-semibold">Se connecter</span>
-              </Button>
-              
-              <Button
-                onClick={handleDemoClick}
-                className="justify-start bg-gradient-to-r from-electric-blue to-emerald-500 text-white hover:from-blue-600 hover:to-emerald-600 py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
-                <Sparkles className="h-5 w-5 mr-3 relative z-10 transition-transform group-hover:rotate-12" />
-                <span className="font-bold relative z-10">Commencer maintenant</span>
-              </Button>
-            </div>
-
-            <div className="pt-4 mt-auto">
-              <div className="p-4 bg-gradient-to-r from-electric-blue/10 to-emerald-500/10 rounded-xl border border-electric-blue/20">
-                <p className="text-xs text-graphite-600 text-center font-medium">
-                  ✨ Prêt à transformer votre business ?
-                </p>
+            {!user && (
+              <div className="flex flex-col space-y-4 pt-6 border-t border-electric-blue/20">
+                <h3 className="text-xs font-bold text-electric-blue uppercase tracking-wider flex items-center gap-2">
+                  <div className="w-4 h-0.5 bg-electric-blue rounded-full"></div>
+                  Actions
+                </h3>
+                
+                <Button
+                  onClick={handleLoginClick}
+                  variant="outline"
+                  className="justify-start border-2 border-graphite-300 text-graphite-700 hover:border-electric-blue hover:text-electric-blue hover:bg-electric-blue/5 py-3 px-4 rounded-xl transition-all duration-300 group"
+                >
+                  <LogIn className="h-5 w-5 mr-3 transition-transform group-hover:scale-110" />
+                  <span className="font-semibold">Se connecter</span>
+                </Button>
+                
+                <Button
+                  onClick={handleDemoClick}
+                  className="justify-start bg-gradient-to-r from-electric-blue to-emerald-500 text-white hover:from-blue-600 hover:to-emerald-600 py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
+                  <Sparkles className="h-5 w-5 mr-3 relative z-10 transition-transform group-hover:rotate-12" />
+                  <span className="font-bold relative z-10">Commencer maintenant</span>
+                </Button>
               </div>
-            </div>
+            )}
+
+            {!user && (
+              <div className="pt-4 mt-auto">
+                <div className="p-4 bg-gradient-to-r from-electric-blue/10 to-emerald-500/10 rounded-xl border border-electric-blue/20">
+                  <p className="text-xs text-graphite-600 text-center font-medium">
+                    ✨ Prêt à transformer votre business ?
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>

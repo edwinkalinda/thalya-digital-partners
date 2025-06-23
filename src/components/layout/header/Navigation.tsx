@@ -1,11 +1,13 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { navigationItems } from "./navigationItems";
+import { navigationItems, adminNavigationItems } from "./navigationItems";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const isHomePage = location.pathname === '/';
 
   const scrollToElement = (sectionId: string, maxAttempts = 20) => {
@@ -36,27 +38,53 @@ const Navigation = () => {
     }
   };
 
+  const handleAdminNavigation = (path: string) => {
+    navigate(path);
+  };
+
   return (
     <nav 
       className="hidden lg:flex items-center space-x-2"
       role="navigation"
       aria-label="Navigation principale"
     >
-      {navigationItems.map((item) => (
-        <Button
-          key={item.id}
-          onClick={() => handleNavigation(item.id)}
-          variant="ghost"
-          className="text-graphite-700 hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200 font-medium relative group"
-          aria-label={`Naviguer vers ${item.label}`}
-        >
-          {item.label}
-          <span 
-            className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"
-            aria-hidden="true"
-          />
-        </Button>
-      ))}
+      {user ? (
+        // Navigation for authenticated users (admin pages)
+        adminNavigationItems.map((item) => (
+          <Button
+            key={item.id}
+            onClick={() => handleAdminNavigation(item.path)}
+            variant="ghost"
+            className={`text-graphite-700 hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200 font-medium relative group ${
+              location.pathname === item.path ? 'text-electric-blue bg-electric-blue/10' : ''
+            }`}
+            aria-label={`Naviguer vers ${item.label}`}
+          >
+            {item.label}
+            <span 
+              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"
+              aria-hidden="true"
+            />
+          </Button>
+        ))
+      ) : (
+        // Navigation for non-authenticated users (homepage sections)
+        navigationItems.map((item) => (
+          <Button
+            key={item.id}
+            onClick={() => handleNavigation(item.id)}
+            variant="ghost"
+            className="text-graphite-700 hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200 font-medium relative group"
+            aria-label={`Naviguer vers ${item.label}`}
+          >
+            {item.label}
+            <span 
+              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"
+              aria-hidden="true"
+            />
+          </Button>
+        ))
+      )}
     </nav>
   );
 };
