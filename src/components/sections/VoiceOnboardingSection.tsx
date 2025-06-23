@@ -26,11 +26,10 @@ const VoiceOnboardingSection = () => {
         <div className="max-w-5xl mx-auto">
           <VoiceOnboardingDemo />
           
-          {/* Click to initialize indication */}
-          <div className="text-center mt-8">
-            <div className="inline-flex items-center justify-center px-6 py-3 bg-electric-blue/5 border border-electric-blue/20 rounded-full animate-pulse">
-              <span className="text-electric-blue font-semibold mr-2">👆</span>
-              <span className="text-electric-blue font-medium">Cliquez sur l'orbe pour commencer</span>
+          {/* Click to initialize indication - more discreet */}
+          <div className="text-center mt-6">
+            <div className="inline-flex items-center justify-center px-3 py-1.5 bg-graphite-100/30 border border-graphite-200/20 rounded-lg opacity-60 hover:opacity-80 transition-opacity">
+              <span className="text-graphite-500 text-xs font-medium">Cliquez pour commencer</span>
             </div>
           </div>
         </div>
