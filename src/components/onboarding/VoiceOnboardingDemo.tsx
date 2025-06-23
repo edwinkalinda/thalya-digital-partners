@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import VoiceOrb from '@/components/ui/VoiceOrb';
-import { useVoiceOnboarding } from '@/hooks/useVoiceOnboarding';
+import { useRealtimeOnboarding } from '@/hooks/useRealtimeOnboarding';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff } from 'lucide-react';
 
 export function VoiceOnboardingDemo() {
   const { toast } = useToast();
@@ -15,24 +14,16 @@ export function VoiceOnboardingDemo() {
     currentStep,
     currentQuestion,
     onboardingData,
-    isRecording,
     isSpeaking,
+    isUserSpeaking,
     audioLevel,
     startOnboarding,
-    endOnboarding,
-    startRecording,
-    stopRecording
-  } = useVoiceOnboarding();
+    endOnboarding
+  } = useRealtimeOnboarding();
 
   const handleOrbClick = () => {
     if (currentStep === 'welcome') {
       startOnboarding();
-    } else if (currentStep === 'questioning' || currentStep === 'summary' || currentStep === 'testing') {
-      if (isRecording) {
-        stopRecording();
-      } else {
-        startRecording();
-      }
     }
   };
 
@@ -41,13 +32,13 @@ export function VoiceOnboardingDemo() {
       case 'welcome':
         return 'Cliquez pour commencer votre onboarding vocal';
       case 'questioning':
-        return `Question ${currentQuestion + 1}/5 - ${isRecording ? 'Parlez maintenant...' : 'Cliquez pour répondre'}`;
+        return `Question ${currentQuestion + 1}/5 - ${isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara vous parle...' : 'Conversation en cours...'}`;
       case 'summary':
-        return isRecording ? 'Confirmez par "oui" ou corrigez...' : 'Cliquez pour confirmer';
+        return isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara fait le résumé...' : 'Confirmez ou corrigez...';
       case 'generating':
         return 'Génération de votre IA en cours...';
       case 'testing':
-        return isRecording ? 'Testez votre IA...' : 'Cliquez pour tester votre IA';
+        return isUserSpeaking ? 'Testez votre IA...' : isSpeaking ? 'Votre IA vous répond...' : 'Parlez à votre IA pour la tester';
       case 'completed':
         return 'Onboarding terminé !';
       default:
@@ -83,9 +74,9 @@ export function VoiceOnboardingDemo() {
       hue,
       hoverIntensity: 0.4,
       forceHoverState: isConnected || isConnecting,
-      isListening: isRecording,
+      isListening: isUserSpeaking,
       isSpeaking: isSpeaking,
-      audioLevel: audioLevel
+      audioLevel: isUserSpeaking ? audioLevel : (isSpeaking ? 0.7 : 0)
     };
   };
 
@@ -93,7 +84,7 @@ export function VoiceOnboardingDemo() {
     <div className="flex flex-col items-center justify-center min-h-[500px] space-y-8">
       {/* Orb principal */}
       <div 
-        className="w-80 h-80 cursor-pointer transition-transform hover:scale-105"
+        className={`w-80 h-80 transition-transform ${currentStep === 'welcome' ? 'cursor-pointer hover:scale-105' : ''}`}
         onClick={handleOrbClick}
       >
         <VoiceOrb {...getOrbProps()} />
@@ -119,19 +110,20 @@ export function VoiceOnboardingDemo() {
           </div>
         )}
 
-        {/* Contrôles manuels pendant l'onboarding */}
+        {/* Indicateur de conversation en cours */}
         {isConnected && (currentStep === 'questioning' || currentStep === 'summary' || currentStep === 'testing') && (
-          <div className="flex justify-center space-x-4 mt-6">
-            <Button
-              onClick={isRecording ? stopRecording : startRecording}
-              variant={isRecording ? "destructive" : "default"}
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              <span>{isRecording ? 'Arrêter' : 'Parler'}</span>
-            </Button>
-            
+          <div className="flex justify-center items-center space-x-3 mt-6">
+            <div className={`w-3 h-3 rounded-full ${isUserSpeaking ? 'bg-electric-blue animate-pulse' : 'bg-gray-300'}`}></div>
+            <span className="text-sm text-graphite-600">
+              {isUserSpeaking ? 'Vous parlez' : isSpeaking ? 'Clara parle' : 'En écoute'}
+            </span>
+            <div className={`w-3 h-3 rounded-full ${isSpeaking ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+          </div>
+        )}
+
+        {/* Bouton recommencer */}
+        {isConnected && (
+          <div className="flex justify-center mt-6">
             <Button
               onClick={endOnboarding}
               variant="outline"
@@ -162,7 +154,16 @@ export function VoiceOnboardingDemo() {
         {currentStep === 'testing' && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
             <p className="text-green-800 text-sm">
-              🎉 Votre IA personnalisée est prête ! Vous pouvez maintenant lui parler pour la tester.
+              🎉 Votre IA personnalisée est prête ! Parlez-lui naturellement pour la tester.
+            </p>
+          </div>
+        )}
+
+        {/* Instructions pour la conversation */}
+        {isConnected && currentStep !== 'generating' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+            <p className="text-blue-800 text-xs">
+              💡 Parlez naturellement, Clara détecte automatiquement quand vous commencez et arrêtez de parler
             </p>
           </div>
         )}
