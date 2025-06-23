@@ -1,8 +1,8 @@
 
-import { VoiceOnboardingDemo } from '@/components/onboarding/VoiceOnboardingDemo';
+import { VoiceChatInterface } from '@/components/voice/VoiceChatInterface';
 import Header from '@/components/layout/Header';
 
-const Onboarding = () => {
+const VoiceChat = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pure-white via-graphite-50 to-graphite-100">
       <Header />
@@ -12,16 +12,14 @@ const Onboarding = () => {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-bold text-deep-black mb-4">
-                Configuration de votre IA Clara
+                Chat Vocal avec Clara
               </h1>
               <p className="text-xl text-graphite-600">
-                Configurez votre assistante vocale en parlant naturellement
+                Conversation naturelle avec votre IA grâce à OpenAI Realtime
               </p>
             </div>
             
-            <div className="bg-pure-white rounded-2xl shadow-xl border border-graphite-200 p-8">
-              <VoiceOnboardingDemo />
-            </div>
+            <VoiceChatInterface />
           </div>
         </div>
       </div>
@@ -29,4 +27,4 @@ const Onboarding = () => {
   );
 };
 
-export default Onboarding;
+export default VoiceChat;
