@@ -24,7 +24,7 @@ export const StatsCard = ({
   valueColor 
 }: StatsCardProps) => {
   return (
-    <Card className={`border-2 ${borderColor} ${gradient}`}>
+    <Card className={`border ${borderColor} ${gradient}`}>
       <CardHeader className="pb-3">
         <CardTitle className={`text-lg ${iconColor} flex items-center`}>
           <Icon className="w-5 h-5 mr-2" />
@@ -33,7 +33,7 @@ export const StatsCard = ({
       </CardHeader>
       <CardContent>
         <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
-        <p className={`text-sm ${iconColor.replace('800', '700')}`}>{description}</p>
+        <p className={`text-sm text-gray-600`}>{description}</p>
       </CardContent>
     </Card>
   );

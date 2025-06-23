@@ -20,9 +20,9 @@ export const DashboardStats = ({ stats }: DashboardStatsProps) => {
         description={`+${stats.monthlyGrowth}% vs mois dernier`}
         icon={Phone}
         gradient="bg-white"
-        borderColor="border-blue-100"
-        iconColor="text-blue-600"
-        valueColor="text-blue-700"
+        borderColor="border-gray-200"
+        iconColor="text-gray-700"
+        valueColor="text-gray-900"
       />
       <StatsCard
         title="Agents actifs"
@@ -30,9 +30,9 @@ export const DashboardStats = ({ stats }: DashboardStatsProps) => {
         description="Clara en service"
         icon={Brain}
         gradient="bg-white"
-        borderColor="border-green-100"
-        iconColor="text-green-600"
-        valueColor="text-green-700"
+        borderColor="border-gray-200"
+        iconColor="text-gray-700"
+        valueColor="text-gray-900"
       />
       <StatsCard
         title="Satisfaction"
@@ -40,9 +40,9 @@ export const DashboardStats = ({ stats }: DashboardStatsProps) => {
         description="Note moyenne clients"
         icon={Users}
         gradient="bg-white"
-        borderColor="border-purple-100"
-        iconColor="text-purple-600"
-        valueColor="text-purple-700"
+        borderColor="border-gray-200"
+        iconColor="text-gray-700"
+        valueColor="text-gray-900"
       />
       <StatsCard
         title="Croissance"
@@ -50,9 +50,9 @@ export const DashboardStats = ({ stats }: DashboardStatsProps) => {
         description="Ce mois vs précédent"
         icon={BarChart3}
         gradient="bg-white"
-        borderColor="border-orange-100"
-        iconColor="text-orange-600"
-        valueColor="text-orange-700"
+        borderColor="border-gray-200"
+        iconColor="text-gray-700"
+        valueColor="text-gray-900"
       />
     </div>
   );

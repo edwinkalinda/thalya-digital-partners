@@ -28,17 +28,17 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-graphite-50">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       
       <div className="pt-16 container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Welcome Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-deep-black">
+            <h1 className="text-3xl font-bold text-gray-900">
               Tableau de bord
             </h1>
-            <p className="text-graphite-600">
+            <p className="text-gray-600">
               Bienvenue {user?.user_metadata?.first_name || 'Admin'}
             </p>
           </div>
