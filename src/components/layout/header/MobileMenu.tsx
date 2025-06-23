@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { navigationItems, adminNavigationItems } from "./navigationItems";
+import IridescenceLogo from "@/components/ui/IridescenceLogo";
 
 const MobileMenu = () => {
   const navigate = useNavigate();
@@ -84,8 +85,8 @@ const MobileMenu = () => {
         >
           <SheetHeader className="text-left border-b border-electric-blue/20 pb-6 mb-8">
             <SheetTitle className="text-2xl font-black text-deep-black flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-electric-blue to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden">
+                <IridescenceLogo size={40} />
               </div>
               <span className="text-gradient">Thalya</span>
             </SheetTitle>
