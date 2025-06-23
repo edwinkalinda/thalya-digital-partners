@@ -1,30 +1,26 @@
 
-import Header from '../components/layout/Header';
-import AnimatedBackground from '../components/ui/AnimatedBackground';
-import Hero from '../components/sections/Hero';
-import VoiceOnboardingSection from '../components/sections/VoiceOnboardingSection';
-import AIHub from '../components/sections/AIHub';
-import ThalyaDifference from '../components/sections/ThalyaDifference';
-import Philosophy from '../components/sections/Philosophy';
-import FinalCTA from '../components/sections/FinalCTA';
+import Hero from "@/components/sections/Hero";
+import AIHub from "@/components/sections/AIHub";
+import VoiceOnboardingSection from "@/components/sections/VoiceOnboardingSection"; 
+import TestimonialsSection from "@/components/sections/TestimonialsSection";
+import ThalyaDifference from "@/components/sections/ThalyaDifference";
+import Philosophy from "@/components/sections/Philosophy";
+import FinalCTA from "@/components/sections/FinalCTA";
+import Header from "@/components/layout/Header";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-graphite-100 text-deep-black relative">
-      <AnimatedBackground />
+    <div className="min-h-screen">
       <Header />
-      <Hero />
-      <VoiceOnboardingSection />
-      <AIHub />
-      <div id="thalya-difference">
+      <main>
+        <Hero />
+        <AIHub />
+        <VoiceOnboardingSection />
+        <TestimonialsSection />
         <ThalyaDifference />
-      </div>
-      <div id="philosophy">
         <Philosophy />
-      </div>
-      <div id="final-cta">
         <FinalCTA />
-      </div>
+      </main>
     </div>
   );
 };

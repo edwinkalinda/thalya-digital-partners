@@ -1,224 +1,327 @@
 
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import VoiceOrb from '@/components/ui/VoiceOrb';
-import { useRealtimeOnboarding } from '@/hooks/useRealtimeOnboarding';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle, Play } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  Mic, 
+  MicOff, 
+  Volume2, 
+  VolumeX, 
+  CheckCircle, 
+  ArrowRight,
+  Sparkles,
+  Bot
+} from 'lucide-react';
+import { useRealtimeOnboarding } from '@/hooks/useRealtimeOnboarding';
+import { useAIConfiguration } from '@/hooks/useAIConfiguration';
+import { useNavigate } from 'react-router-dom';
 
-export function VoiceOnboardingDemo() {
-  const { toast } = useToast();
-  
+export const VoiceOnboardingDemo = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [collectedData, setCollectedData] = useState<any>({});
+  const { saveConfiguration, loading: saveLoading } = useAIConfiguration();
+
   const {
     isConnected,
-    isConnecting,
-    currentStep,
-    currentQuestion,
-    onboardingData,
-    isSpeaking,
-    isUserSpeaking,
+    isRecording,
+    currentTranscript,
+    aiResponse,
     audioLevel,
-    startOnboarding,
-    endOnboarding
+    connect,
+    disconnect,
+    startRecording,
+    stopRecording,
+    messages
   } = useRealtimeOnboarding();
 
-  const handleOrbClick = () => {
-    if (currentStep === 'welcome') {
-      startOnboarding();
-      toast({
-        title: "🎙️ Clara activée",
-        description: "Votre onboarding vocal commence maintenant !",
-      });
-    }
+  const handleStartOnboarding = async () => {
+    if (!email) return;
+    setEmailSubmitted(true);
+    await connect();
   };
 
-  const getStatusText = () => {
-    switch (currentStep) {
-      case 'welcome':
-        return 'Cliquez sur l\'orb pour commencer votre configuration vocale ultra-rapide';
-      case 'questioning':
-        return `Question ${currentQuestion + 1}/5 - ${isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara vous parle...' : 'Conversation fluide avec OpenAI Realtime'}`;
-      case 'email':
-        return isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara vous parle...' : 'Donnez votre email et nom d\'entreprise...';
-      case 'summary':
-        return isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara fait le résumé...' : 'Confirmez ou corrigez...';
-      case 'generating':
-        return 'Génération de votre IA personnalisée en cours...';
-      case 'testing':
-        return isUserSpeaking ? 'Testez votre IA...' : isSpeaking ? 'Votre IA vous répond...' : 'Parlez à votre IA pour la tester';
-      case 'completed':
-        return 'Configuration terminée ! Votre IA Clara est prête.';
-      default:
-        return 'Initialisation...';
-    }
-  };
+  const handleCompleteOnboarding = async () => {
+    if (!email || !collectedData.business_name || !collectedData.business_type) return;
 
-  const getOrbProps = () => {
-    let hue = 220; // Bleu par défaut
-    
-    switch (currentStep) {
-      case 'welcome':
-        hue = 220; // Bleu
-        break;
-      case 'questioning':
-        hue = 280; // Violet
-        break;
-      case 'email':
-        hue = 300; // Violet-rose
-        break;
-      case 'summary':
-        hue = 320; // Magenta
-        break;
-      case 'generating':
-        hue = 60; // Jaune
-        break;
-      case 'testing':
-        hue = 120; // Vert
-        break;
-      case 'completed':
-        hue = 120; // Vert
-        break;
-    }
-
-    return {
-      hue,
-      hoverIntensity: 0.4,
-      forceHoverState: isConnected || isConnecting,
-      isListening: isUserSpeaking,
-      isSpeaking: isSpeaking,
-      audioLevel: isUserSpeaking ? audioLevel : (isSpeaking ? 0.8 : 0)
+    const config = {
+      email,
+      business_name: collectedData.business_name,
+      ai_name: collectedData.ai_name || 'Clara',
+      business_type: collectedData.business_type,
+      profession: collectedData.profession,
+      needs: collectedData.needs,
+      tone: collectedData.tone || 'professionnel',
+      language: collectedData.language || 'français',
+      use_case: collectedData.use_case
     };
-  };
 
-  const getProgressSteps = () => {
-    const totalSteps = currentStep === 'email' ? 6 : 5;
-    const currentStepNumber = currentStep === 'email' ? 6 : currentQuestion + 1;
+    const result = await saveConfiguration(config);
     
-    return { totalSteps, currentStepNumber };
+    if (result.success) {
+      setOnboardingComplete(true);
+      // Sauvegarder dans localStorage pour le dashboard
+      localStorage.setItem('thalya_configured_ai', JSON.stringify({
+        name: config.ai_name,
+        businessType: config.business_type,
+        personality: config.tone,
+        voice: 'Clara'
+      }));
+      
+      setTimeout(() => {
+        navigate('/signup');
+      }, 2000);
+    }
   };
 
-  const { totalSteps, currentStepNumber } = getProgressSteps();
+  // Analyser les messages pour extraire les données
+  useEffect(() => {
+    const lastAiMessage = messages.filter(m => m.role === 'assistant').pop();
+    if (lastAiMessage && lastAiMessage.content) {
+      // Logique simple d'extraction de données depuis la conversation
+      const content = lastAiMessage.content.toLowerCase();
+      
+      if (content.includes('restaurant') && !collectedData.business_type) {
+        setCollectedData(prev => ({ ...prev, business_type: 'Restaurant' }));
+      } else if (content.includes('clinique') || content.includes('médical')) {
+        setCollectedData(prev => ({ ...prev, business_type: 'Clinique médicale' }));
+      } else if (content.includes('hôtel') || content.includes('hébergement')) {
+        setCollectedData(prev => ({ ...prev, business_type: 'Hôtellerie' }));
+      }
+      
+      // Vérifier si on a assez de données pour terminer
+      if (messages.length >= 8 && collectedData.business_type) {
+        setCollectedData(prev => ({
+          ...prev,
+          business_name: prev.business_name || 'Mon Entreprise',
+          ai_name: 'Clara',
+          tone: 'professionnel et bienveillant',
+          language: 'français',
+          use_case: 'Accueil téléphonique et prise de rendez-vous'
+        }));
+      }
+    }
+  }, [messages, collectedData]);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] space-y-8">
-      {/* Statut de connexion */}
-      {isConnecting && (
-        <div className="flex items-center space-x-3 text-electric-blue font-medium mb-4">
-          <RefreshCw className="w-5 h-5 animate-spin" />
-          <span>Connexion à OpenAI Realtime...</span>
-        </div>
-      )}
+  if (onboardingComplete) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="pt-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-deep-black mb-4">
+            🎉 Configuration terminée !
+          </h2>
+          <p className="text-graphite-600 mb-6">
+            Votre IA Clara est maintenant configurée selon vos besoins. 
+            Vous allez être redirigé vers la création de votre compte.
+          </p>
+          <div className="animate-pulse text-electric-blue font-medium">
+            Redirection en cours...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-      {/* Orb principal */}
-      <div 
-        className={`w-80 h-80 transition-transform duration-300 ${
-          currentStep === 'welcome' ? 'cursor-pointer hover:scale-105' : ''
-        }`}
-        onClick={handleOrbClick}
-      >
-        <VoiceOrb {...getOrbProps()} />
-      </div>
+  if (!emailSubmitted) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="pt-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-electric-blue to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bot className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-deep-black mb-4">
+              Configurons votre IA Clara
+            </h2>
+            <p className="text-graphite-600 mb-6">
+              Entrez votre email pour commencer la configuration vocale de votre assistante IA.
+            </p>
+          </div>
 
-      {/* Status et contrôles */}
-      <div className="text-center space-y-4 max-w-md">
-        <p className="text-lg text-graphite-700 font-medium">
-          {getStatusText()}
-        </p>
-        
-        {/* Indicateurs de progression pour les questions */}
-        {(currentStep === 'questioning' || currentStep === 'email') && (
-          <div className="flex justify-center space-x-2 mt-4">
-            {[...Array(totalSteps)].map((_, i) => (
-              <div
-                key={i}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  i < currentStepNumber ? 'bg-electric-blue' : 'bg-graphite-300'
-                }`}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="email">Adresse email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="votre@email.com"
+                className="mt-1"
               />
-            ))}
-          </div>
-        )}
-
-        {/* Indicateur de conversation OpenAI Realtime */}
-        {isConnected && (currentStep === 'questioning' || currentStep === 'email' || currentStep === 'summary' || currentStep === 'testing') && (
-          <div className="flex justify-center items-center space-x-3 mt-6">
-            <div className={`w-3 h-3 rounded-full transition-all ${isUserSpeaking ? 'bg-electric-blue animate-pulse scale-125' : 'bg-gray-300'}`}></div>
-            <span className="text-sm text-graphite-600 font-medium">
-              {isUserSpeaking ? 'Vous parlez' : isSpeaking ? 'Clara parle' : 'OpenAI Realtime actif'}
-            </span>
-            <div className={`w-3 h-3 rounded-full transition-all ${isSpeaking ? 'bg-green-500 animate-pulse scale-125' : 'bg-gray-300'}`}></div>
-          </div>
-        )}
-
-        {/* Bouton recommencer */}
-        {isConnected && currentStep !== 'welcome' && (
-          <div className="flex justify-center mt-6">
-            <Button
-              onClick={endOnboarding}
-              variant="outline"
-              size="sm"
+            </div>
+            
+            <Button 
+              onClick={handleStartOnboarding}
+              disabled={!email || !email.includes('@')}
+              className="w-full bg-electric-blue hover:bg-blue-600 py-3"
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Recommencer
+              <Sparkles className="w-5 h-5 mr-2" />
+              Commencer la configuration vocale
             </Button>
           </div>
-        )}
+        </CardContent>
+      </Card>
+    );
+  }
 
-        {/* État de génération */}
-        {currentStep === 'generating' && (
-          <div className="flex justify-center items-center space-x-2 mt-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-electric-blue"></div>
-            <span className="text-electric-blue font-medium">Génération avec OpenAI...</span>
-          </div>
-        )}
-
-        {/* Message de test */}
-        {currentStep === 'testing' && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-            <div className="flex items-center justify-center mb-2">
-              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-              <span className="text-green-800 font-semibold">IA Clara configurée !</span>
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Statut de connexion */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="font-medium">
+                {isConnected ? 'Connecté à Clara' : 'Connexion...'}
+              </span>
             </div>
-            <p className="text-green-700 text-sm">
-              Votre assistante vocale est prête. Parlez-lui naturellement pour la tester.
-            </p>
+            <Badge variant={isConnected ? 'default' : 'secondary'}>
+              {isConnected ? 'En ligne' : 'Hors ligne'}
+            </Badge>
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        {/* Confirmation de sauvegarde */}
-        {currentStep === 'completed' && onboardingData.email && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-            <div className="flex items-center justify-center mb-2">
-              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-              <span className="text-green-800 font-semibold">Configuration terminée !</span>
+      {/* Interface de conversation */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="h-96">
+          <CardContent className="pt-6 h-full flex flex-col">
+            <h3 className="font-semibold mb-4">Conversation avec Clara</h3>
+            <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-electric-blue text-white ml-8'
+                      : 'bg-gray-100 text-gray-800 mr-8'
+                  }`}
+                >
+                  <div className="text-sm font-medium mb-1">
+                    {message.role === 'user' ? 'Vous' : 'Clara'}
+                  </div>
+                  <div>{message.content}</div>
+                </div>
+              ))}
+              
+              {currentTranscript && (
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 ml-8">
+                  <div className="text-sm font-medium mb-1 text-blue-800">Vous (en cours...)</div>
+                  <div className="text-blue-700">{currentTranscript}</div>
+                </div>
+              )}
+              
+              {aiResponse && (
+                <div className="p-3 rounded-lg bg-purple-50 border border-purple-200 mr-8">
+                  <div className="text-sm font-medium mb-1 text-purple-800">Clara</div>
+                  <div className="text-purple-700">{aiResponse}</div>
+                </div>
+              )}
             </div>
-            <p className="text-green-700 text-sm">
-              Votre IA Clara a été créée et enregistrée pour : {onboardingData.email}
-            </p>
-          </div>
-        )}
 
-        {/* Informations techniques OpenAI Realtime */}
-        {isConnected && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-            <div className="flex items-center justify-center mb-1">
-              <Play className="w-4 h-4 text-blue-600 mr-2" />
-              <span className="text-blue-800 text-xs font-semibold">OpenAI Realtime API</span>
+            {/* Contrôles audio */}
+            <div className="flex items-center justify-center space-x-4 pt-4 border-t">
+              <Button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={!isConnected}
+                className={`${
+                  isRecording 
+                    ? 'bg-red-500 hover:bg-red-600' 
+                    : 'bg-electric-blue hover:bg-blue-600'
+                } text-white px-6 py-3 rounded-full`}
+              >
+                {isRecording ? (
+                  <>
+                    <MicOff className="w-5 h-5 mr-2" />
+                    Arrêter
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-5 h-5 mr-2" />
+                    Parler
+                  </>
+                )}
+              </Button>
+              
+              {audioLevel > 0 && (
+                <div className="flex items-center space-x-1">
+                  <Volume2 className="w-4 h-4 text-gray-500" />
+                  <div className="w-20 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-electric-blue h-2 rounded-full transition-all duration-150" 
+                      style={{ width: `${Math.min(audioLevel * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-blue-700 text-xs">
-              Conversation vocale ultra-rapide avec GPT-4o • Latence minimale • Audio natif
-            </p>
-          </div>
-        )}
+          </CardContent>
+        </Card>
 
-        {/* Affichage des données collectées (debug) */}
-        {process.env.NODE_ENV === 'development' && Object.keys(onboardingData).length > 0 && (
-          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-left text-sm">
-            <h4 className="font-semibold mb-2">Données collectées :</h4>
-            <pre className="text-xs">{JSON.stringify(onboardingData, null, 2)}</pre>
-          </div>
-        )}
+        {/* Données collectées */}
+        <Card className="h-96">
+          <CardContent className="pt-6">
+            <h3 className="font-semibold mb-4">Configuration en cours</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Email</label>
+                <p className="font-medium">{email}</p>
+              </div>
+              
+              {collectedData.business_type && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Type d'entreprise</label>
+                  <p className="font-medium">{collectedData.business_type}</p>
+                </div>
+              )}
+              
+              {collectedData.business_name && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Nom de l'entreprise</label>
+                  <p className="font-medium">{collectedData.business_name}</p>
+                </div>
+              )}
+              
+              {collectedData.tone && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Ton de voix</label>
+                  <p className="font-medium">{collectedData.tone}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bouton de finalisation */}
+            {Object.keys(collectedData).length >= 3 && (
+              <div className="mt-6 pt-4 border-t">
+                <Button 
+                  onClick={handleCompleteOnboarding}
+                  disabled={saveLoading}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  {saveLoading ? (
+                    'Sauvegarde...'
+                  ) : (
+                    <>
+                      Finaliser la configuration
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-}
+};

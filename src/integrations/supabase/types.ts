@@ -9,6 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_configurations: {
+        Row: {
+          ai_name: string
+          business_name: string
+          business_type: string
+          created_at: string | null
+          email: string
+          id: string
+          language: string | null
+          needs: string | null
+          phone_number: string | null
+          profession: string | null
+          status: string | null
+          subscription_tier: string | null
+          tone: string | null
+          trial_expires_at: string | null
+          updated_at: string | null
+          use_case: string | null
+        }
+        Insert: {
+          ai_name?: string
+          business_name: string
+          business_type: string
+          created_at?: string | null
+          email: string
+          id?: string
+          language?: string | null
+          needs?: string | null
+          phone_number?: string | null
+          profession?: string | null
+          status?: string | null
+          subscription_tier?: string | null
+          tone?: string | null
+          trial_expires_at?: string | null
+          updated_at?: string | null
+          use_case?: string | null
+        }
+        Update: {
+          ai_name?: string
+          business_name?: string
+          business_type?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          language?: string | null
+          needs?: string | null
+          phone_number?: string | null
+          profession?: string | null
+          status?: string | null
+          subscription_tier?: string | null
+          tone?: string | null
+          trial_expires_at?: string | null
+          updated_at?: string | null
+          use_case?: string | null
+        }
+        Relationships: []
+      }
       business_profiles: {
         Row: {
           appointment_type: string
@@ -460,6 +517,45 @@ export type Database = {
         }
         Relationships: []
       }
+      testimonials: {
+        Row: {
+          avatar_url: string | null
+          business_name: string
+          business_type: string
+          client_name: string
+          created_at: string | null
+          id: string
+          is_approved: boolean | null
+          is_featured: boolean | null
+          rating: number | null
+          testimonial_text: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          business_name: string
+          business_type: string
+          client_name: string
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          rating?: number | null
+          testimonial_text: string
+        }
+        Update: {
+          avatar_url?: string | null
+          business_name?: string
+          business_type?: string
+          client_name?: string
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          rating?: number | null
+          testimonial_text?: string
+        }
+        Relationships: []
+      }
       thalya_connect_configs: {
         Row: {
           business_name: string
@@ -495,6 +591,47 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      usage_stats: {
+        Row: {
+          ai_config_id: string | null
+          calls_count: number | null
+          created_at: string | null
+          date: string | null
+          id: string
+          last_activity: string | null
+          successful_calls: number | null
+          total_duration_seconds: number | null
+        }
+        Insert: {
+          ai_config_id?: string | null
+          calls_count?: number | null
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          last_activity?: string | null
+          successful_calls?: number | null
+          total_duration_seconds?: number | null
+        }
+        Update: {
+          ai_config_id?: string | null
+          calls_count?: number | null
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          last_activity?: string | null
+          successful_calls?: number | null
+          total_duration_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_stats_ai_config_id_fkey"
+            columns: ["ai_config_id"]
+            isOneToOne: false
+            referencedRelation: "ai_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
