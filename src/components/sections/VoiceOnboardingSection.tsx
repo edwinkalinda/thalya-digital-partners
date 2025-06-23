@@ -25,6 +25,14 @@ const VoiceOnboardingSection = () => {
 
         <div className="max-w-5xl mx-auto">
           <VoiceOnboardingDemo />
+          
+          {/* Click to initialize indication */}
+          <div className="text-center mt-8">
+            <div className="inline-flex items-center justify-center px-6 py-3 bg-electric-blue/5 border border-electric-blue/20 rounded-full animate-pulse">
+              <span className="text-electric-blue font-semibold mr-2">👆</span>
+              <span className="text-electric-blue font-medium">Cliquez sur l'orbe pour commencer</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
