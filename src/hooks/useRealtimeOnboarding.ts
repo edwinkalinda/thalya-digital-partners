@@ -380,8 +380,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
-          latency: 0.01
+          autoGainControl: true
         }
       });
 
