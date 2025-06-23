@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useNavigate } from 'react-router-dom';
 import { useAIConfiguration } from '@/hooks/useAIConfiguration';
 import { Bot, Building, User, MessageSquare } from 'lucide-react';
+import VoiceTestButton from './VoiceTestButton';
 
 const SimpleOnboardingForm = () => {
   const navigate = useNavigate();
@@ -168,6 +169,8 @@ const SimpleOnboardingForm = () => {
               )}
             </Button>
           </form>
+          
+          <VoiceTestButton />
         </CardContent>
       </Card>
     </div>
