@@ -9,15 +9,11 @@ export const navigationItems = [
 export const adminNavigationItems = [
   { id: 'dashboard', label: 'Tableau de bord', path: '/dashboard' },
   { id: 'voice-management', label: 'Gestion vocale', path: '/voice-management' },
-  { id: 'ai-config', label: 'Configuration IA', path: '/ai-config' },
+  { id: 'onboarding', label: 'Configuration', path: '/onboarding' },
 ];
 
 export const dashboardNavigationItems = [
   { path: '/dashboard', label: 'Accueil', icon: 'Home' },
   { path: '/voice-management', label: 'Gestion vocale', icon: 'Mic' },
-  { path: '/ai-config', label: 'Configuration IA', icon: 'Settings' },
-  { path: '/clinic-dashboard', label: 'Clinique', icon: 'Heart' },
-  { path: '/restaurant-dashboard', label: 'Restaurant', icon: 'UtensilsCrossed' },
-  { path: '/real-estate-dashboard', label: 'Immobilier', icon: 'Building' },
-  { path: '/outreach-dashboard', label: 'Outreach', icon: 'Target' },
+  { path: '/onboarding', label: 'Configuration IA', icon: 'Settings' },
 ];

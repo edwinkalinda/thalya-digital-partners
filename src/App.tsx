@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import ClientDashboard from "./pages/ClientDashboard";
+import VoiceManagement from "./pages/VoiceManagement";
+import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -22,6 +24,14 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route 
+            path="/voice-management" 
+            element={
+              <ProtectedRoute>
+                <VoiceManagement />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/client-dashboard" 
             element={
@@ -38,6 +48,7 @@ const App = () => (
               </ProtectedRoute>
             } 
           />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
