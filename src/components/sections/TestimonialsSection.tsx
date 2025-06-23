@@ -28,39 +28,39 @@ const TestimonialsSection = () => {
   ];
 
   return (
-    <section className="py-24 px-6 lg:px-8 bg-gray-50">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-semibold mb-6 text-gray-900">
+    <section className="py-20 px-6 lg:px-8 bg-gray-50">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
             Ils nous font confiance
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="text-lg text-gray-600">
             Découvrez l'impact de Clara sur leur business
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-              <CardContent className="p-8">
+            <Card key={index} className="bg-white border-0 shadow-modern hover-lift">
+              <CardContent className="p-6">
                 <div className="flex mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
                   ))}
                 </div>
                 
-                <blockquote className="text-gray-700 mb-6 leading-relaxed">
+                <blockquote className="text-gray-700 mb-6 leading-relaxed text-sm">
                   "{testimonial.content}"
                 </blockquote>
                 
-                <div className="border-t border-gray-100 pt-6">
-                  <div className="font-semibold text-gray-900 mb-1">
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="font-semibold text-gray-900 mb-1 text-sm">
                     {testimonial.name}
                   </div>
-                  <div className="text-gray-600 text-sm mb-3">
+                  <div className="text-gray-600 text-xs mb-3">
                     {testimonial.role}
                   </div>
-                  <div className="bg-green-50 text-green-700 text-sm font-medium px-3 py-1 rounded-full inline-block">
+                  <div className="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-full inline-block">
                     {testimonial.metric}
                   </div>
                 </div>
