@@ -1,161 +1,173 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import VoiceOrb from '@/components/ui/VoiceOrb';
-import { useOpenAIRealtimeChat } from '@/hooks/useOpenAIRealtimeChat';
-
-interface ConfiguredAI {
-  name: string;
-  businessType: string;
-  personality: string;
-  voice: string;
-}
+import { useVoiceOnboarding } from '@/hooks/useVoiceOnboarding';
+import { Button } from '@/components/ui/button';
+import { Mic, MicOff } from 'lucide-react';
 
 export function VoiceOnboardingDemo() {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'configuring' | 'testing' | 'completed'>('welcome');
-  const [configuredAI, setConfiguredAI] = useState<ConfiguredAI | null>(null);
-  const [audioLevel, setAudioLevel] = useState(0);
-
+  
   const {
     isConnected,
     isConnecting,
-    messages,
+    currentStep,
+    currentQuestion,
+    onboardingData,
     isRecording,
-    startConversation,
-    endConversation,
-    sendTextMessage,
+    isSpeaking,
+    audioLevel,
+    startOnboarding,
+    endOnboarding,
     startRecording,
     stopRecording
-  } = useOpenAIRealtimeChat();
+  } = useVoiceOnboarding();
 
-  // Simulated audio level for demo
-  useEffect(() => {
-    if (isRecording) {
-      const interval = setInterval(() => {
-        setAudioLevel(Math.random() * 0.8 + 0.2);
-      }, 100);
-      return () => clearInterval(interval);
-    } else {
-      setAudioLevel(0);
-    }
-  }, [isRecording]);
-
-  // Extract AI configuration from conversation
-  useEffect(() => {
-    if (messages.length >= 6) {
-      const lastMessages = messages.slice(-6);
-      const hasName = lastMessages.some(m => m.text.toLowerCase().includes('nom') || m.text.toLowerCase().includes('appeler'));
-      const hasBusiness = lastMessages.some(m => 
-        m.text.toLowerCase().includes('restaurant') || 
-        m.text.toLowerCase().includes('hôtel') || 
-        m.text.toLowerCase().includes('clinique')
-      );
-      
-      if (hasName && hasBusiness && !configuredAI) {
-        const nameMatch = lastMessages.find(m => m.sender === 'user' && m.text.match(/\b[A-Z][a-z]+\b/));
-        const businessMatch = lastMessages.find(m => m.sender === 'user' && 
-          (m.text.includes('restaurant') || m.text.includes('hôtel') || m.text.includes('clinique'))
-        );
-        
-        setConfiguredAI({
-          name: nameMatch?.text.match(/\b[A-Z][a-z]+\b/)?.[0] || 'Clara',
-          businessType: businessMatch?.text.includes('restaurant') ? 'restaurant' : 
-                       businessMatch?.text.includes('hôtel') ? 'hôtel' : 'clinique',
-          personality: 'Professionnelle et chaleureuse',
-          voice: 'Voix féminine française'
-        });
-        
-        setCurrentStep('testing');
-        toast({
-          title: "🎉 Configuration terminée !",
-          description: "Votre IA est maintenant configurée.",
-        });
-      }
-    }
-  }, [messages, configuredAI, toast]);
-
-  const handleOrbClick = async () => {
+  const handleOrbClick = () => {
     if (currentStep === 'welcome') {
-      setCurrentStep('configuring');
-      try {
-        await startConversation();
-        setTimeout(() => {
-          sendTextMessage(`Bonjour ! Je suis l'IA Chef d'Orchestre de Thalya. Je vais vous aider à configurer votre assistante IA personnalisée. 
-
-Commençons par le nom : Quel prénom souhaitez-vous donner à votre assistante IA ?`);
-        }, 2000);
-      } catch (error) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de démarrer la configuration vocale",
-          variant: "destructive"
-        });
-        setCurrentStep('welcome');
-      }
-    } else if (currentStep === 'configuring') {
+      startOnboarding();
+    } else if (currentStep === 'questioning' || currentStep === 'summary' || currentStep === 'testing') {
       if (isRecording) {
         stopRecording();
       } else {
         startRecording();
       }
-    } else if (currentStep === 'testing') {
-      toast({
-        title: `🎙️ Test de ${configuredAI?.name}`,
-        description: "Votre IA configurée est maintenant en ligne pour un test",
-      });
     }
   };
 
-  // Determine orb properties based on current step
-  const getOrbProps = () => {
+  const getStatusText = () => {
     switch (currentStep) {
       case 'welcome':
-        return {
-          hue: 220,
-          hoverIntensity: 0.3,
-          forceHoverState: true,
-          isListening: false,
-          isSpeaking: false,
-          audioLevel: 0
-        };
-      case 'configuring':
-        return {
-          hue: 220,
-          hoverIntensity: 0.4,
-          forceHoverState: false,
-          isListening: isRecording,
-          isSpeaking: false,
-          audioLevel: audioLevel
-        };
+        return 'Cliquez pour commencer votre onboarding vocal';
+      case 'questioning':
+        return `Question ${currentQuestion + 1}/5 - ${isRecording ? 'Parlez maintenant...' : 'Cliquez pour répondre'}`;
+      case 'summary':
+        return isRecording ? 'Confirmez par "oui" ou corrigez...' : 'Cliquez pour confirmer';
+      case 'generating':
+        return 'Génération de votre IA en cours...';
       case 'testing':
-        return {
-          hue: 120,
-          hoverIntensity: 0.3,
-          forceHoverState: true,
-          isListening: false,
-          isSpeaking: false,
-          audioLevel: 0
-        };
+        return isRecording ? 'Testez votre IA...' : 'Cliquez pour tester votre IA';
+      case 'completed':
+        return 'Onboarding terminé !';
       default:
-        return {
-          hue: 220,
-          hoverIntensity: 0.3,
-          forceHoverState: true,
-          isListening: false,
-          isSpeaking: false,
-          audioLevel: 0
-        };
+        return '';
     }
+  };
+
+  const getOrbProps = () => {
+    let hue = 220; // Bleu par défaut
+    
+    switch (currentStep) {
+      case 'welcome':
+        hue = 220; // Bleu
+        break;
+      case 'questioning':
+        hue = 280; // Violet
+        break;
+      case 'summary':
+        hue = 320; // Magenta
+        break;
+      case 'generating':
+        hue = 60; // Jaune
+        break;
+      case 'testing':
+        hue = 120; // Vert
+        break;
+      case 'completed':
+        hue = 120; // Vert
+        break;
+    }
+
+    return {
+      hue,
+      hoverIntensity: 0.4,
+      forceHoverState: isConnected || isConnecting,
+      isListening: isRecording,
+      isSpeaking: isSpeaking,
+      audioLevel: audioLevel
+    };
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex flex-col items-center justify-center min-h-[500px] space-y-8">
+      {/* Orb principal */}
       <div 
-        className="w-64 h-64 cursor-pointer transition-transform hover:scale-105"
+        className="w-80 h-80 cursor-pointer transition-transform hover:scale-105"
         onClick={handleOrbClick}
       >
         <VoiceOrb {...getOrbProps()} />
+      </div>
+
+      {/* Status et contrôles */}
+      <div className="text-center space-y-4 max-w-md">
+        <p className="text-lg text-graphite-700 font-medium">
+          {getStatusText()}
+        </p>
+        
+        {/* Indicateurs de progression pour les questions */}
+        {currentStep === 'questioning' && (
+          <div className="flex justify-center space-x-2 mt-4">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full ${
+                  i <= currentQuestion ? 'bg-electric-blue' : 'bg-graphite-300'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Contrôles manuels pendant l'onboarding */}
+        {isConnected && (currentStep === 'questioning' || currentStep === 'summary' || currentStep === 'testing') && (
+          <div className="flex justify-center space-x-4 mt-6">
+            <Button
+              onClick={isRecording ? stopRecording : startRecording}
+              variant={isRecording ? "destructive" : "default"}
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              <span>{isRecording ? 'Arrêter' : 'Parler'}</span>
+            </Button>
+            
+            {currentStep !== 'welcome' && (
+              <Button
+                onClick={endOnboarding}
+                variant="outline"
+                size="sm"
+              >
+                Recommencer
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Affichage des données collectées (debug) */}
+        {process.env.NODE_ENV === 'development' && Object.keys(onboardingData).length > 0 && (
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg text-left text-sm">
+            <h4 className="font-semibold mb-2">Données collectées :</h4>
+            <pre className="text-xs">{JSON.stringify(onboardingData, null, 2)}</pre>
+          </div>
+        )}
+
+        {/* État de génération */}
+        {currentStep === 'generating' && (
+          <div className="flex justify-center items-center space-x-2 mt-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-electric-blue"></div>
+            <span className="text-electric-blue font-medium">Génération en cours...</span>
+          </div>
+        )}
+
+        {/* Message de test */}
+        {currentStep === 'testing' && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+            <p className="text-green-800 text-sm">
+              🎉 Votre IA personnalisée est prête ! Vous pouvez maintenant lui parler pour la tester.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
