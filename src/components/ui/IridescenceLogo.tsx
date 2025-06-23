@@ -39,32 +39,32 @@ void main() {
   }
   d += uTime * 0.5 * uSpeed;
   
-  // Subtle chromatic effect with muted colors
+  // Balanced chromatic effect - not too vivid, not too grey
   vec3 col = vec3(
-    cos(uv.x * d * 1.2) * 0.3 + 0.5,
-    cos(uv.y * a * 1.0) * 0.25 + 0.55,
-    cos((uv.x + uv.y) * (d + a) * 0.6) * 0.2 + 0.6
+    cos(uv.x * d * 1.4) * 0.4 + 0.5,
+    cos(uv.y * a * 1.2) * 0.35 + 0.55,
+    cos((uv.x + uv.y) * (d + a) * 0.8) * 0.3 + 0.65
   );
   
-  // Add subtle iridescent shifts with muted tones
-  float phase = sin(d * 0.3) * 0.3 + 0.5;
+  // Subtle iridescent shifts with balanced tones
+  float phase = sin(d * 0.4) * 0.4 + 0.5;
   vec3 iridescent = vec3(
-    0.5 + 0.3 * cos(phase * 6.28 + 0.0),
-    0.5 + 0.25 * cos(phase * 6.28 + 2.09),
-    0.55 + 0.2 * cos(phase * 6.28 + 4.18)
+    0.45 + 0.35 * cos(phase * 6.28 + 0.0),
+    0.5 + 0.3 * cos(phase * 6.28 + 2.09),
+    0.55 + 0.25 * cos(phase * 6.28 + 4.18)
   );
   
-  // Blend with base color - more subtle mixing
-  col = mix(col * uColor, iridescent, 0.4);
+  // Balanced blending
+  col = mix(col * uColor, iridescent, 0.5);
   
-  // Add more prominent grey metallic accents
+  // Light grey metallic accents
   float grey = (col.r + col.g + col.b) * 0.33;
-  vec3 greyAccent = vec3(0.45, 0.48, 0.52);
-  col = mix(col, greyAccent, grey * 0.5);
+  vec3 greyAccent = vec3(0.5, 0.52, 0.55);
+  col = mix(col, greyAccent, grey * 0.3);
   
-  // Overall desaturation for muted effect
+  // Light desaturation for refined look
   float luminance = dot(col, vec3(0.299, 0.587, 0.114));
-  col = mix(col, vec3(luminance), 0.3);
+  col = mix(col, vec3(luminance), 0.15);
   
   gl_FragColor = vec4(col, 1.0);
 }
@@ -80,9 +80,9 @@ interface IridescenceLogoProps {
 
 export default function IridescenceLogo({
   size = 80,
-  color = [0.6, 0.65, 0.75], // More muted grey-blue tones
-  speed = 1.2, // Reduced speed for calmer effect
-  amplitude = 0.2, // Reduced amplitude
+  color = [0.7, 0.75, 0.85], // Balanced blue-grey tones
+  speed = 1.4, // Moderate speed
+  amplitude = 0.25, // Balanced amplitude
   mouseReact = true
 }: IridescenceLogoProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
