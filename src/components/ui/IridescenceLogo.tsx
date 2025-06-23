@@ -39,8 +39,30 @@ void main() {
     d += sin(uv.y * i + a);
   }
   d += uTime * 0.5 * uSpeed;
-  vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
-  col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5) * uColor;
+  
+  // Enhanced chromatic effect with more dynamic color shifts
+  vec3 col = vec3(
+    cos(uv.x * d * 2.0) * 0.5 + 0.5,
+    cos(uv.y * a * 1.5) * 0.4 + 0.6,
+    cos((uv.x + uv.y) * (d + a) * 0.8) * 0.3 + 0.7
+  );
+  
+  // Add iridescent color shifts
+  float phase = sin(d * 0.5) * 0.5 + 0.5;
+  vec3 iridescent = vec3(
+    0.3 + 0.7 * cos(phase * 6.28 + 0.0),
+    0.3 + 0.7 * cos(phase * 6.28 + 2.09),
+    0.3 + 0.7 * cos(phase * 6.28 + 4.18)
+  );
+  
+  // Blend with base color and add grey accents
+  col = mix(col * uColor, iridescent, 0.6);
+  
+  // Add grey metallic accents
+  float grey = (col.r + col.g + col.b) * 0.33;
+  vec3 greyAccent = vec3(0.4, 0.45, 0.5);
+  col = mix(col, greyAccent, grey * 0.3);
+  
   gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -55,9 +77,9 @@ interface IridescenceLogoProps {
 
 export default function IridescenceLogo({
   size = 80,
-  color = [0.2, 0.6, 1.0],
-  speed = 1.5,
-  amplitude = 0.2,
+  color = [0.8, 0.9, 1.0], // Shifted to more chromatic blues
+  speed = 2.0, // Increased speed for more dynamic effect
+  amplitude = 0.3, // Increased amplitude
   mouseReact = true
 }: IridescenceLogoProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
