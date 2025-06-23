@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Play, ArrowRight, CheckCircle } from "lucide-react";
@@ -122,22 +123,6 @@ const Hero = () => {
                   </span>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Stats section - Données de validation */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto p-8 bg-gradient-to-r from-electric-blue/5 to-emerald-500/5 rounded-2xl border border-electric-blue/10">
-            <div className="text-center group">
-              <div className="text-4xl sm:text-5xl font-black text-electric-blue mb-3 group-hover:scale-110 transition-transform">99%</div>
-              <div className="text-base text-graphite-600 font-medium">Taux de satisfaction</div>
-            </div>
-            <div className="text-center group">
-              <div className="text-4xl sm:text-5xl font-black text-electric-blue mb-3 group-hover:scale-110 transition-transform">24/7</div>
-              <div className="text-base text-graphite-600 font-medium">Disponibilité garantie</div>
-            </div>
-            <div className="text-center group">
-              <div className="text-4xl sm:text-5xl font-black text-electric-blue mb-3 group-hover:scale-110 transition-transform">-50%</div>
-              <div className="text-base text-graphite-600 font-medium">Temps de traitement</div>
             </div>
           </div>
         </div>
