@@ -1,11 +1,7 @@
 
-import { useState } from 'react';
 import Header from '@/components/layout/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Settings, Activity } from 'lucide-react';
-import { VoiceConfigPanel } from '@/components/admin/VoiceConfigPanel';
-import { VoiceSystemPanel } from '@/components/admin/VoiceSystemPanel';
+import { Brain } from 'lucide-react';
+import { MultiAIManager } from '@/components/admin/MultiAIManager';
 
 const AIConfig = () => {
   return (
@@ -13,7 +9,7 @@ const AIConfig = () => {
       <Header />
       
       <div className="pt-16 container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Header Section */}
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-4">
@@ -22,36 +18,17 @@ const AIConfig = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-deep-black">
-                  Configuration IA
+                  Gestion des IA
                 </h1>
                 <p className="text-graphite-600">
-                  Paramètres avancés de Clara - Réservé aux administrateurs
+                  Configurez et gérez toutes vos assistantes IA selon les besoins de vos clients
                 </p>
               </div>
             </div>
           </div>
           
-          {/* Main Configuration Interface */}
-          <Tabs defaultValue="config" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="config" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Configuration
-              </TabsTrigger>
-              <TabsTrigger value="system" className="flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                Système
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="config">
-              <VoiceConfigPanel />
-            </TabsContent>
-
-            <TabsContent value="system">
-              <VoiceSystemPanel />
-            </TabsContent>
-          </Tabs>
+          {/* Multi-AI Manager */}
+          <MultiAIManager />
         </div>
       </div>
     </div>
