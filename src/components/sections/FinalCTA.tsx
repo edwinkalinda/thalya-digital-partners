@@ -44,7 +44,7 @@ const FinalCTA = () => {
               onClick={handleStartOnboarding}
             >
               <div className="flex items-center">
-                Donner Vie à votre IA
+                Commencer maintenant
                 <ArrowRight className="w-6 h-6 ml-3" />
               </div>
             </StarBorder>

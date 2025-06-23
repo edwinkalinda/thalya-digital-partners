@@ -22,6 +22,10 @@ const Hero = () => {
     "Croissance accélérée"
   ];
 
+  const handleStartOnboarding = () => {
+    navigate('/onboarding');
+  };
+
   return (
     <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden pt-16">
       {/* Background elements */}
@@ -89,10 +93,10 @@ const Hero = () => {
               color="#0066FF"
               speed="4s"
               className="transition-all duration-300 hover:scale-105 group shadow-lg shadow-electric-blue/20"
-              onClick={() => navigate('/onboarding')}
+              onClick={handleStartOnboarding}
             >
               <span className="flex items-center gap-3 text-lg font-bold px-6 py-1">
-                Découvrir l'automatisation 
+                Commencer maintenant
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </span>
             </StarBorder>
