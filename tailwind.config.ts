@@ -62,6 +62,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				'electric-blue': 'rgb(37 99 235)',
+				'graphite': {
+					300: 'rgb(203 213 225)',
+					700: 'rgb(51 65 85)'
+				},
+				'emerald': {
+					500: 'rgb(16 185 129)',
+					600: 'rgb(5 150 105)'
 				}
 			},
 			borderRadius: {

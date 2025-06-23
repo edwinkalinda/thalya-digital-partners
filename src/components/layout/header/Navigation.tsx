@@ -55,14 +55,14 @@ const Navigation = () => {
             key={item.id}
             onClick={() => handleAdminNavigation(item.path)}
             variant="ghost"
-            className={`text-graphite-700 hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200 font-medium relative group ${
-              location.pathname === item.path ? 'text-electric-blue bg-electric-blue/10' : ''
+            className={`text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium relative group ${
+              location.pathname === item.path ? 'text-blue-600 bg-blue-50' : ''
             }`}
             aria-label={`Naviguer vers ${item.label}`}
           >
             {item.label}
             <span 
-              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"
+              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-300 group-hover:w-full"
               aria-hidden="true"
             />
           </Button>
@@ -74,12 +74,12 @@ const Navigation = () => {
             key={item.id}
             onClick={() => handleNavigation(item.id)}
             variant="ghost"
-            className="text-graphite-700 hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200 font-medium relative group"
+            className="text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium relative group"
             aria-label={`Naviguer vers ${item.label}`}
           >
             {item.label}
             <span 
-              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-electric-blue to-emerald-500 transition-all duration-300 group-hover:w-full"
+              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-500 transition-all duration-300 group-hover:w-full"
               aria-hidden="true"
             />
           </Button>

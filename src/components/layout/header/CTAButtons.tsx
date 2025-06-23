@@ -42,7 +42,7 @@ const CTAButtons = () => {
             <Button 
               variant="outline" 
               size="sm"
-              className="flex items-center space-x-2 bg-white border-graphite-300 hover:border-electric-blue hover:bg-electric-blue/5 transition-all duration-200"
+              className="flex items-center space-x-2 bg-white border-slate-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
               aria-label={`Menu utilisateur - ${user.email}`}
             >
               <User className="w-4 h-4" />
@@ -53,22 +53,22 @@ const CTAButtons = () => {
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="end" 
-            className="w-56 bg-white border-graphite-200 shadow-lg"
+            className="w-56 bg-white border-slate-200 shadow-lg"
             sideOffset={8}
           >
             {dashboardNavigationItems.map((item) => (
               <DropdownMenuItem
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`cursor-pointer hover:bg-electric-blue/5 focus:bg-electric-blue/10 ${
-                  location.pathname === item.path ? 'bg-electric-blue/10 text-electric-blue' : ''
+                className={`cursor-pointer hover:bg-blue-50 focus:bg-blue-100 ${
+                  location.pathname === item.path ? 'bg-blue-100 text-blue-700' : ''
                 }`}
               >
                 {getIcon(item.icon)}
                 <span className="ml-2">{item.label}</span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator className="bg-graphite-200" />
+            <DropdownMenuSeparator className="bg-slate-200" />
             <DropdownMenuItem 
               onClick={handleSignOut} 
               className="text-red-600 hover:bg-red-50 focus:bg-red-50 cursor-pointer"
@@ -88,14 +88,14 @@ const CTAButtons = () => {
         variant="outline" 
         size="sm"
         onClick={() => navigate('/login')}
-        className="border-graphite-300 text-graphite-700 hover:border-electric-blue hover:text-electric-blue hover:bg-electric-blue/5 transition-all duration-200"
+        className="border-slate-300 text-slate-700 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
       >
         Se connecter
       </Button>
       <Button 
         size="sm"
         onClick={() => navigate('/onboarding')}
-        className="bg-gradient-to-r from-electric-blue to-emerald-500 text-white hover:from-blue-600 hover:to-emerald-600 shadow-md hover:shadow-lg transition-all duration-200"
+        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200"
       >
         Commencer
       </Button>
