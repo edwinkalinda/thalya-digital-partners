@@ -132,15 +132,13 @@ export function VoiceOnboardingDemo() {
               <span>{isRecording ? 'Arrêter' : 'Parler'}</span>
             </Button>
             
-            {currentStep !== 'welcome' && (
-              <Button
-                onClick={endOnboarding}
-                variant="outline"
-                size="sm"
-              >
-                Recommencer
-              </Button>
-            )}
+            <Button
+              onClick={endOnboarding}
+              variant="outline"
+              size="sm"
+            >
+              Recommencer
+            </Button>
           </div>
         )}
 
