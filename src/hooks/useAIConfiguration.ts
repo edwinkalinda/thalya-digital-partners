@@ -1,102 +1,64 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-export interface AIConfiguration {
-  id?: string;
+interface AIConfiguration {
   email: string;
   business_name: string;
   ai_name: string;
   business_type: string;
-  profession?: string;
-  needs?: string;
-  tone?: string;
-  language?: string;
-  use_case?: string;
-  phone_number?: string;
-  status?: string;
-  subscription_tier?: string;
-  trial_expires_at?: string;
+  status: string;
 }
 
 export const useAIConfiguration = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const saveConfiguration = async (config: AIConfiguration) => {
-    setLoading(true);
-    setError(null);
-    
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('ai_configurations')
-        .insert([config])
-        .select()
-        .single();
+        .from('business_profiles')
+        .insert({
+          owner_email: config.email,
+          business_name: config.business_name,
+          business_type: config.business_type,
+          appointment_type: 'Accueil téléphonique',
+          preferred_tone: 'Professionnel',
+          spoken_languages: ['français'],
+          intro_prompt: `IA ${config.business_name} - ${config.business_type}`,
+          working_hours: {
+            "lundi": ["09:00-18:00"],
+            "mardi": ["09:00-18:00"],
+            "mercredi": ["09:00-18:00"],
+            "jeudi": ["09:00-18:00"],
+            "vendredi": ["09:00-18:00"]
+          }
+        });
 
       if (error) throw error;
-      
+
+      toast({
+        title: "Configuration sauvegardée",
+        description: "Votre IA a été configurée avec succès",
+      });
+
       return { success: true, data };
-    } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+      return { success: false, error: error.message };
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const getConfigurationByEmail = async (email: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase
-        .from('ai_configurations')
-        .select('*')
-        .eq('email', email)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      return { success: true, data };
-    } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateConfiguration = async (id: string, updates: Partial<AIConfiguration>) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase
-        .from('ai_configurations')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      return { success: true, data };
-    } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return {
-    loading,
-    error,
     saveConfiguration,
-    getConfigurationByEmail,
-    updateConfiguration
+    isLoading
   };
 };

@@ -7,17 +7,17 @@
 @layer base {
   :root {
     --background: 248 250 252;
-    --foreground: 31 41 55; /* Gris foncé au lieu de slate */
+    --foreground: 17 24 39;
     --card: 255 255 255;
-    --card-foreground: 31 41 55;
+    --card-foreground: 17 24 39;
     --popover: 255 255 255;
-    --popover-foreground: 31 41 55;
+    --popover-foreground: 17 24 39;
     --primary: 37 99 235;
     --primary-foreground: 255 255 255;
     --secondary: 241 245 249;
-    --secondary-foreground: 31 41 55;
+    --secondary-foreground: 17 24 39;
     --muted: 248 250 252;
-    --muted-foreground: 75 85 99; /* Gris moyen */
+    --muted-foreground: 75 85 99;
     --accent: 99 102 241;
     --accent-foreground: 255 255 255;
     --destructive: 239 68 68;
@@ -29,6 +29,15 @@
     --electric-blue: 37 99 235;
     --graphite-700: 51 65 85;
     --emerald-500: 16 185 129;
+    --pure-white: 255 255 255;
+    --deep-black: 17 24 39;
+    --graphite-50: 248 250 252;
+    --graphite-100: 241 245 249;
+    --graphite-200: 226 232 240;
+    --graphite-300: 203 213 225;
+    --graphite-600: 75 85 99;
+    --graphite-800: 31 41 55;
+    --graphite-900: 15 23 42;
   }
 
   .dark {
@@ -62,20 +71,36 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'cv11', 'cv04', 'cv09', 'ss04';
-    color: rgb(31 41 55); /* Force une couleur de texte gris foncé */
+    color: rgb(17 24 39);
   }
 
   html {
     scroll-behavior: smooth;
   }
 
-  /* Styles globaux pour une cohérence visuelle */
   h1, h2, h3, h4, h5, h6 {
-    color: rgb(17 24 39); /* Noir/gris très foncé pour les titres */
+    color: rgb(17 24 39);
+    font-weight: 600;
   }
 
-  p, span, div {
-    color: rgb(55 65 81); /* Gris foncé pour le texte */
+  p, span, div, label, button {
+    color: rgb(55 65 81);
+  }
+
+  .text-gray-900, .text-deep-black {
+    color: rgb(17 24 39) !important;
+  }
+
+  .text-gray-700 {
+    color: rgb(55 65 81) !important;
+  }
+
+  .text-gray-600 {
+    color: rgb(75 85 99) !important;
+  }
+
+  .text-gray-500 {
+    color: rgb(107 114 128) !important;
   }
 }
 
@@ -97,14 +122,6 @@
 
   .shadow-ai-lg {
     box-shadow: 0 20px 25px -5px rgb(37 99 235 / 0.1), 0 8px 10px -6px rgb(37 99 235 / 0.1);
-  }
-
-  .shadow-modern {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  .shadow-modern-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   .hover-lift {
@@ -131,18 +148,5 @@
     border-radius: inherit;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
-  }
-
-  /* Utilitaires pour le texte */
-  .text-dark {
-    color: rgb(17 24 39) !important;
-  }
-
-  .text-medium {
-    color: rgb(55 65 81) !important;
-  }
-
-  .text-muted {
-    color: rgb(107 114 128) !important;
   }
 }
