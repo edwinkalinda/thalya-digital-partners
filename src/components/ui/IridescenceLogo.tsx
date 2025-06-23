@@ -1,4 +1,3 @@
-
 import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
 import { useEffect, useRef } from "react";
 
@@ -40,28 +39,32 @@ void main() {
   }
   d += uTime * 0.5 * uSpeed;
   
-  // Enhanced chromatic effect with more dynamic color shifts
+  // Subtle chromatic effect with muted colors
   vec3 col = vec3(
-    cos(uv.x * d * 2.0) * 0.5 + 0.5,
-    cos(uv.y * a * 1.5) * 0.4 + 0.6,
-    cos((uv.x + uv.y) * (d + a) * 0.8) * 0.3 + 0.7
+    cos(uv.x * d * 1.2) * 0.3 + 0.5,
+    cos(uv.y * a * 1.0) * 0.25 + 0.55,
+    cos((uv.x + uv.y) * (d + a) * 0.6) * 0.2 + 0.6
   );
   
-  // Add iridescent color shifts
-  float phase = sin(d * 0.5) * 0.5 + 0.5;
+  // Add subtle iridescent shifts with muted tones
+  float phase = sin(d * 0.3) * 0.3 + 0.5;
   vec3 iridescent = vec3(
-    0.3 + 0.7 * cos(phase * 6.28 + 0.0),
-    0.3 + 0.7 * cos(phase * 6.28 + 2.09),
-    0.3 + 0.7 * cos(phase * 6.28 + 4.18)
+    0.5 + 0.3 * cos(phase * 6.28 + 0.0),
+    0.5 + 0.25 * cos(phase * 6.28 + 2.09),
+    0.55 + 0.2 * cos(phase * 6.28 + 4.18)
   );
   
-  // Blend with base color and add grey accents
-  col = mix(col * uColor, iridescent, 0.6);
+  // Blend with base color - more subtle mixing
+  col = mix(col * uColor, iridescent, 0.4);
   
-  // Add grey metallic accents
+  // Add more prominent grey metallic accents
   float grey = (col.r + col.g + col.b) * 0.33;
-  vec3 greyAccent = vec3(0.4, 0.45, 0.5);
-  col = mix(col, greyAccent, grey * 0.3);
+  vec3 greyAccent = vec3(0.45, 0.48, 0.52);
+  col = mix(col, greyAccent, grey * 0.5);
+  
+  // Overall desaturation for muted effect
+  float luminance = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(col, vec3(luminance), 0.3);
   
   gl_FragColor = vec4(col, 1.0);
 }
@@ -77,9 +80,9 @@ interface IridescenceLogoProps {
 
 export default function IridescenceLogo({
   size = 80,
-  color = [0.8, 0.9, 1.0], // Shifted to more chromatic blues
-  speed = 2.0, // Increased speed for more dynamic effect
-  amplitude = 0.3, // Increased amplitude
+  color = [0.6, 0.65, 0.75], // More muted grey-blue tones
+  speed = 1.2, // Reduced speed for calmer effect
+  amplitude = 0.2, // Reduced amplitude
   mouseReact = true
 }: IridescenceLogoProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
