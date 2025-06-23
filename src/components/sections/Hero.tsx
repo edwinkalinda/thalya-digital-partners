@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Play, ArrowRight, CheckCircle } from "lucide-react";
@@ -87,20 +86,8 @@ const Hero = () => {
             />
           </div>
           
-          {/* CTA Buttons - Niveau d'action principal */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-            <StarBorder 
-              color="#0066FF"
-              speed="4s"
-              className="transition-all duration-300 hover:scale-105 group shadow-lg shadow-electric-blue/20"
-              onClick={handleStartOnboarding}
-            >
-              <span className="flex items-center gap-3 text-lg font-bold px-6 py-1">
-                Commencer maintenant
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </span>
-            </StarBorder>
-            
+          {/* CTA Button - Seul bouton restant */}
+          <div className="flex justify-center items-center mb-16">
             <Button 
               variant="outline"
               size="lg"

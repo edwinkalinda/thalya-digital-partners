@@ -39,32 +39,32 @@ void main() {
   }
   d += uTime * 0.5 * uSpeed;
   
-  // Balanced chromatic effect - not too vivid, not too grey
+  // Orb-like chromatic effect with blue/purple tones
   vec3 col = vec3(
-    cos(uv.x * d * 1.4) * 0.4 + 0.5,
-    cos(uv.y * a * 1.2) * 0.35 + 0.55,
-    cos((uv.x + uv.y) * (d + a) * 0.8) * 0.3 + 0.65
+    cos(uv.x * d * 1.6) * 0.5 + 0.4,
+    cos(uv.y * a * 1.4) * 0.45 + 0.5,
+    cos((uv.x + uv.y) * (d + a) * 1.2) * 0.6 + 0.7
   );
   
-  // Subtle iridescent shifts with balanced tones
-  float phase = sin(d * 0.4) * 0.4 + 0.5;
+  // Iridescent shifts with orb-like colors
+  float phase = sin(d * 0.5) * 0.5 + 0.5;
   vec3 iridescent = vec3(
-    0.45 + 0.35 * cos(phase * 6.28 + 0.0),
-    0.5 + 0.3 * cos(phase * 6.28 + 2.09),
-    0.55 + 0.25 * cos(phase * 6.28 + 4.18)
+    0.3 + 0.4 * cos(phase * 6.28 + 0.0),
+    0.4 + 0.35 * cos(phase * 6.28 + 2.09),
+    0.7 + 0.3 * cos(phase * 6.28 + 4.18)
   );
   
-  // Balanced blending
-  col = mix(col * uColor, iridescent, 0.5);
+  // Enhanced blending for more vibrant effect
+  col = mix(col * uColor, iridescent, 0.65);
   
-  // Light grey metallic accents
+  // Subtle metallic accents
   float grey = (col.r + col.g + col.b) * 0.33;
-  vec3 greyAccent = vec3(0.5, 0.52, 0.55);
-  col = mix(col, greyAccent, grey * 0.3);
+  vec3 greyAccent = vec3(0.55, 0.57, 0.65);
+  col = mix(col, greyAccent, grey * 0.2);
   
-  // Light desaturation for refined look
+  // Minimal desaturation to keep vibrancy
   float luminance = dot(col, vec3(0.299, 0.587, 0.114));
-  col = mix(col, vec3(luminance), 0.15);
+  col = mix(col, vec3(luminance), 0.08);
   
   gl_FragColor = vec4(col, 1.0);
 }
@@ -80,9 +80,9 @@ interface IridescenceLogoProps {
 
 export default function IridescenceLogo({
   size = 80,
-  color = [0.7, 0.75, 0.85], // Balanced blue-grey tones
-  speed = 1.4, // Moderate speed
-  amplitude = 0.25, // Balanced amplitude
+  color = [0.4, 0.6, 0.9], // Orb-like blue/purple tones
+  speed = 1.6, // Slightly faster like the orb
+  amplitude = 0.3, // More reactive
   mouseReact = true
 }: IridescenceLogoProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
