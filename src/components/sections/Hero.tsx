@@ -1,29 +1,12 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Play, ArrowRight, CheckCircle, Zap } from "lucide-react";
-import DecryptedText from "@/components/ui/DecryptedText";
-import StarBorder from "@/components/ui/StarBorder";
-import TextCycler from "@/components/ui/TextCycler";
+import { Play, ArrowRight, CheckCircle } from "lucide-react";
 
 const Hero = () => {
   const navigate = useNavigate();
 
-  const trustIndicators = [
-    "Configuration en 3 minutes",
-    "Support client 24/7 automatisé", 
-    "ROI mesurable dès J+1"
-  ];
-
-  const specializations = [
-    "Accueil téléphonique",
-    "Prise de rendez-vous",
-    "Service client",
-    "Vente automatisée"
-  ];
-
   const handleStartDemo = () => {
-    // Scroll to demo section
     const demoSection = document.getElementById('demo-section');
     if (demoSection) {
       demoSection.scrollIntoView({ behavior: 'smooth' });
@@ -35,113 +18,63 @@ const Hero = () => {
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden pt-16">
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-pure-white via-graphite-50 to-electric-blue/5"></div>
-      
-      {/* Floating elements */}
-      <div className="absolute top-20 left-10 w-20 h-20 bg-electric-blue/10 rounded-full blur-xl animate-pulse"></div>
-      <div className="absolute bottom-20 right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl animate-pulse animation-delay-1000"></div>
-      
-      <div className="max-w-6xl mx-auto text-center relative z-10">
-        <div className="animate-fade-in">
-          {/* Badge/Tagline */}
-          <div className="inline-flex items-center px-4 py-2 mb-6 bg-electric-blue/10 border border-electric-blue/20 rounded-full text-electric-blue font-medium text-sm">
-            <Zap className="w-4 h-4 mr-2" />
-            IA Conversationnelle Nouvelle Génération
-          </div>
+    <section className="min-h-screen flex items-center justify-center px-6 lg:px-8 pt-20 pb-16 bg-white">
+      <div className="max-w-4xl mx-auto text-center">
+        {/* Main Title */}
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-6 text-gray-900 leading-tight">
+          Votre réceptionniste IA
+          <br />
+          disponible 24h/24
+        </h1>
+        
+        {/* Subtitle */}
+        <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
+          Clara accueille vos clients, prend les rendez-vous et répond aux questions avec la personnalité de votre marque.
+        </p>
+        
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
+          <Button 
+            onClick={handleStartDemo}
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-xl transition-colors duration-200"
+          >
+            <Play className="w-5 h-5 mr-2" />
+            Essayer gratuitement
+          </Button>
           
-          {/* Main Title */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-[0.95]">
-            <DecryptedText 
-              text="Votre réceptionniste IA"
-              animateOn="view"
-              sequential={true}
-              speed={40}
-              revealDirection="center"
-              className="text-deep-black block mb-2"
-              encryptedClassName="text-electric-blue/40"
-            />
-            <DecryptedText 
-              text="disponible 24h/24"
-              animateOn="view"
-              sequential={true}
-              speed={40}
-              revealDirection="center"
-              className="text-gradient block"
-              encryptedClassName="text-electric-blue/40"
-            />
-          </h1>
-          
-          {/* Subtitle */}
-          <div className="mb-8">
-            <p className="text-xl sm:text-2xl lg:text-3xl text-graphite-700 max-w-4xl mx-auto mb-4 font-semibold leading-tight">
-              Clara accueille vos clients, prend les rendez-vous et répond aux questions
-            </p>
-            <p className="text-lg sm:text-xl text-graphite-600 max-w-3xl mx-auto leading-relaxed">
-              Configuration en 3 minutes • Sans installation • Résultats immédiats
-            </p>
+          <Button 
+            onClick={handleStartOnboarding}
+            variant="outline"
+            size="lg"
+            className="border-2 border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600 px-8 py-4 text-lg font-medium rounded-xl transition-colors duration-200"
+          >
+            Configurer mon IA
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
+        
+        {/* Trust indicators */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto mb-16">
+          <div className="flex items-center justify-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="text-gray-600 font-medium">Configuration en 3 minutes</span>
           </div>
-          
-          {/* TextCycler */}
-          <div className="mb-12 p-6 bg-pure-white/60 border border-graphite-200/50 rounded-2xl backdrop-blur-sm max-w-2xl mx-auto">
-            <div className="text-lg text-graphite-600 mb-4 font-medium">Spécialisée en :</div>
-            <TextCycler
-              texts={specializations}
-              className="text-2xl sm:text-3xl text-electric-blue font-bold"
-              interval={1200}
-              splitBy="characters"
-              staggerDuration={30}
-            />
+          <div className="flex items-center justify-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="text-gray-600 font-medium">Support 24/7 automatisé</span>
           </div>
-          
-          {/* CTA Buttons - Flow optimisé */}
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
-            <Button 
-              onClick={handleStartDemo}
-              size="lg"
-              className="bg-gradient-to-r from-electric-blue to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-            >
-              <Play className="w-5 h-5 mr-2 transition-transform group-hover:scale-110" />
-              Essayer gratuitement
-            </Button>
-            
-            <Button 
-              onClick={handleStartOnboarding}
-              variant="outline"
-              size="lg"
-              className="border-2 border-graphite-400 text-graphite-700 hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 group"
-            >
-              Configurer mon IA
-              <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
-            </Button>
+          <div className="flex items-center justify-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="text-gray-600 font-medium">ROI mesurable dès J+1</span>
           </div>
-          
-          {/* Trust indicators */}
-          <div className="mb-16">
-            <p className="text-base text-graphite-600 mb-8 font-semibold">Déjà adopté par 200+ entreprises</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {trustIndicators.map((indicator, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-center sm:justify-start space-x-3 p-5 rounded-xl bg-pure-white/70 border border-graphite-200/60 hover:border-electric-blue/30 hover:bg-electric-blue/5 transition-all duration-300 group shadow-sm"
-                  style={{ animationDelay: `${index * 200}ms` }}
-                >
-                  <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="text-base text-graphite-700 font-medium text-center sm:text-left">
-                    {indicator}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+        </div>
 
-          {/* Social proof */}
-          <div className="text-center">
-            <div className="inline-flex items-center px-6 py-3 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
-              ⭐ 4.9/5 • 200+ avis clients • Déploiement en 24h
-            </div>
-          </div>
+        {/* Social proof */}
+        <div className="text-center">
+          <p className="text-gray-500 text-sm font-medium">
+            Déjà adopté par plus de 200 entreprises
+          </p>
         </div>
       </div>
     </section>
