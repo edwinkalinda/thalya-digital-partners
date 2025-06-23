@@ -40,82 +40,82 @@ export const VoiceSystemPanel = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-gray-200">
+        <CardHeader className="flex flex-row items-center justify-between bg-white">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
             <Activity className="w-5 h-5" />
             Statut du Système
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={refreshStatus}>
+          <Button variant="outline" size="sm" onClick={refreshStatus} className="border-gray-300">
             <RefreshCw className="w-4 h-4" />
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-white">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${getStatusColor(systemStatus.openai)}`} />
-              <span className="text-sm font-medium">OpenAI</span>
+              <span className="text-sm font-medium text-gray-700">OpenAI</span>
             </div>
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${getStatusColor(systemStatus.elevenlabs)}`} />
-              <span className="text-sm font-medium">ElevenLabs</span>
+              <span className="text-sm font-medium text-gray-700">ElevenLabs</span>
             </div>
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${getStatusColor(systemStatus.twilio)}`} />
-              <span className="text-sm font-medium">Twilio</span>
+              <span className="text-sm font-medium text-gray-700">Twilio</span>
             </div>
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${getStatusColor(systemStatus.gemini)}`} />
-              <span className="text-sm font-medium">Gemini</span>
+              <span className="text-sm font-medium text-gray-700">Gemini</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
+        <Card className="border-gray-200">
+          <CardContent className="p-4 bg-white">
             <div className="flex items-center gap-2">
-              <Phone className="w-5 h-5 text-blue-500" />
+              <Phone className="w-5 h-5 text-gray-700" />
               <div>
                 <p className="text-sm text-gray-600">Connexions actives</p>
-                <p className="text-2xl font-bold">{stats.activeConnections}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.activeConnections}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="border-gray-200">
+          <CardContent className="p-4 bg-white">
             <div className="flex items-center gap-2">
-              <Mic className="w-5 h-5 text-green-500" />
+              <Mic className="w-5 h-5 text-gray-700" />
               <div>
                 <p className="text-sm text-gray-600">Appels total</p>
-                <p className="text-2xl font-bold">{stats.totalCalls}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalCalls}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="border-gray-200">
+          <CardContent className="p-4 bg-white">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-purple-500" />
+              <Activity className="w-5 h-5 text-gray-700" />
               <div>
                 <p className="text-sm text-gray-600">Latence moy.</p>
-                <p className="text-2xl font-bold">{stats.avgLatency}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.avgLatency}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
+        <Card className="border-gray-200">
+          <CardContent className="p-4 bg-white">
             <div className="flex items-center gap-2">
-              <Server className="w-5 h-5 text-orange-500" />
+              <Server className="w-5 h-5 text-gray-700" />
               <div>
                 <p className="text-sm text-gray-600">Uptime</p>
-                <p className="text-2xl font-bold">{stats.uptime}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.uptime}</p>
               </div>
             </div>
           </CardContent>

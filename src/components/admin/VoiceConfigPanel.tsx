@@ -41,26 +41,27 @@ export const VoiceConfigPanel = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-gray-200">
+        <CardHeader className="bg-white">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
             <Settings className="w-5 h-5" />
             Configuration de l'IA
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 bg-white">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Nom de l'IA</Label>
+              <Label className="text-gray-700">Nom de l'IA</Label>
               <Input
                 value={config.aiName}
                 onChange={(e) => setConfig({ ...config, aiName: e.target.value })}
+                className="border-gray-300"
               />
             </div>
             <div>
-              <Label>Langue</Label>
+              <Label className="text-gray-700">Langue</Label>
               <Select value={config.language} onValueChange={(value) => setConfig({ ...config, language: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -73,9 +74,9 @@ export const VoiceConfigPanel = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Personnalité</Label>
+              <Label className="text-gray-700">Personnalité</Label>
               <Select value={config.personality} onValueChange={(value) => setConfig({ ...config, personality: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -86,9 +87,9 @@ export const VoiceConfigPanel = () => {
               </Select>
             </div>
             <div>
-              <Label>Ton</Label>
+              <Label className="text-gray-700">Ton</Label>
               <Select value={config.tone} onValueChange={(value) => setConfig({ ...config, tone: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -101,21 +102,21 @@ export const VoiceConfigPanel = () => {
           </div>
 
           <div>
-            <Label>Template de prompt</Label>
+            <Label className="text-gray-700">Template de prompt</Label>
             <Textarea
               value={config.promptTemplate}
               onChange={(e) => setConfig({ ...config, promptTemplate: e.target.value })}
               rows={4}
-              className="font-mono text-sm"
+              className="font-mono text-sm border-gray-300"
             />
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={handleSave} className="flex items-center gap-2">
+            <Button onClick={handleSave} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700">
               <Save className="w-4 h-4" />
               Sauvegarder
             </Button>
-            <Button onClick={handleTest} variant="outline" className="flex items-center gap-2">
+            <Button onClick={handleTest} variant="outline" className="flex items-center gap-2 border-gray-300">
               <TestTube className="w-4 h-4" />
               Tester
             </Button>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Brain, Plus, Settings, Trash2, Copy, Building } from 'lucide-react';
+import { Settings, Plus, Edit, Trash2, Copy, Building } from 'lucide-react';
 import { BusinessManager } from './BusinessManager';
 import { AIConfig, Business } from '@/types/ai-config';
 
@@ -205,7 +206,7 @@ export const MultiAIManager = () => {
         <Button 
           onClick={() => setShowBusinessManager(!showBusinessManager)}
           variant="outline"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 border-gray-300"
         >
           <Building className="w-4 h-4" />
           {showBusinessManager ? 'Masquer' : 'Gérer'} les Businesses
@@ -218,36 +219,36 @@ export const MultiAIManager = () => {
       )}
 
       {/* Liste des IA */}
-      <Card>
-        <CardHeader>
+      <Card className="border-gray-200">
+        <CardHeader className="bg-white">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5" />
-              Mes IA Configurées ({aiConfigs.length})
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <Settings className="w-5 h-5" />
+              IA Configurées ({aiConfigs.length})
             </CardTitle>
             <Button 
               onClick={() => setIsCreating(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700"
             >
               <Plus className="w-4 h-4" />
               Nouvelle IA
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {aiConfigs.map((config) => (
               <div
                 key={config.id}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   selectedAI === config.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-gray-800 bg-gray-50' 
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
                 onClick={() => setSelectedAI(config.id)}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-lg">{config.name}</h3>
+                  <h3 className="font-semibold text-lg text-gray-900">{config.name}</h3>
                   <div className="flex gap-1">
                     <Button
                       size="sm"
@@ -256,6 +257,7 @@ export const MultiAIManager = () => {
                         e.stopPropagation();
                         handleDuplicateAI(config.id);
                       }}
+                      className="hover:bg-gray-100"
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -266,19 +268,20 @@ export const MultiAIManager = () => {
                         e.stopPropagation();
                         handleDeleteAI(config.id);
                       }}
+                      className="hover:bg-red-50 hover:text-red-600"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-blue-600 mb-1">{config.businessName}</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{config.businessName}</p>
                 <p className="text-sm text-gray-600 mb-1">{config.businessType}</p>
                 <p className="text-xs text-gray-500">
                   {config.personality} • {config.tone}
                 </p>
                 <div className="flex items-center justify-between mt-2">
                   <span className={`text-xs px-2 py-1 rounded ${
-                    config.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    config.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                   }`}>
                     {config.isActive ? 'Active' : 'Inactive'}
                   </span>
@@ -294,27 +297,28 @@ export const MultiAIManager = () => {
 
       {/* Formulaire de création */}
       {isCreating && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Créer une nouvelle IA</CardTitle>
+        <Card className="border-gray-200">
+          <CardHeader className="bg-white">
+            <CardTitle className="text-gray-900">Créer une nouvelle IA</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-white">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Prénom de l'IA *</Label>
+                <Label className="text-gray-700">Prénom de l'IA *</Label>
                 <Input
                   value={newConfig.name || ''}
                   onChange={(e) => setNewConfig({ ...newConfig, name: e.target.value })}
                   placeholder="Ex: Clara, Sophie, Marie..."
+                  className="border-gray-300"
                 />
               </div>
               <div>
-                <Label>Business associé *</Label>
+                <Label className="text-gray-700">Business associé *</Label>
                 <Select 
                   value={newConfig.businessId || ''} 
                   onValueChange={handleBusinessChange}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue placeholder="Sélectionnez un business" />
                   </SelectTrigger>
                   <SelectContent>
@@ -330,9 +334,9 @@ export const MultiAIManager = () => {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label>Personnalité</Label>
+                <Label className="text-gray-700">Personnalité</Label>
                 <Select value={newConfig.personality || 'professional'} onValueChange={(value) => setNewConfig({ ...newConfig, personality: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -343,9 +347,9 @@ export const MultiAIManager = () => {
                 </Select>
               </div>
               <div>
-                <Label>Ton</Label>
+                <Label className="text-gray-700">Ton</Label>
                 <Select value={newConfig.tone || 'friendly'} onValueChange={(value) => setNewConfig({ ...newConfig, tone: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -356,9 +360,9 @@ export const MultiAIManager = () => {
                 </Select>
               </div>
               <div>
-                <Label>Langue</Label>
+                <Label className="text-gray-700">Langue</Label>
                 <Select value={newConfig.language || 'fr'} onValueChange={(value) => setNewConfig({ ...newConfig, language: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -370,18 +374,19 @@ export const MultiAIManager = () => {
             </div>
 
             <div>
-              <Label>Prompt personnalisé (optionnel)</Label>
+              <Label className="text-gray-700">Prompt personnalisé (optionnel)</Label>
               <Textarea
                 value={newConfig.promptTemplate || ''}
                 onChange={(e) => setNewConfig({ ...newConfig, promptTemplate: e.target.value })}
                 placeholder="Définissez le comportement spécifique de cette IA..."
                 rows={3}
+                className="border-gray-300"
               />
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleCreateAI}>Créer l'IA</Button>
-              <Button variant="outline" onClick={() => setIsCreating(false)}>Annuler</Button>
+              <Button onClick={handleCreateAI} className="bg-gray-800 hover:bg-gray-700">Créer l'IA</Button>
+              <Button variant="outline" onClick={() => setIsCreating(false)} className="border-gray-300">Annuler</Button>
             </div>
           </CardContent>
         </Card>
@@ -441,26 +446,27 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="w-5 h-5" />
+    <Card className="border-gray-200">
+      <CardHeader className="bg-white">
+        <CardTitle className="flex items-center gap-2 text-gray-900">
+          <Edit className="w-5 h-5" />
           Configuration de {editedConfig.name} - {editedConfig.businessName}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 bg-white">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Prénom de l'IA</Label>
+            <Label className="text-gray-700">Prénom de l'IA</Label>
             <Input
               value={editedConfig.name}
               onChange={(e) => setEditedConfig({ ...editedConfig, name: e.target.value })}
+              className="border-gray-300"
             />
           </div>
           <div>
-            <Label>Business associé</Label>
+            <Label className="text-gray-700">Business associé</Label>
             <Select value={editedConfig.businessId} onValueChange={handleBusinessChange}>
-              <SelectTrigger>
+              <SelectTrigger className="border-gray-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -476,9 +482,9 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label>Personnalité</Label>
+            <Label className="text-gray-700">Personnalité</Label>
             <Select value={editedConfig.personality} onValueChange={(value) => setEditedConfig({ ...editedConfig, personality: value })}>
-              <SelectTrigger>
+              <SelectTrigger className="border-gray-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -489,9 +495,9 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
             </Select>
           </div>
           <div>
-            <Label>Ton</Label>
+            <Label className="text-gray-700">Ton</Label>
             <Select value={editedConfig.tone} onValueChange={(value) => setEditedConfig({ ...editedConfig, tone: value })}>
-              <SelectTrigger>
+              <SelectTrigger className="border-gray-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -502,9 +508,9 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
             </Select>
           </div>
           <div>
-            <Label>Langue</Label>
+            <Label className="text-gray-700">Langue</Label>
             <Select value={editedConfig.language} onValueChange={(value) => setEditedConfig({ ...editedConfig, language: value })}>
-              <SelectTrigger>
+              <SelectTrigger className="border-gray-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -516,20 +522,20 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
         </div>
 
         <div>
-          <Label>Template de prompt</Label>
+          <Label className="text-gray-700">Template de prompt</Label>
           <Textarea
             value={editedConfig.promptTemplate}
             onChange={(e) => setEditedConfig({ ...editedConfig, promptTemplate: e.target.value })}
             rows={4}
-            className="font-mono text-sm"
+            className="font-mono text-sm border-gray-300"
           />
         </div>
 
         <div>
-          <Label className="text-base font-semibold">Paramètres vocaux</Label>
+          <Label className="text-base font-semibold text-gray-700">Paramètres vocaux</Label>
           <div className="grid grid-cols-3 gap-4 mt-2">
             <div>
-              <Label className="text-sm">Vitesse</Label>
+              <Label className="text-sm text-gray-600">Vitesse</Label>
               <Input
                 type="number"
                 step="0.1"
@@ -540,10 +546,11 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
                   ...editedConfig,
                   voiceSettings: { ...editedConfig.voiceSettings, speed: e.target.value }
                 })}
+                className="border-gray-300"
               />
             </div>
             <div>
-              <Label className="text-sm">Hauteur</Label>
+              <Label className="text-sm text-gray-600">Hauteur</Label>
               <Input
                 type="number"
                 step="1"
@@ -554,10 +561,11 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
                   ...editedConfig,
                   voiceSettings: { ...editedConfig.voiceSettings, pitch: e.target.value }
                 })}
+                className="border-gray-300"
               />
             </div>
             <div>
-              <Label className="text-sm">Stabilité</Label>
+              <Label className="text-sm text-gray-600">Stabilité</Label>
               <Input
                 type="number"
                 step="0.1"
@@ -568,6 +576,7 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
                   ...editedConfig,
                   voiceSettings: { ...editedConfig.voiceSettings, stability: e.target.value }
                 })}
+                className="border-gray-300"
               />
             </div>
           </div>
@@ -579,19 +588,19 @@ const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: 
               type="checkbox"
               checked={editedConfig.isActive}
               onChange={(e) => setEditedConfig({ ...editedConfig, isActive: e.target.checked })}
-              className="rounded"
+              className="rounded border-gray-300"
             />
-            <span className="text-sm">IA active</span>
+            <span className="text-sm text-gray-700">IA active</span>
           </label>
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleSave} className="flex items-center gap-2">
+          <Button onClick={handleSave} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700">
             <Settings className="w-4 h-4" />
             Sauvegarder
           </Button>
-          <Button onClick={handleTest} variant="outline" className="flex items-center gap-2">
-            <Brain className="w-4 h-4" />
+          <Button onClick={handleTest} variant="outline" className="flex items-center gap-2 border-gray-300">
+            <Edit className="w-4 h-4" />
             Tester
           </Button>
         </div>

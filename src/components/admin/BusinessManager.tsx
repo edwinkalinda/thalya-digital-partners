@@ -126,37 +126,38 @@ export const BusinessManager = ({ onBusinessesChange }: BusinessManagerProps) =>
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-gray-200">
+      <CardHeader className="bg-white">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-gray-900">
             <Building className="w-5 h-5" />
-            Mes Businesses ({businesses.length})
+            Businesses ({businesses.length})
           </CardTitle>
           <Button 
             onClick={() => setIsCreating(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700"
           >
             <Plus className="w-4 h-4" />
             Nouveau Business
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="bg-white">
         {/* Liste des businesses */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {businesses.map((business) => (
             <div
               key={business.id}
-              className="p-4 border-2 rounded-lg border-gray-200 hover:border-gray-300 transition-all"
+              className="p-4 border-2 rounded-lg border-gray-200 hover:border-gray-300 transition-all bg-white"
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-lg">{business.name}</h3>
+                <h3 className="font-semibold text-lg text-gray-900">{business.name}</h3>
                 <div className="flex gap-1">
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => setEditingBusiness(business)}
+                    className="hover:bg-gray-100"
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
@@ -164,6 +165,7 @@ export const BusinessManager = ({ onBusinessesChange }: BusinessManagerProps) =>
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDeleteBusiness(business.id)}
+                    className="hover:bg-red-50 hover:text-red-600"
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -185,22 +187,23 @@ export const BusinessManager = ({ onBusinessesChange }: BusinessManagerProps) =>
 
         {/* Formulaire de création */}
         {isCreating && (
-          <div className="border-t pt-6">
-            <h4 className="font-semibold mb-4">Créer un nouveau business</h4>
+          <div className="border-t pt-6 border-gray-200">
+            <h4 className="font-semibold mb-4 text-gray-900">Créer un nouveau business</h4>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Nom du business *</Label>
+                  <Label className="text-gray-700">Nom du business *</Label>
                   <Input
                     value={newBusiness.name || ''}
                     onChange={(e) => setNewBusiness({ ...newBusiness, name: e.target.value })}
                     placeholder="Ex: Restaurant Le Gourmet"
+                    className="border-gray-300"
                   />
                 </div>
                 <div>
-                  <Label>Type de business *</Label>
+                  <Label className="text-gray-700">Type de business *</Label>
                   <Select value={newBusiness.type || ''} onValueChange={(value) => setNewBusiness({ ...newBusiness, type: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-300">
                       <SelectValue placeholder="Sélectionnez le type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -213,36 +216,39 @@ export const BusinessManager = ({ onBusinessesChange }: BusinessManagerProps) =>
               </div>
 
               <div>
-                <Label>Adresse</Label>
+                <Label className="text-gray-700">Adresse</Label>
                 <Input
                   value={newBusiness.address || ''}
                   onChange={(e) => setNewBusiness({ ...newBusiness, address: e.target.value })}
                   placeholder="123 Rue de la Paix, Paris"
+                  className="border-gray-300"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Téléphone</Label>
+                  <Label className="text-gray-700">Téléphone</Label>
                   <Input
                     value={newBusiness.phone || ''}
                     onChange={(e) => setNewBusiness({ ...newBusiness, phone: e.target.value })}
                     placeholder="+33 1 23 45 67 89"
+                    className="border-gray-300"
                   />
                 </div>
                 <div>
-                  <Label>Email</Label>
+                  <Label className="text-gray-700">Email</Label>
                   <Input
                     value={newBusiness.email || ''}
                     onChange={(e) => setNewBusiness({ ...newBusiness, email: e.target.value })}
                     placeholder="contact@business.fr"
+                    className="border-gray-300"
                   />
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleCreateBusiness}>Créer le Business</Button>
-                <Button variant="outline" onClick={() => setIsCreating(false)}>Annuler</Button>
+                <Button onClick={handleCreateBusiness} className="bg-gray-800 hover:bg-gray-700">Créer le Business</Button>
+                <Button variant="outline" onClick={() => setIsCreating(false)} className="border-gray-300">Annuler</Button>
               </div>
             </div>
           </div>
@@ -250,21 +256,22 @@ export const BusinessManager = ({ onBusinessesChange }: BusinessManagerProps) =>
 
         {/* Formulaire d'édition */}
         {editingBusiness && (
-          <div className="border-t pt-6">
-            <h4 className="font-semibold mb-4">Modifier {editingBusiness.name}</h4>
+          <div className="border-t pt-6 border-gray-200">
+            <h4 className="font-semibold mb-4 text-gray-900">Modifier {editingBusiness.name}</h4>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Nom du business</Label>
+                  <Label className="text-gray-700">Nom du business</Label>
                   <Input
                     value={editingBusiness.name}
                     onChange={(e) => setEditingBusiness({ ...editingBusiness, name: e.target.value })}
+                    className="border-gray-300"
                   />
                 </div>
                 <div>
-                  <Label>Type de business</Label>
+                  <Label className="text-gray-700">Type de business</Label>
                   <Select value={editingBusiness.type} onValueChange={(value) => setEditingBusiness({ ...editingBusiness, type: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-300">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -277,33 +284,36 @@ export const BusinessManager = ({ onBusinessesChange }: BusinessManagerProps) =>
               </div>
 
               <div>
-                <Label>Adresse</Label>
+                <Label className="text-gray-700">Adresse</Label>
                 <Input
                   value={editingBusiness.address || ''}
                   onChange={(e) => setEditingBusiness({ ...editingBusiness, address: e.target.value })}
+                  className="border-gray-300"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Téléphone</Label>
+                  <Label className="text-gray-700">Téléphone</Label>
                   <Input
                     value={editingBusiness.phone || ''}
                     onChange={(e) => setEditingBusiness({ ...editingBusiness, phone: e.target.value })}
+                    className="border-gray-300"
                   />
                 </div>
                 <div>
-                  <Label>Email</Label>
+                  <Label className="text-gray-700">Email</Label>
                   <Input
                     value={editingBusiness.email || ''}
                     onChange={(e) => setEditingBusiness({ ...editingBusiness, email: e.target.value })}
+                    className="border-gray-300"
                   />
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={() => handleUpdateBusiness(editingBusiness)}>Sauvegarder</Button>
-                <Button variant="outline" onClick={() => setEditingBusiness(null)}>Annuler</Button>
+                <Button onClick={() => handleUpdateBusiness(editingBusiness)} className="bg-gray-800 hover:bg-gray-700">Sauvegarder</Button>
+                <Button variant="outline" onClick={() => setEditingBusiness(null)} className="border-gray-300">Annuler</Button>
               </div>
             </div>
           </div>
