@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,11 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Brain, Plus, Settings, Trash2, Copy } from 'lucide-react';
+import { Brain, Plus, Settings, Trash2, Copy, Building } from 'lucide-react';
+import { BusinessManager } from './BusinessManager';
+import { AIConfig, Business } from '@/types/ai-config';
 
 interface AIConfig {
   id: string;
   name: string;
+  businessId: string;
+  businessName: string;
   businessType: string;
   personality: string;
   tone: string;
@@ -30,11 +33,15 @@ interface AIConfig {
 export const MultiAIManager = () => {
   const { toast } = useToast();
   const [aiConfigs, setAiConfigs] = useState<AIConfig[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [selectedAI, setSelectedAI] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [showBusinessManager, setShowBusinessManager] = useState(false);
   
   const [newConfig, setNewConfig] = useState<Partial<AIConfig>>({
     name: '',
+    businessId: '',
+    businessName: '',
     businessType: '',
     personality: 'professional',
     tone: 'friendly',
@@ -54,11 +61,13 @@ export const MultiAIManager = () => {
       {
         id: '1',
         name: 'Clara',
+        businessId: '1',
+        businessName: 'Restaurant Le Gourmet',
         businessType: 'Restaurant',
         personality: 'professional',
         tone: 'friendly',
         language: 'fr',
-        promptTemplate: 'Vous êtes Clara, une assistante IA spécialisée dans les réservations de restaurant...',
+        promptTemplate: 'Vous êtes Clara, une assistante IA spécialisée dans les réservations pour Restaurant Le Gourmet...',
         voiceSettings: { speed: '1.0', pitch: '0', stability: '0.5' },
         isActive: true,
         createdAt: '2024-01-15',
@@ -67,11 +76,13 @@ export const MultiAIManager = () => {
       {
         id: '2',
         name: 'Sophie',
+        businessId: '2',
+        businessName: 'Clinique Saint-Louis',
         businessType: 'Clinique',
         personality: 'calm',
         tone: 'reassuring',
         language: 'fr',
-        promptTemplate: 'Vous êtes Sophie, une assistante IA médicale pour prendre des rendez-vous...',
+        promptTemplate: 'Vous êtes Sophie, une assistante IA médicale pour la Clinique Saint-Louis...',
         voiceSettings: { speed: '0.9', pitch: '-2', stability: '0.7' },
         isActive: true,
         createdAt: '2024-01-10',
@@ -81,11 +92,6 @@ export const MultiAIManager = () => {
     setAiConfigs(mockConfigs);
     setSelectedAI(mockConfigs[0]?.id || null);
   }, []);
-
-  const businessTypes = [
-    'Restaurant', 'Clinique', 'Dentiste', 'Hôtel', 'Hôpital', 
-    'Immobilier', 'Salon de coiffure', 'SPA', 'Garage', 'Autre'
-  ];
 
   const personalities = [
     { value: 'professional', label: 'Professionnelle' },
@@ -103,11 +109,23 @@ export const MultiAIManager = () => {
     { value: 'confident', label: 'Confiant' }
   ];
 
+  const handleBusinessChange = (selectedBusinessId: string) => {
+    const selectedBusiness = businesses.find(b => b.id === selectedBusinessId);
+    if (selectedBusiness) {
+      setNewConfig({
+        ...newConfig,
+        businessId: selectedBusiness.id,
+        businessName: selectedBusiness.name,
+        businessType: selectedBusiness.type
+      });
+    }
+  };
+
   const handleCreateAI = () => {
-    if (!newConfig.name || !newConfig.businessType) {
+    if (!newConfig.name || !newConfig.businessId) {
       toast({
         title: "Champs requis",
-        description: "Veuillez remplir le nom et le type de business",
+        description: "Veuillez remplir le nom de l'IA et sélectionner un business",
         variant: "destructive"
       });
       return;
@@ -116,11 +134,13 @@ export const MultiAIManager = () => {
     const config: AIConfig = {
       id: Date.now().toString(),
       name: newConfig.name!,
+      businessId: newConfig.businessId!,
+      businessName: newConfig.businessName!,
       businessType: newConfig.businessType!,
       personality: newConfig.personality || 'professional',
       tone: newConfig.tone || 'friendly',
       language: newConfig.language || 'fr',
-      promptTemplate: newConfig.promptTemplate || `Vous êtes ${newConfig.name}, une assistante IA pour ${newConfig.businessType}...`,
+      promptTemplate: newConfig.promptTemplate || `Vous êtes ${newConfig.name}, une assistante IA pour ${newConfig.businessName}...`,
       voiceSettings: newConfig.voiceSettings || { speed: '1.0', pitch: '0', stability: '0.5' },
       isActive: true,
       createdAt: new Date().toISOString().split('T')[0],
@@ -132,6 +152,8 @@ export const MultiAIManager = () => {
     setIsCreating(false);
     setNewConfig({
       name: '',
+      businessId: '',
+      businessName: '',
       businessType: '',
       personality: 'professional',
       tone: 'friendly',
@@ -143,7 +165,7 @@ export const MultiAIManager = () => {
 
     toast({
       title: "IA créée",
-      description: `${config.name} a été configurée avec succès`,
+      description: `${config.name} a été configurée pour ${config.businessName}`,
     });
   };
 
@@ -198,6 +220,23 @@ export const MultiAIManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Bouton pour gérer les businesses */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={() => setShowBusinessManager(!showBusinessManager)}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Building className="w-4 h-4" />
+          {showBusinessManager ? 'Masquer' : 'Gérer'} les Businesses
+        </Button>
+      </div>
+
+      {/* Gestionnaire de businesses */}
+      {showBusinessManager && (
+        <BusinessManager onBusinessesChange={setBusinesses} />
+      )}
+
       {/* Liste des IA */}
       <Card>
         <CardHeader>
@@ -252,6 +291,7 @@ export const MultiAIManager = () => {
                     </Button>
                   </div>
                 </div>
+                <p className="text-sm font-medium text-blue-600 mb-1">{config.businessName}</p>
                 <p className="text-sm text-gray-600 mb-1">{config.businessType}</p>
                 <p className="text-xs text-gray-500">
                   {config.personality} • {config.tone}
@@ -289,14 +329,19 @@ export const MultiAIManager = () => {
                 />
               </div>
               <div>
-                <Label>Type de business *</Label>
-                <Select value={newConfig.businessType || ''} onValueChange={(value) => setNewConfig({ ...newConfig, businessType: value })}>
+                <Label>Business associé *</Label>
+                <Select 
+                  value={newConfig.businessId || ''} 
+                  onValueChange={handleBusinessChange}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez le type" />
+                    <SelectValue placeholder="Sélectionnez un business" />
                   </SelectTrigger>
                   <SelectContent>
-                    {businessTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    {businesses.map(business => (
+                      <SelectItem key={business.id} value={business.id}>
+                        {business.name} ({business.type})
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -366,8 +411,8 @@ export const MultiAIManager = () => {
       {selectedConfig && (
         <AIConfigEditor 
           config={selectedConfig} 
+          businesses={businesses}
           onUpdate={handleUpdateConfig}
-          businessTypes={businessTypes}
           personalities={personalities}
           tones={tones}
         />
@@ -378,19 +423,31 @@ export const MultiAIManager = () => {
 
 interface AIConfigEditorProps {
   config: AIConfig;
+  businesses: Business[];
   onUpdate: (config: AIConfig) => void;
-  businessTypes: string[];
   personalities: { value: string; label: string }[];
   tones: { value: string; label: string }[];
 }
 
-const AIConfigEditor = ({ config, onUpdate, businessTypes, personalities, tones }: AIConfigEditorProps) => {
+const AIConfigEditor = ({ config, businesses, onUpdate, personalities, tones }: AIConfigEditorProps) => {
   const { toast } = useToast();
   const [editedConfig, setEditedConfig] = useState<AIConfig>(config);
 
   useEffect(() => {
     setEditedConfig(config);
   }, [config]);
+
+  const handleBusinessChange = (selectedBusinessId: string) => {
+    const selectedBusiness = businesses.find(b => b.id === selectedBusinessId);
+    if (selectedBusiness) {
+      setEditedConfig({
+        ...editedConfig,
+        businessId: selectedBusiness.id,
+        businessName: selectedBusiness.name,
+        businessType: selectedBusiness.type
+      });
+    }
+  };
 
   const handleSave = () => {
     onUpdate(editedConfig);
@@ -399,7 +456,7 @@ const AIConfigEditor = ({ config, onUpdate, businessTypes, personalities, tones 
   const handleTest = () => {
     toast({
       title: "Test lancé",
-      description: `${editedConfig.name} va répondre avec les nouveaux paramètres`,
+      description: `${editedConfig.name} va répondre avec les nouveaux paramètres pour ${editedConfig.businessName}`,
     });
   };
 
@@ -408,7 +465,7 @@ const AIConfigEditor = ({ config, onUpdate, businessTypes, personalities, tones 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="w-5 h-5" />
-          Configuration de {editedConfig.name}
+          Configuration de {editedConfig.name} - {editedConfig.businessName}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -421,14 +478,16 @@ const AIConfigEditor = ({ config, onUpdate, businessTypes, personalities, tones 
             />
           </div>
           <div>
-            <Label>Type de business</Label>
-            <Select value={editedConfig.businessType} onValueChange={(value) => setEditedConfig({ ...editedConfig, businessType: value })}>
+            <Label>Business associé</Label>
+            <Select value={editedConfig.businessId} onValueChange={handleBusinessChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {businessTypes.map(type => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                {businesses.map(business => (
+                  <SelectItem key={business.id} value={business.id}>
+                    {business.name} ({business.type})
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
