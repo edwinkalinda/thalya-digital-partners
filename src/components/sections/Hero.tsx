@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Play, ArrowRight, CheckCircle } from "lucide-react";
+import { Play, ArrowRight, CheckCircle, Zap } from "lucide-react";
 import DecryptedText from "@/components/ui/DecryptedText";
 import StarBorder from "@/components/ui/StarBorder";
 import TextCycler from "@/components/ui/TextCycler";
@@ -9,17 +10,25 @@ const Hero = () => {
   const navigate = useNavigate();
 
   const trustIndicators = [
-    "Gestion de stocks optimisée",
+    "Configuration en 3 minutes",
     "Support client 24/7 automatisé", 
-    "Processus métier fluidifiés"
+    "ROI mesurable dès J+1"
   ];
 
   const specializations = [
-    "Automatisation intelligente",
-    "IA conversationnelle",
-    "Optimisation des processus",
-    "Croissance accélérée"
+    "Accueil téléphonique",
+    "Prise de rendez-vous",
+    "Service client",
+    "Vente automatisée"
   ];
+
+  const handleStartDemo = () => {
+    // Scroll to demo section
+    const demoSection = document.getElementById('demo-section');
+    if (demoSection) {
+      demoSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleStartOnboarding = () => {
     navigate('/onboarding');
@@ -36,16 +45,16 @@ const Hero = () => {
       
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <div className="animate-fade-in">
-          {/* Badge/Tagline - Level 4 */}
+          {/* Badge/Tagline */}
           <div className="inline-flex items-center px-4 py-2 mb-6 bg-electric-blue/10 border border-electric-blue/20 rounded-full text-electric-blue font-medium text-sm">
-            <span className="w-2 h-2 bg-electric-blue rounded-full mr-2 animate-pulse"></span>
-            Votre Partenaire en Automatisation Intelligente
+            <Zap className="w-4 h-4 mr-2" />
+            IA Conversationnelle Nouvelle Génération
           </div>
           
-          {/* Main Title - Level 1 (Primaire) */}
+          {/* Main Title */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-[0.95]">
             <DecryptedText 
-              text="Automatisez votre business,"
+              text="Votre réceptionniste IA"
               animateOn="view"
               sequential={true}
               speed={40}
@@ -54,7 +63,7 @@ const Hero = () => {
               encryptedClassName="text-electric-blue/40"
             />
             <DecryptedText 
-              text="libérez votre potentiel"
+              text="disponible 24h/24"
               animateOn="view"
               sequential={true}
               speed={40}
@@ -64,19 +73,19 @@ const Hero = () => {
             />
           </h1>
           
-          {/* Subtitle - Level 2 (Secondaire) */}
+          {/* Subtitle */}
           <div className="mb-8">
             <p className="text-xl sm:text-2xl lg:text-3xl text-graphite-700 max-w-4xl mx-auto mb-4 font-semibold leading-tight">
-              Thalya révolutionne votre entreprise grâce à l'IA
+              Clara accueille vos clients, prend les rendez-vous et répond aux questions
             </p>
             <p className="text-lg sm:text-xl text-graphite-600 max-w-3xl mx-auto leading-relaxed">
-              Automatisation des stocks, relation client optimisée, processus fluidifiés pour une efficacité et une croissance sans précédent.
+              Configuration en 3 minutes • Sans installation • Résultats immédiats
             </p>
           </div>
           
-          {/* TextCycler - Level 3 (Tertiaire) */}
+          {/* TextCycler */}
           <div className="mb-12 p-6 bg-pure-white/60 border border-graphite-200/50 rounded-2xl backdrop-blur-sm max-w-2xl mx-auto">
-            <div className="text-lg text-graphite-600 mb-4 font-medium">Spécialisé en :</div>
+            <div className="text-lg text-graphite-600 mb-4 font-medium">Spécialisée en :</div>
             <TextCycler
               texts={specializations}
               className="text-2xl sm:text-3xl text-electric-blue font-bold"
@@ -86,21 +95,31 @@ const Hero = () => {
             />
           </div>
           
-          {/* CTA Button - Seul bouton restant */}
-          <div className="flex justify-center items-center mb-16">
+          {/* CTA Buttons - Flow optimisé */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
             <Button 
-              variant="outline"
+              onClick={handleStartDemo}
               size="lg"
-              className="border-2 border-graphite-400 text-graphite-700 hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-electric-blue/10 group"
+              className="bg-gradient-to-r from-electric-blue to-emerald-500 hover:from-blue-600 hover:to-emerald-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
             >
               <Play className="w-5 h-5 mr-2 transition-transform group-hover:scale-110" />
-              Voir les cas d'usage
+              Essayer gratuitement
+            </Button>
+            
+            <Button 
+              onClick={handleStartOnboarding}
+              variant="outline"
+              size="lg"
+              className="border-2 border-graphite-400 text-graphite-700 hover:bg-graphite-50 hover:border-electric-blue/50 hover:text-electric-blue px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 group"
+            >
+              Configurer mon IA
+              <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
             </Button>
           </div>
           
-          {/* Trust indicators - Niveau de preuve */}
+          {/* Trust indicators */}
           <div className="mb-16">
-            <p className="text-base text-graphite-600 mb-8 font-semibold">Déjà adopté par des entreprises innovantes</p>
+            <p className="text-base text-graphite-600 mb-8 font-semibold">Déjà adopté par 200+ entreprises</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {trustIndicators.map((indicator, index) => (
                 <div 
@@ -114,6 +133,13 @@ const Hero = () => {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Social proof */}
+          <div className="text-center">
+            <div className="inline-flex items-center px-6 py-3 bg-green-50 border border-green-200 rounded-full text-green-700 font-medium">
+              ⭐ 4.9/5 • 200+ avis clients • Déploiement en 24h
             </div>
           </div>
         </div>

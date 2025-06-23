@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -130,34 +129,75 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
     }
   }, [createWavFromPCM]);
 
-  const saveOnboardingData = useCallback(async () => {
+  const saveToBusinessProfiles = useCallback(async () => {
     try {
-      const { error } = await supabase
-        .from('onboarding_completions')
-        .insert({
-          email: onboardingData.email,
-          business_name: onboardingData.businessName,
-          profession: onboardingData.profession,
-          needs: onboardingData.needs,
-          tone: onboardingData.tone,
-          language: onboardingData.language,
-          use_case: onboardingData.useCase,
-          session_id: sessionIdRef.current,
-          business_type: 'IA Conversationnelle'
-        });
-
-      if (error) {
-        console.error('Error saving onboarding data:', error);
-        toast({
-          title: "Erreur de sauvegarde",
-          description: "Impossible de sauvegarder vos données",
-          variant: "destructive"
-        });
-      } else {
-        console.log('Onboarding data saved successfully');
+      const { email, businessName, profession, needs, tone, language, useCase } = onboardingData;
+      
+      if (!email || !businessName) {
+        throw new Error('Email et nom d\'entreprise requis');
       }
-    } catch (error) {
-      console.error('Error saving onboarding data:', error);
+
+      // Vérifier si le profil existe déjà
+      const { data: existingProfile } = await supabase
+        .from('business_profiles')
+        .select('id')
+        .eq('owner_email', email)
+        .single();
+
+      if (existingProfile) {
+        // Mettre à jour le profil existant
+        const { error } = await supabase
+          .from('business_profiles')
+          .update({
+            business_name: businessName,
+            business_type: profession || 'Général',
+            appointment_type: useCase || 'Accueil téléphonique',
+            preferred_tone: tone || 'Professionnel',
+            spoken_languages: [language || 'français'],
+            intro_prompt: `IA ${businessName} - ${profession}. Ton: ${tone}. Mission: ${needs}`,
+            restrictions: `Cas d'usage: ${useCase}`
+          })
+          .eq('id', existingProfile.id);
+
+        if (error) throw error;
+      } else {
+        // Créer un nouveau profil
+        const { error } = await supabase
+          .from('business_profiles')
+          .insert({
+            owner_email: email,
+            business_name: businessName,
+            business_type: profession || 'Général',
+            appointment_type: useCase || 'Accueil téléphonique',
+            preferred_tone: tone || 'Professionnel',
+            spoken_languages: [language || 'français'],
+            intro_prompt: `IA ${businessName} - ${profession}. Ton: ${tone}. Mission: ${needs}`,
+            restrictions: `Cas d'usage: ${useCase}`,
+            working_hours: {
+              "lundi": ["09:00-18:00"],
+              "mardi": ["09:00-18:00"],
+              "mercredi": ["09:00-18:00"],
+              "jeudi": ["09:00-18:00"],
+              "vendredi": ["09:00-18:00"]
+            }
+          });
+
+        if (error) throw error;
+      }
+
+      console.log('Configuration sauvegardée dans business_profiles');
+      toast({
+        title: "✅ Configuration sauvegardée",
+        description: "Votre IA est maintenant configurée !",
+      });
+
+    } catch (error: any) {
+      console.error('Erreur sauvegarde business_profiles:', error);
+      toast({
+        title: "Erreur de sauvegarde",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   }, [onboardingData, toast]);
 
@@ -183,7 +223,6 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
       const emailMatch = transcription.match(/[\w.-]+@[\w.-]+\.\w+/);
       const email = emailMatch ? emailMatch[0] : '';
       
-      // Chercher le nom d'entreprise (approximation)
       const businessMatch = transcription.match(/(?:entreprise|société|boîte|company|business)?\s*:?\s*([A-Za-zÀ-ÿ\s]+)/i);
       const businessName = businessMatch ? businessMatch[1].trim() : transcription.replace(email, '').trim();
       
@@ -211,17 +250,21 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
     if (isPositive) {
       setCurrentStep('generating');
       
-      // Sauvegarder les données
-      await saveOnboardingData();
+      // Sauvegarder automatiquement dans business_profiles
+      await saveToBusinessProfiles();
       
       setTimeout(() => {
-        setCurrentStep('testing');
+        setCurrentStep('completed');
+        toast({
+          title: "🎉 IA créée avec succès !",
+          description: "Votre assistant IA est maintenant opérationnel",
+        });
       }, 2000);
     } else {
       setCurrentQuestion(0);
       setCurrentStep('questioning');
     }
-  }, [saveOnboardingData]);
+  }, [saveToBusinessProfiles, toast]);
 
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
     try {
@@ -244,10 +287,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
           5. ${QUESTIONS[4]}
           6. ${QUESTIONS[5]}
           
-          Après les 6 réponses, fais un résumé rapide : "Parfait ! Je récapitule : tu travailles dans ${onboardingData.profession}, ton IA va t'aider à ${onboardingData.needs}, avec un ton ${onboardingData.tone}, parlant ${onboardingData.language}, pour ${onboardingData.useCase}. C'est bien ça ?"
-          
-          Si confirmation : "Excellent ! Je génère ton IA personnalisée maintenant."
-          Sinon : reprendre rapidement.
+          Après les 6 réponses, fais un résumé rapide et demande confirmation.
           
           Sois très naturelle, rapide et efficace. Évite les pauses.`;
 
@@ -275,7 +315,6 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
           break;
 
         case 'session.updated':
-          console.log('Session updated successfully');
           setIsConnected(true);
           setIsConnecting(false);
           setCurrentStep('questioning');
@@ -337,7 +376,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
     }
-  }, [currentStep, processUserResponse, handleSummaryResponse, playAudioChunk, toast, onboardingData]);
+  }, [currentStep, processUserResponse, handleSummaryResponse, playAudioChunk, toast]);
 
   const startOnboarding = useCallback(async () => {
     if (isConnected || isConnecting) return;

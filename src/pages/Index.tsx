@@ -1,8 +1,9 @@
 
 import Hero from "@/components/sections/Hero";
+import PublicDemo from "@/components/sections/PublicDemo";
 import AIHub from "@/components/sections/AIHub";
-import VoiceOnboardingSection from "@/components/sections/VoiceOnboardingSection"; 
 import TestimonialsSection from "@/components/sections/TestimonialsSection";
+import PricingSection from "@/components/sections/PricingSection";
 import ThalyaDifference from "@/components/sections/ThalyaDifference";
 import Philosophy from "@/components/sections/Philosophy";
 import FinalCTA from "@/components/sections/FinalCTA";
@@ -14,9 +15,12 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
+        <div id="demo-section">
+          <PublicDemo />
+        </div>
         <AIHub />
-        <VoiceOnboardingSection />
         <TestimonialsSection />
+        <PricingSection />
         <ThalyaDifference />
         <Philosophy />
         <FinalCTA />
