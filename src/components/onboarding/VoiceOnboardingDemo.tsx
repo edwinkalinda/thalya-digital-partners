@@ -30,9 +30,11 @@ export function VoiceOnboardingDemo() {
   const getStatusText = () => {
     switch (currentStep) {
       case 'welcome':
-        return 'Cliquez pour commencer votre onboarding vocal';
+        return 'Cliquez pour commencer votre onboarding vocal ultra-rapide';
       case 'questioning':
-        return `Question ${currentQuestion + 1}/5 - ${isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara vous parle...' : 'Conversation en cours...'}`;
+        return `Question ${currentQuestion + 1}/5 - ${isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara vous parle...' : 'Conversation fluide...'}`;
+      case 'email':
+        return isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara vous parle...' : 'Donnez votre email et nom d\'entreprise...';
       case 'summary':
         return isUserSpeaking ? 'Je vous écoute...' : isSpeaking ? 'Clara fait le résumé...' : 'Confirmez ou corrigez...';
       case 'generating':
@@ -40,7 +42,7 @@ export function VoiceOnboardingDemo() {
       case 'testing':
         return isUserSpeaking ? 'Testez votre IA...' : isSpeaking ? 'Votre IA vous répond...' : 'Parlez à votre IA pour la tester';
       case 'completed':
-        return 'Onboarding terminé !';
+        return 'Onboarding terminé et IA enregistrée !';
       default:
         return '';
     }
@@ -55,6 +57,9 @@ export function VoiceOnboardingDemo() {
         break;
       case 'questioning':
         hue = 280; // Violet
+        break;
+      case 'email':
+        hue = 300; // Violet-rose
         break;
       case 'summary':
         hue = 320; // Magenta
@@ -76,15 +81,24 @@ export function VoiceOnboardingDemo() {
       forceHoverState: isConnected || isConnecting,
       isListening: isUserSpeaking,
       isSpeaking: isSpeaking,
-      audioLevel: isUserSpeaking ? audioLevel : (isSpeaking ? 0.7 : 0)
+      audioLevel: isUserSpeaking ? audioLevel : (isSpeaking ? 0.8 : 0)
     };
   };
+
+  const getProgressSteps = () => {
+    const totalSteps = currentStep === 'email' ? 6 : 5;
+    const currentStepNumber = currentStep === 'email' ? 6 : currentQuestion + 1;
+    
+    return { totalSteps, currentStepNumber };
+  };
+
+  const { totalSteps, currentStepNumber } = getProgressSteps();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[500px] space-y-8">
       {/* Orb principal */}
       <div 
-        className={`w-80 h-80 transition-transform ${currentStep === 'welcome' ? 'cursor-pointer hover:scale-105' : ''}`}
+        className={`w-80 h-80 transition-transform duration-300 ${currentStep === 'welcome' ? 'cursor-pointer hover:scale-105' : ''}`}
         onClick={handleOrbClick}
       >
         <VoiceOrb {...getOrbProps()} />
@@ -97,27 +111,27 @@ export function VoiceOnboardingDemo() {
         </p>
         
         {/* Indicateurs de progression pour les questions */}
-        {currentStep === 'questioning' && (
+        {(currentStep === 'questioning' || currentStep === 'email') && (
           <div className="flex justify-center space-x-2 mt-4">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(totalSteps)].map((_, i) => (
               <div
                 key={i}
-                className={`w-3 h-3 rounded-full ${
-                  i <= currentQuestion ? 'bg-electric-blue' : 'bg-graphite-300'
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  i < currentStepNumber ? 'bg-electric-blue' : 'bg-graphite-300'
                 }`}
               />
             ))}
           </div>
         )}
 
-        {/* Indicateur de conversation en cours */}
-        {isConnected && (currentStep === 'questioning' || currentStep === 'summary' || currentStep === 'testing') && (
+        {/* Indicateur de conversation ultra-rapide */}
+        {isConnected && (currentStep === 'questioning' || currentStep === 'email' || currentStep === 'summary' || currentStep === 'testing') && (
           <div className="flex justify-center items-center space-x-3 mt-6">
-            <div className={`w-3 h-3 rounded-full ${isUserSpeaking ? 'bg-electric-blue animate-pulse' : 'bg-gray-300'}`}></div>
-            <span className="text-sm text-graphite-600">
-              {isUserSpeaking ? 'Vous parlez' : isSpeaking ? 'Clara parle' : 'En écoute'}
+            <div className={`w-3 h-3 rounded-full transition-all ${isUserSpeaking ? 'bg-electric-blue animate-pulse scale-125' : 'bg-gray-300'}`}></div>
+            <span className="text-sm text-graphite-600 font-medium">
+              {isUserSpeaking ? 'Vous parlez' : isSpeaking ? 'Clara parle' : 'Conversation active'}
             </span>
-            <div className={`w-3 h-3 rounded-full ${isSpeaking ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+            <div className={`w-3 h-3 rounded-full transition-all ${isSpeaking ? 'bg-green-500 animate-pulse scale-125' : 'bg-gray-300'}`}></div>
           </div>
         )}
 
@@ -146,7 +160,7 @@ export function VoiceOnboardingDemo() {
         {currentStep === 'generating' && (
           <div className="flex justify-center items-center space-x-2 mt-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-electric-blue"></div>
-            <span className="text-electric-blue font-medium">Génération en cours...</span>
+            <span className="text-electric-blue font-medium">Génération et sauvegarde...</span>
           </div>
         )}
 
@@ -154,16 +168,25 @@ export function VoiceOnboardingDemo() {
         {currentStep === 'testing' && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
             <p className="text-green-800 text-sm">
-              🎉 Votre IA personnalisée est prête ! Parlez-lui naturellement pour la tester.
+              🎉 Votre IA personnalisée est prête et enregistrée ! Parlez-lui naturellement pour la tester.
             </p>
           </div>
         )}
 
-        {/* Instructions pour la conversation */}
+        {/* Instructions pour la conversation ultra-rapide */}
         {isConnected && currentStep !== 'generating' && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
             <p className="text-blue-800 text-xs">
-              💡 Parlez naturellement, Clara détecte automatiquement quand vous commencez et arrêtez de parler
+              ⚡ Conversation ultra-rapide activée - Clara détecte automatiquement votre voix et répond instantanément
+            </p>
+          </div>
+        )}
+
+        {/* Confirmation de sauvegarde */}
+        {currentStep === 'completed' && onboardingData.email && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+            <p className="text-green-800 text-sm">
+              ✅ Votre IA a été créée et enregistrée avec l'email : {onboardingData.email}
             </p>
           </div>
         )}

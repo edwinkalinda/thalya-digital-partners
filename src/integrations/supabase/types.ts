@@ -174,6 +174,51 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_completions: {
+        Row: {
+          business_name: string | null
+          business_type: string | null
+          completed_at: string | null
+          created_at: string | null
+          email: string
+          id: string
+          language: string | null
+          needs: string | null
+          profession: string | null
+          session_id: string | null
+          tone: string | null
+          use_case: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          business_type?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          language?: string | null
+          needs?: string | null
+          profession?: string | null
+          session_id?: string | null
+          tone?: string | null
+          use_case?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          business_type?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          language?: string | null
+          needs?: string | null
+          profession?: string | null
+          session_id?: string | null
+          tone?: string | null
+          use_case?: string | null
+        }
+        Relationships: []
+      }
       onboarding_logs: {
         Row: {
           business_profile_id: string | null

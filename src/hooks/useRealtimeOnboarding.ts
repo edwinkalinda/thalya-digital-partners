@@ -9,12 +9,14 @@ interface OnboardingData {
   tone: string;
   language: string;
   useCase: string;
+  email?: string;
+  businessName?: string;
 }
 
 interface UseRealtimeOnboardingReturn {
   isConnected: boolean;
   isConnecting: boolean;
-  currentStep: 'welcome' | 'questioning' | 'summary' | 'generating' | 'testing' | 'completed';
+  currentStep: 'welcome' | 'questioning' | 'summary' | 'email' | 'generating' | 'testing' | 'completed';
   currentQuestion: number;
   onboardingData: Partial<OnboardingData>;
   isSpeaking: boolean;
@@ -29,14 +31,15 @@ const QUESTIONS = [
   "Super. Et dans ton quotidien, à quoi aimerais-tu que ton IA t'aide ? Que veux-tu qu'elle fasse pour toi ?",
   "Parfait. Et comment veux-tu qu'elle parle à tes clients ? Plutôt calme, énergique, amicale, très pro, ou autre ?",
   "Tu veux qu'elle parle uniquement en français ou qu'elle soit bilingue, par exemple français/anglais ?",
-  "Dernière question : veux-tu qu'elle accueille les clients, prenne des réservations, réponde à des questions, ou fasse autre chose de précis ?"
+  "Dernière question : veux-tu qu'elle accueille les clients, prenne des réservations, réponde à des questions, ou fasse autre chose de précis ?",
+  "Parfait ! Pour finaliser ta création d'IA, peux-tu me donner ton adresse email et le nom de ton entreprise ?"
 ];
 
 export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'questioning' | 'summary' | 'generating' | 'testing' | 'completed'>('welcome');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'questioning' | 'summary' | 'email' | 'generating' | 'testing' | 'completed'>('welcome');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>({});
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -48,6 +51,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const sessionIdRef = useRef<string>('');
 
   const encodeAudioForAPI = useCallback((float32Array: Float32Array): string => {
     const int16Array = new Int16Array(float32Array.length);
@@ -115,7 +119,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
 
     try {
       const wavData = createWavFromPCM(audioData);
-      const audioBuffer = await audioContextRef.current.decodeAudioData(wavData.buffer);
+      const audioBuffer = await audioContextRef.current.decodeAudioData(wavData.buffer.slice(0));
       
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
@@ -126,12 +130,43 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
     }
   }, [createWavFromPCM]);
 
+  const saveOnboardingData = useCallback(async () => {
+    try {
+      const { error } = await supabase
+        .from('onboarding_completions')
+        .insert({
+          email: onboardingData.email,
+          business_name: onboardingData.businessName,
+          profession: onboardingData.profession,
+          needs: onboardingData.needs,
+          tone: onboardingData.tone,
+          language: onboardingData.language,
+          use_case: onboardingData.useCase,
+          session_id: sessionIdRef.current,
+          business_type: 'IA Conversationnelle'
+        });
+
+      if (error) {
+        console.error('Error saving onboarding data:', error);
+        toast({
+          title: "Erreur de sauvegarde",
+          description: "Impossible de sauvegarder vos données",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Onboarding data saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
+    }
+  }, [onboardingData, toast]);
+
   const processUserResponse = useCallback((transcription: string) => {
     console.log(`Question ${currentQuestion + 1} response:`, transcription);
     
-    const dataKeys: (keyof OnboardingData)[] = ['profession', 'needs', 'tone', 'language', 'useCase'];
-    
     if (currentQuestion < 5) {
+      const dataKeys: (keyof OnboardingData)[] = ['profession', 'needs', 'tone', 'language', 'useCase'];
+      
       setOnboardingData(prev => ({
         ...prev,
         [dataKeys[currentQuestion]]: transcription
@@ -140,43 +175,65 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
       if (currentQuestion < 4) {
         setCurrentQuestion(prev => prev + 1);
       } else {
-        generateSummary();
+        setCurrentStep('email');
+        setCurrentQuestion(5);
       }
+    } else if (currentQuestion === 5) {
+      // Extraire email et nom d'entreprise
+      const emailMatch = transcription.match(/[\w.-]+@[\w.-]+\.\w+/);
+      const email = emailMatch ? emailMatch[0] : '';
+      
+      // Chercher le nom d'entreprise (approximation)
+      const businessMatch = transcription.match(/(?:entreprise|société|boîte|company|business)?\s*:?\s*([A-Za-zÀ-ÿ\s]+)/i);
+      const businessName = businessMatch ? businessMatch[1].trim() : transcription.replace(email, '').trim();
+      
+      setOnboardingData(prev => ({
+        ...prev,
+        email,
+        businessName
+      }));
+      
+      generateSummary();
     }
   }, [currentQuestion]);
 
   const generateSummary = useCallback(() => {
-    const { profession, needs, tone, language, useCase } = onboardingData;
     setCurrentStep('summary');
-  }, [onboardingData]);
+  }, []);
 
-  const handleSummaryResponse = useCallback((transcription: string) => {
+  const handleSummaryResponse = useCallback(async (transcription: string) => {
     const isPositive = transcription.toLowerCase().includes('oui') || 
                       transcription.toLowerCase().includes('exact') ||
                       transcription.toLowerCase().includes('parfait') ||
-                      transcription.toLowerCase().includes('correct');
+                      transcription.toLowerCase().includes('correct') ||
+                      transcription.toLowerCase().includes('c\'est bon');
     
     if (isPositive) {
       setCurrentStep('generating');
       
+      // Sauvegarder les données
+      await saveOnboardingData();
+      
       setTimeout(() => {
         setCurrentStep('testing');
-      }, 3000);
+      }, 2000);
     } else {
       setCurrentQuestion(0);
       setCurrentStep('questioning');
     }
-  }, []);
+  }, [saveOnboardingData]);
 
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('WebSocket message:', data.type, data);
+      console.log('WebSocket message:', data.type);
 
       switch (data.type) {
         case 'session.created':
+          sessionIdRef.current = data.session?.id || `session_${Date.now()}`;
           console.log('Session created, sending configuration...');
-          const systemPrompt = `Tu es Clara, l'assistante IA de Thalya spécialisée dans l'onboarding vocal. 
+          
+          const systemPrompt = `Tu es Clara, l'assistante IA de Thalya spécialisée dans l'onboarding vocal ultra-rapide. 
           Tu conduis une conversation naturelle pour collecter les informations nécessaires à la création d'un agent IA personnalisé.
           
           Questions à poser dans l'ordre :
@@ -185,13 +242,14 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
           3. ${QUESTIONS[2]}
           4. ${QUESTIONS[3]}
           5. ${QUESTIONS[4]}
+          6. ${QUESTIONS[5]}
           
-          Après les 5 réponses, fais un résumé : "Si je résume bien, tu veux une IA qui travaille dans [activité], qui va t'aider à [besoin], avec un ton [ton], parlant [langue], et qui fera [cas d'usage]. C'est bien ça ?"
+          Après les 6 réponses, fais un résumé rapide : "Parfait ! Je récapitule : tu travailles dans ${onboardingData.profession}, ton IA va t'aider à ${onboardingData.needs}, avec un ton ${onboardingData.tone}, parlant ${onboardingData.language}, pour ${onboardingData.useCase}. C'est bien ça ?"
           
-          Si confirmation : "Parfait. Donne-moi une seconde… Je génère ta version personnalisée maintenant."
-          Sinon : reprendre les questions nécessaires.
+          Si confirmation : "Excellent ! Je génère ton IA personnalisée maintenant."
+          Sinon : reprendre rapidement.
           
-          Sois naturelle, chaleureuse et professionnelle. Parle comme dans une vraie conversation.`;
+          Sois très naturelle, rapide et efficace. Évite les pauses.`;
 
           wsRef.current?.send(JSON.stringify({
             type: 'session.update',
@@ -206,12 +264,12 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
               },
               turn_detection: {
                 type: 'server_vad',
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 1000
+                threshold: 0.4,
+                prefix_padding_ms: 200,
+                silence_duration_ms: 800
               },
-              temperature: 0.8,
-              max_response_output_tokens: 'inf'
+              temperature: 0.7,
+              max_response_output_tokens: 150
             }
           }));
           break;
@@ -225,24 +283,22 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
           
           toast({
             title: "🎙️ Clara connectée",
-            description: "L'onboarding vocal commence !",
+            description: "Onboarding vocal optimisé actif !",
           });
           break;
 
         case 'input_audio_buffer.speech_started':
-          console.log('User started speaking');
           setIsUserSpeaking(true);
           break;
 
         case 'input_audio_buffer.speech_stopped':
-          console.log('User stopped speaking');
           setIsUserSpeaking(false);
           break;
 
         case 'conversation.item.input_audio_transcription.completed':
           if (data.transcript) {
             console.log('User transcript:', data.transcript);
-            if (currentStep === 'questioning') {
+            if (currentStep === 'questioning' || currentStep === 'email') {
               processUserResponse(data.transcript);
             } else if (currentStep === 'summary') {
               handleSummaryResponse(data.transcript);
@@ -281,7 +337,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
     }
-  }, [currentStep, processUserResponse, handleSummaryResponse, playAudioChunk, toast]);
+  }, [currentStep, processUserResponse, handleSummaryResponse, playAudioChunk, toast, onboardingData]);
 
   const startOnboarding = useCallback(async () => {
     if (isConnected || isConnecting) return;
@@ -317,14 +373,15 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
 
       wsRef.current = ws;
 
-      // Start recording immediately when connected
+      // Démarrer l'enregistrement immédiatement
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          latency: 0.01
         }
       });
 
@@ -335,7 +392,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
       }
 
       sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
-      processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      processorRef.current = audioContextRef.current.createScriptProcessor(2048, 1, 1);
       
       processorRef.current.onaudioprocess = (event) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -343,7 +400,7 @@ export const useRealtimeOnboarding = (): UseRealtimeOnboardingReturn => {
           
           const sum = inputData.reduce((acc, val) => acc + Math.abs(val), 0);
           const avgLevel = sum / inputData.length;
-          setAudioLevel(avgLevel * 10);
+          setAudioLevel(avgLevel * 15);
           
           const encodedAudio = encodeAudioForAPI(inputData);
           

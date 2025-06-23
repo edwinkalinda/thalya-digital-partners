@@ -1,17 +1,15 @@
 
-import { createThalyaLogoSVG } from '@/utils/createThalyaLogo';
+import { Link } from 'react-router-dom';
+import IridescenceLogo from '@/components/ui/IridescenceLogo';
 
 const Logo = () => {
   return (
-    <div className="flex items-center space-x-2">
-      <div 
-        className="w-8 h-8"
-        dangerouslySetInnerHTML={{ __html: createThalyaLogoSVG() }}
-      />
-      <span className="text-xl font-bold text-deep-black">
+    <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+      <IridescenceLogo size={48} />
+      <span className="text-2xl font-black tracking-tight text-deep-black">
         Thalya
       </span>
-    </div>
+    </Link>
   );
 };
 
